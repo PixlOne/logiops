@@ -14,6 +14,8 @@ class Device
 public:
     Device(std::string p, const HIDPP::DeviceIndex i);
 
+    std::string name;
+
     void configure(bool scanning=false);
 
     void press_button(uint16_t cid);
@@ -41,17 +43,14 @@ public:
     class ButtonHandler : public EventHandler
     {
     public:
-        ButtonHandler (HIDPP20::Device *hidppdev, Device *d):
-                _irc4 (hidppdev),
-                dev (d),
-                states (0) {}
+        ButtonHandler (HIDPP20::Device *hidppdev, Device *d) : _irc (HIDPP20::IReprogControls::auto_version(hidppdev)), dev (d) { }
         const HIDPP20::FeatureInterface *feature () const
         {
-            return &_irc4;
+            return &_irc;
         }
         void handleEvent (const HIDPP::Report &event);
     protected:
-        HIDPP20::IReprogControlsV4 _irc4;
+        HIDPP20::IReprogControls _irc;
         Device* dev;
         std::vector<uint16_t> states;
         std::vector<uint16_t> new_states;

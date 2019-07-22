@@ -5,11 +5,12 @@
 #include <hidpp20/IAdjustableDPI.h>
 #include <hidpp20/IFeatureSet.h>
 #include <hidpp20/Error.h>
-#include <hidpp20/IReprogControlsV4.h>
+#include <hidpp20/IReprogControls.h>
 #include <hidpp20/Device.h>
 #include <hidpp10/Error.h>
 #include <algorithm>
 #include <cstring>
+#include <hidpp20/UnsupportedFeature.h>
 
 #include "Device.h"
 #include "Actions.h"
@@ -21,45 +22,59 @@ using namespace std::chrono_literals;
 
 Device::Device(std::string p, const HIDPP::DeviceIndex i) : path(p), index (i)
 {
+    // Initialise variables
     DeviceRemoved = false;
     dispatcher = new HIDPP::SimpleDispatcher(path.c_str());
     hidpp_dev = new HIDPP20::Device(dispatcher, index);
+    name = hidpp_dev->name();
     features = get_features();
 
-    if(global_config->devices.find(hidpp_dev->name()) == global_config->devices.end())
+    // Set config, if none is found for this device then use default
+    if(global_config->devices.find(name) == global_config->devices.end())
     {
-        log_printf(INFO, "Device %s not configured, using default.", hidpp_dev->name().c_str());
+        log_printf(INFO, "Device %s not configured, using default config.", hidpp_dev->name().c_str());
         config = new DeviceConfig();
     }
-    else config = global_config->devices.find(hidpp_dev->name())->second;
+    else config = global_config->devices.find(name)->second;
 }
 
 void Device::configure(bool scanning)
 {
+    // Set DPI if it is set
     if(config->dpi != nullptr)
         set_dpi(*config->dpi, scanning);
+    // Set Smartshift if it is set
     if(config->smartshift != nullptr)
         set_smartshift(*config->smartshift, scanning);
+    // Set Hires Scroll if it is set
     if(config->hiresscroll != nullptr)
         set_hiresscroll(*config->hiresscroll, scanning);
+    // Divert buttons
     divert_buttons();
 }
 
 void Device::divert_buttons(bool scanning)
 {
-    HIDPP20::IReprogControlsV4 irc4(hidpp_dev);
-    for(auto it = config->actions.begin(); it != config->actions.end(); ++it)
+    try
     {
-        uint8_t flags = 0;
-        flags |= HIDPP20::IReprogControlsV4::ChangeTemporaryDivert;
-        flags |= HIDPP20::IReprogControlsV4::TemporaryDiverted;
-        if(it->second->type == Action::Gestures)
+        HIDPP20::IReprogControls irc = HIDPP20::IReprogControls::auto_version(hidpp_dev);
+        for(auto it = config->actions.begin(); it != config->actions.end(); ++it)
         {
-            flags |= HIDPP20::IReprogControlsV4::ChangeRawXYDivert;
-            flags |= HIDPP20::IReprogControlsV4::RawXYDiverted;
+            uint8_t flags = 0;
+            flags |= HIDPP20::IReprogControls::ChangeTemporaryDivert;
+            flags |= HIDPP20::IReprogControls::TemporaryDiverted;
+            if(it->second->type == Action::Gestures)
+            {
+                flags |= HIDPP20::IReprogControls::ChangeRawXYDivert;
+                flags |= HIDPP20::IReprogControls::RawXYDiverted;
+            }
+            irc.setControlReporting(it->first, flags, it->first);
+            log_printf(DEBUG, "Diverted 0x%x.", it->first);
         }
-        it->first;
-        irc4.setControlReporting(it->first, flags, it->first);
+    }
+    catch(HIDPP20::UnsupportedFeature &e)
+    {
+        log_printf(DEBUG, "%s does not support Reprog controls, not diverting!", name);
     }
 }
 
@@ -110,7 +125,6 @@ void Device::set_dpi(int dpi, bool scanning)
 void Device::start()
 {
     configure();
-
     auto *d = new HIDPP::SimpleDispatcher(path.c_str());
     listener = new SimpleListener(d, index);
     listener->addEventHandler( std::make_unique<ButtonHandler>(hidpp_dev, this) );
@@ -160,9 +174,9 @@ void Device::ButtonHandler::handleEvent (const HIDPP::Report &event)
 {
     switch (event.function())
     {
-        case HIDPP20::IReprogControlsV4::Event::DivertedButtonEvent:
+        case HIDPP20::IReprogControls::Event::DivertedButtonEvent:
         {
-            new_states = HIDPP20::IReprogControlsV4::divertedButtonEvent(event);
+            new_states = HIDPP20::IReprogControls::divertedButtonEvent(event);
             if (states.empty())
             {
                 for (uint16_t i : new_states)
@@ -248,7 +262,7 @@ void Device::press_button(uint16_t cid)
 {
     if(config->actions.find(cid) == config->actions.end())
     {
-        log_printf(WARN, "0x%x was pressed but no action was found.", cid);
+        log_printf(DEBUG, "0x%x was pressed but no action was found.", cid);
         return;
     }
     config->actions.find(cid)->second->press();
@@ -258,7 +272,7 @@ void Device::release_button(uint16_t cid)
 {
     if(config->actions.find(cid) == config->actions.end())
     {
-        log_printf(WARN, "0x%x was released but no action was found.", cid);
+        log_printf(DEBUG, "0x%x was released but no action was found.", cid);
         return;
     }
     config->actions.find(cid)->second->release();
@@ -280,13 +294,13 @@ void Device::move_diverted(uint16_t cid, HIDPP20::IReprogControlsV4::Move m)
 std::map<uint16_t, uint8_t> Device::get_features()
 {
     std::map<uint16_t, uint8_t> features;
-
     HIDPP20::IFeatureSet ifs (hidpp_dev);
-
     unsigned int feature_count = ifs.getCount();
-
-    for(unsigned int i = 1; i <= feature_count; i++)
+    for(uint8_t i = 1; i <= feature_count; i++)
+    {
         features.insert({ifs.getFeatureID(i), i});
+        log_printf(DEBUG, "%s: 0x%02x : 0x%04x", name.c_str(), i, ifs.getFeatureID(i));
+    }
 
     return features;
 }

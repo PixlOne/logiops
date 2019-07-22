@@ -6,7 +6,7 @@ This is currently only compatible with HID++ \>2.0 devices.
 
 ## Building
 
-This project requires a C++14 compiler, cmake, libevdev, libconfig, and [libhidpp](https://github.com/cvuchener/hidpp)
+This project requires a C++14 compiler, cmake, libevdev, libconfig, and [my fork of libhidpp](https://github.com/PixlOne/hidpp)
 
 To build this project, run:
 
@@ -24,7 +24,7 @@ Installation is currently not implemented.
 |  Device   | Compatible? |
 |:---------:|:-----------:|
 | MX Master |     Yes     |
-|   T400    |  Untested   |
+|   T400    |     Yes     |
 |   K400r   |  Untested   |
 |   K350    |  Untested   |
 |   M325c   |  Untested   |

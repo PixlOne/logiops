@@ -2,7 +2,7 @@
 #define LOGIOPS_ACTIONS_H
 
 #include <map>
-#include <hidpp20/IReprogControlsV4.h>
+#include <hidpp20/IReprogControls.h>
 #include "Device.h"
 
 enum class Action

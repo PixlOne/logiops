@@ -28,7 +28,7 @@ void DeviceFinder::addDevice(const char *path)
     std::thread{[=]()
     {
         // Check /sys/class/hidraw/hidrawX/device/uevent for device details.
-        // Continue if HIDRAW_NAME contains 'Logitech' or is non-existent/
+        // Continue if HID_NAME contains 'Logitech' or is non-existent
         // Otherwise, skip.
         std::string hidraw_name;
         std::size_t spos = string_path.rfind('/');
@@ -77,7 +77,7 @@ void DeviceFinder::addDevice(const char *path)
                          std::tie(major, minor) = d.protocolVersion();
                          if(major > 1) // HID++ 2.0 devices only
                          {
-                             auto dev = new Device(string_path.c_str(), index);
+                             auto dev = new Device(string_path, index);
                              handlers.insert({
                                      dev, std::async(std::launch::async, &Device::start, *dev)
                              });
@@ -107,7 +107,7 @@ void DeviceFinder::addDevice(const char *path)
                      {
                          if(i == max_tries - 1)
                             log_printf(WARN, "Device %s (index %d) timed out.", string_path.c_str(), index);
-                        else usleep(try_delay);
+                         else usleep(try_delay);
                      }
                      catch(std::runtime_error &e)
                      {
@@ -131,7 +131,7 @@ void DeviceFinder::removeDevice(const char* path)
     {
         if(it->first->path == path)
         {
-            log_printf(INFO, "%s on %s disconnected.", it->first->hidpp_dev->name(), path);
+            log_printf(INFO, "%s on %s disconnected.", it->first->name.c_str(), path);
             it->first->stop();
             it->second.wait();
             //handlers.erase(it);
