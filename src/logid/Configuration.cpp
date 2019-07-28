@@ -5,6 +5,7 @@
 #include <libevdev/libevdev.h>
 #include <algorithm>
 #include <cstring>
+#include <hidpp20/IHiresScroll.h>
 
 #include "Configuration.h"
 #include "util.h"
@@ -79,10 +80,48 @@ DeviceConfig::DeviceConfig(const libconfig::Setting &root)
 
     try
     {
-        bool b;
-        if(!root.lookupValue("hiresscroll", b))
-            throw SettingTypeException(root["hiresscroll"]);
-        hiresscroll = new bool(b);
+        const Setting& hr = root["hiresscroll"];
+        uint8_t hss = 0;
+        try
+        {
+            bool b;
+            if(!hr.lookupValue("hires", b))
+                throw SettingTypeException(root["hires"]);
+            if(b) hss |= HIDPP20::IHiresScroll::HiRes;
+        }
+        catch(SettingNotFoundException &e) { }
+        catch(SettingTypeException &e)
+        {
+            log_printf(INFO, "Line %d: hires field must be a boolean", hr["hires"].getSourceLine());
+        }
+
+        try
+        {
+            bool b;
+            if(!hr.lookupValue("invert", b))
+                throw SettingTypeException(root["invert"]);
+            if(b) hss |= HIDPP20::IHiresScroll::Inverted;
+        }
+        catch(SettingNotFoundException &e) { }
+        catch(SettingTypeException &e)
+        {
+            log_printf(INFO, "Line %d: invert field must be a boolean", hr["invert"].getSourceLine());
+        }
+
+        try
+        {
+            bool b;
+            if(!hr.lookupValue("target", b))
+                throw SettingTypeException(root["target"]);
+            if(b) hss |= HIDPP20::IHiresScroll::Target;
+        }
+        catch(SettingNotFoundException &e) { }
+        catch(SettingTypeException &e)
+        {
+            log_printf(INFO, "Line %d: target field must be a boolean", hr["target"].getSourceLine());
+        }
+
+        hiresscroll = new uint8_t(hss);
     }
     catch(const SettingNotFoundException &e)
     {
@@ -90,18 +129,18 @@ DeviceConfig::DeviceConfig(const libconfig::Setting &root)
     }
     catch(const SettingTypeException &e)
     {
-        log_printf(WARN, "Line %d: DPI must me an integer; not setting.", root["hiresscroll"].getSourceLine());
+        log_printf(WARN, "Line %d: hiresscroll should be an object", root["hiresscroll"].getSourceLine());
     }
 
     try
     {
         const Setting& ss = root["smartshift"];
-        smartshift = new smartshift_options;
+        smartshift = new HIDPP20::ISmartShift::SmartshiftStatus {};
         bool on;
         int threshold;
         try
         {
-            if (ss.lookupValue("on", on)) smartshift->on = new bool(on);
+            if (ss.lookupValue("on", on)) smartshift->Active = new bool(on);
             else log_printf(WARN, "Line %d: on field must be a boolean", ss["on"].getSourceLine());
         }
         catch(const SettingNotFoundException &e) { }
@@ -113,26 +152,24 @@ DeviceConfig::DeviceConfig(const libconfig::Setting &root)
                 if(threshold < 0)
                 {
                     threshold = 1;
-                    log_printf(INFO, "Smartshift threshold must be > 0 or < 100, setting to 0.");
+                    log_printf(INFO, "Smartshift threshold must be > 0 or < 100, setting to 1.");
                 }
                 if(threshold >= 100)
                 {
                     threshold = 99;
                     log_printf(INFO, "Smartshift threshold must be > 0 or < 100, setting to 99.");
                 }
-                smartshift->threshold = new uint8_t(threshold);
+                smartshift->AutoDisengage = new uint8_t(threshold);
+                smartshift->DefaultAutoDisengage = new uint8_t(threshold);
             }
             else log_printf(WARN, "Line %d: threshold must be an integer", ss["threshold"].getSourceLine());
         }
-        catch(const SettingNotFoundException &e)
-        {
-            log_printf(INFO, "Missing threshold for smartshift, not setting.");
-        }
+        catch(const SettingNotFoundException &e) { }
     }
     catch(const SettingNotFoundException &e) { }
     catch(const SettingTypeException &e)
     {
-        log_printf(WARN, "Line %d: smartshift field must be an object", root["hiressscroll"].getSourceLine());
+        log_printf(WARN, "Line %d: smartshift field must be an object", root["smartshift"].getSourceLine());
     }
 
     Setting* buttons;

@@ -1,9 +1,10 @@
-#ifndef LOGIOPS_ACTIONS_H
-#define LOGIOPS_ACTIONS_H
+#ifndef ACTIONS_H
+#define ACTIONS_H
+#include "Device.h"
 
 #include <map>
+#include <vector>
 #include <hidpp20/IReprogControls.h>
-#include "Device.h"
 
 enum class Action
 {
@@ -119,4 +120,4 @@ private:
     int dpi_inc;
 };
 
-#endif //LOGIOPS_ACTIONS_H
+#endif //ACTIONS_H

@@ -21,6 +21,7 @@
 LogLevel global_verbosity = DEBUG;
 Configuration* global_config;
 EvdevDevice* global_evdev;
+DeviceFinder* finder;
 
 int main(int argc, char** argv)
 {
@@ -36,7 +37,9 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    find_device(); // Scan devices, create listeners, handlers, etc.
+    // Scan devices, create listeners, handlers, etc.
+    finder = new DeviceFinder();
+    finder->run();
 
     return EXIT_SUCCESS;
 }

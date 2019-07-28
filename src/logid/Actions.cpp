@@ -1,6 +1,8 @@
 #include <hidpp20/Error.h>
 #include <hidpp/SimpleDispatcher.h>
 #include <hidpp20/IAdjustableDPI.h>
+#include <hidpp20/ISmartShift.h>
+#include <hidpp20/IHiresScroll.h>
 
 #include "Actions.h"
 #include "util.h"
@@ -55,48 +57,26 @@ void GestureAction::release()
 
 void SmartshiftAction::press()
 {
-    if(device->features.find(0x2110) == device->features.end())
-    {
-        log_printf(DEBUG, "Error toggling smart shift, feature is non-existent.");
-        return;
-    }
-    const uint8_t f_index = device->features.find(0x2110)->second;
-    std::vector<uint8_t> results;
-
     try
     {
-        results = device->hidpp_dev->callFunction(f_index, 0x00);
-        if(results[0] == 0x02)
-            results = device->hidpp_dev->callFunction(f_index, 0x01, {0x01});
-        else if(results[0] == 0x01)
-            results = device->hidpp_dev->callFunction(f_index, 0x01, {0x02});
-        else
-            results = device->hidpp_dev->callFunction(f_index, 0x01, {0x01});
+        HIDPP20::ISmartShift iss(device->hidpp_dev);
+        auto s = iss.getStatus();
+        iss.setStatus({new bool(!*s.Active)});
     }
     catch(HIDPP20::Error &e)
     {
         log_printf(ERROR, "Error toggling smart shift, code %d: %s\n", e.errorCode(), e.what());
-        return;
     }
 }
 
 void HiresScrollAction::press()
 {
-    if(device->features.find(0x2110) == device->features.end())
-    {
-        log_printf(DEBUG, "Error toggling hires scroll, feature is non-existent.");
-        return;
-    }
-    const uint8_t f_index = device->features.find(0x2121)->second;
-    std::vector<uint8_t> results;
-
     try
     {
-        results = device->hidpp_dev->callFunction(f_index, 0x01);
-        if(results[0] == 0x02)
-            results = device->hidpp_dev->callFunction(f_index, 0x02, {0x00});
-        else
-            results = device->hidpp_dev->callFunction(f_index, 0x02, {0x02});
+        HIDPP20::IHiresScroll ihs(device->hidpp_dev);
+        auto mode = ihs.getMode();
+        mode ^= HIDPP20::IHiresScroll::Mode::HiRes;
+        ihs.setMode(mode);
     }
     catch(HIDPP20::Error &e)
     {

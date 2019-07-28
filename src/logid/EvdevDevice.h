@@ -1,5 +1,5 @@
-#ifndef MASTEROPTIONS_EVDEVDEVICE_H
-#define MASTEROPTIONS_EVDEVDEVICE_H
+#ifndef EVDEVDEVICE_H
+#define EVDEVDEVICE_H
 
 #include <libevdev/libevdev.h>
 #include <libevdev/libevdev-uinput.h>
@@ -16,4 +16,4 @@ public:
 
 extern EvdevDevice* global_evdev;
 
-#endif //MASTEROPTIONS_EVDEVDEVICE_H
+#endif //EVDEVDEVICE_H

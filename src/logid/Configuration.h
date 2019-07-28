@@ -1,14 +1,10 @@
-#ifndef MASTEROPTIONS_CONFIGURATION_H
-#define MASTEROPTIONS_CONFIGURATION_H
+#ifndef CONFIGURATION_H
+#define CONFIGURATION_H
 
 #include <map>
 #include <libconfig.h++>
-
-struct smartshift_options
-{
-    bool* on = nullptr;
-    uint8_t* threshold = nullptr;
-};
+#include <hidpp20/ISmartShift.h>
+#include "Actions.h"
 
 class DeviceConfig;
 class ButtonAction;
@@ -20,8 +16,8 @@ public:
     DeviceConfig();
     DeviceConfig(const libconfig::Setting& root);
     const int* dpi = nullptr;
-    struct smartshift_options* smartshift = nullptr;
-    const bool* hiresscroll = nullptr;
+    HIDPP20::ISmartShift::SmartshiftStatus* smartshift;
+    const uint8_t* hiresscroll = nullptr;
     std::map<uint16_t, ButtonAction*> actions;
 };
 
@@ -38,4 +34,4 @@ ButtonAction* parse_action(Action action, const libconfig::Setting* action_confi
 
 extern Configuration* global_config;
 
-#endif //MASTEROPTIONS_CONFIGURATION_H
+#endif //CONFIGURATION_H

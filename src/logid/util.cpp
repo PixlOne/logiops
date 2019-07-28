@@ -6,7 +6,6 @@
 #include <algorithm>
 
 #include "util.h"
-#include "Actions.h"
 
 void log_printf(LogLevel level, const char* format, ...)
 {

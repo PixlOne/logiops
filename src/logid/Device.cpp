@@ -6,21 +6,23 @@
 #include <hidpp20/IFeatureSet.h>
 #include <hidpp20/Error.h>
 #include <hidpp20/IReprogControls.h>
+#include <hidpp20/ISmartShift.h>
 #include <hidpp20/Device.h>
 #include <hidpp10/Error.h>
 #include <algorithm>
 #include <cstring>
+#include <utility>
 #include <hidpp20/UnsupportedFeature.h>
+#include <hidpp20/IHiresScroll.h>
 
 #include "Device.h"
-#include "Actions.h"
-#include "Configuration.h"
 #include "util.h"
 #include "EvdevDevice.h"
 
+
 using namespace std::chrono_literals;
 
-Device::Device(std::string p, const HIDPP::DeviceIndex i) : path(p), index (i)
+Device::Device(std::string p, const HIDPP::DeviceIndex i) : path(std::move(p)), index (i)
 {
     // Initialise variables
     DeviceRemoved = false;
@@ -74,39 +76,42 @@ void Device::divert_buttons(bool scanning)
     }
     catch(HIDPP20::UnsupportedFeature &e)
     {
-        log_printf(DEBUG, "%s does not support Reprog controls, not diverting!", name);
+        log_printf(DEBUG, "%s does not support Reprog controls, not diverting!", name.c_str());
     }
 }
 
-void Device::set_smartshift(smartshift_options ops, bool scanning)
+void Device::set_smartshift(HIDPP20::ISmartShift::SmartshiftStatus ops, bool scanning)
 {
-    std::vector<uint8_t> parameters;
-    parameters.push_back(ops.on == nullptr ? 0 : (*ops.on)? 2 : 1);
-    if(ops.threshold != nullptr)
+    try
     {
-        parameters.push_back(*ops.threshold);
-        parameters.push_back(*ops.threshold);
+        HIDPP20::ISmartShift ss(hidpp_dev);
+        ss.setStatus(ops);
     }
-
-    if(features.find(0x2110) == features.end())
+    catch (HIDPP20::UnsupportedFeature &e)
     {
-        log_printf(DEBUG, "Error toggling smart shift, feature is non-existent.");
-        return;
+        log_printf(ERROR, "Device does not support SmartShift");
     }
-    const uint8_t f_index = features.find(0x2110)->second;
-
-    try { hidpp_dev->callFunction(f_index, 0x01, parameters); }
     catch (HIDPP20::Error &e)
     {
-        if(scanning)
-            throw e;
-        log_printf(ERROR, "Error setting smartshift options, code %d: %s\n", e.errorCode(), e.what());
+        log_printf(ERROR, "Error setting SmartShift options, code %d: %s\n", e.errorCode(), e.what());
     }
 }
 
-void Device::set_hiresscroll(bool b, bool scanning)
+void Device::set_hiresscroll(uint8_t ops, bool scanning)
 {
-
+    try
+    {
+        HIDPP20::IHiresScroll hs(hidpp_dev);
+        hs.setMode(ops);
+    }
+    catch (HIDPP20::UnsupportedFeature &e)
+    {
+        log_printf(ERROR, "Device does not support Hires Scrolling");
+    }
+    catch (HIDPP20::Error &e)
+    {
+        log_printf(ERROR, "Error setting Hires Scrolling options, code %d: %s\n", e.errorCode(), e.what());
+    }
 }
 
 void Device::set_dpi(int dpi, bool scanning)
@@ -128,49 +133,11 @@ void Device::start()
     auto *d = new HIDPP::SimpleDispatcher(path.c_str());
     listener = new SimpleListener(d, index);
     listener->addEventHandler( std::make_unique<ButtonHandler>(hidpp_dev, this) );
-    auto listener_thread = std::thread { [=]() { listener->start(); } };
-    listener_thread.detach();
-    while(!DeviceRemoved)
-    {
-        std::mutex m;
-        std::condition_variable cv;
-        std::vector<uint8_t> results;
-
-        std::thread t([&cv, &results, dev=hidpp_dev, removed=&DeviceRemoved]()
-        {
-            try { results = dev->callFunction(0x00, 0x00); }
-            catch(HIDPP10::Error &e) { usleep(500000); }
-            catch(std::system_error &e)
-            {
-                cv.notify_one();
-                if(*removed) printf("REMOVED!\n");
-                *removed = true;
-            }
-            cv.notify_one();
-        });
-        t.detach();
-
-        std::unique_lock<std::mutex> l(m);
-        if(cv.wait_for(l, 500ms) == std::cv_status::timeout)
-        {
-            while(!DeviceRemoved)
-            {
-                try
-                {
-                    configure(true);
-                    break;
-                }
-                catch(std::exception &e) {} // Retry infinitely on failure
-            }
-        }
-        usleep(200000);
-    }
-
-    listener->stop();
-    listener_thread.join();
+    listener->addEventHandler( std::make_unique<ReceiverHandler>(this) );
+    listener->start();
 }
 
-void Device::ButtonHandler::handleEvent (const HIDPP::Report &event)
+void ButtonHandler::handleEvent (const HIDPP::Report &event)
 {
     switch (event.function())
     {
@@ -187,7 +154,7 @@ void Device::ButtonHandler::handleEvent (const HIDPP::Report &event)
             std::vector<uint16_t>::iterator it;
             std::vector<uint16_t> cids(states.size() + new_states.size());
             it = std::set_union(states.begin(), states.end(), new_states.begin(), new_states.end(), cids.begin());
-            cids.resize(it - cids.begin());
+            cids.resize((ulong)(it - cids.begin()));
             for (uint16_t i : cids)
             {
                 if (std::find(new_states.begin(), new_states.end(), i) != new_states.end())
@@ -208,10 +175,54 @@ void Device::ButtonHandler::handleEvent (const HIDPP::Report &event)
                 std::thread{[=]() { dev->move_diverted(i, raw_xy); }}.detach();
             break;
         }
+        default:
+            break;
     }
 }
 
-void Device::EventListener::removeEventHandlers ()
+void ReceiverHandler::handleEvent(const HIDPP::Report &event)
+{
+    switch(event.featureIndex())
+    {
+        case HIDPP10::IReceiver::DeviceUnpaired:
+        {
+            // Find device, stop it, and delete it
+            auto it = finder->devices.begin();
+            while (it != finder->devices.end())
+            {
+                if(it->first->path == dev->path && it->first->index == event.deviceIndex())
+                {
+                    log_printf(INFO, "%s (Device %d on %s) unpaired.", it->first->name.c_str(), event.deviceIndex(), dev->path);
+                    it->first->stop();
+                    it->second.join();
+                    finder->devices.erase(it);
+                }
+                else it++;
+            }
+            break;
+        }
+        case HIDPP10::IReceiver::DevicePaired:
+        {
+            break;
+        }
+        case HIDPP10::IReceiver::ConnectionStatus:
+        {
+            auto status = HIDPP10::IReceiver::connectionStatusEvent(event);
+            if(status == HIDPP10::IReceiver::LinkLoss)
+                log_printf(INFO, "Link lost to device %d on %s", event.deviceIndex(), dev->path.c_str());
+            else if (status == HIDPP10::IReceiver::ConnectionEstablished)
+            {
+                dev->configure();
+                log_printf(INFO, "Connection established to device %d on %s", event.deviceIndex(), dev->path.c_str());
+            }
+            break;
+        }
+        default:
+            break;
+    }
+}
+
+void EventListener::removeEventHandlers ()
 {
     for (const auto &p: iterators)
         dispatcher->unregisterEventHandler(p.second);
@@ -219,35 +230,37 @@ void Device::EventListener::removeEventHandlers ()
     iterators.clear();
 }
 
-Device::EventListener::~EventListener()
+EventListener::~EventListener()
 {
     removeEventHandlers();
 }
 
-void Device::EventListener::addEventHandler(std::unique_ptr<EventHandler> &&handler)
+void EventListener::addEventHandler(std::unique_ptr<EventHandler> &&handler)
 {
-    uint8_t feature = handler->feature()->index();
     EventHandler *ptr = handler.get();
-    handlers.emplace(feature, std::move(handler));
-    dispatcher->registerEventHandler(index, feature, [ptr](const HIDPP::Report &report)
+    for(uint8_t feature : handler->featureIndices())
     {
-        ptr->handleEvent(report);
-        return true;
-    });
+        handlers.emplace(feature, std::move(handler));
+        dispatcher->registerEventHandler(index, feature, [=](const HIDPP::Report &report)
+        {
+            ptr->handleEvent(report);
+            return true;
+        });
+    }
 }
 
-void Device::SimpleListener::start()
+void SimpleListener::start()
 {
     try { dispatcher->listen(); }
     catch(std::system_error &e) { }
 }
 
-void Device::SimpleListener::stop()
+void SimpleListener::stop()
 {
     dispatcher->stop();
 }
 
-bool Device::SimpleListener::event (EventHandler *handler, const HIDPP::Report &report)
+bool SimpleListener::event (EventHandler *handler, const HIDPP::Report &report)
 {
     handler->handleEvent (report);
     return true;
@@ -255,7 +268,7 @@ bool Device::SimpleListener::event (EventHandler *handler, const HIDPP::Report &
 
 void Device::stop()
 {
-    DeviceRemoved = true;
+    listener->stop();
 }
 
 void Device::press_button(uint16_t cid)
@@ -296,11 +309,5 @@ std::map<uint16_t, uint8_t> Device::get_features()
     std::map<uint16_t, uint8_t> features;
     HIDPP20::IFeatureSet ifs (hidpp_dev);
     unsigned int feature_count = ifs.getCount();
-    for(uint8_t i = 1; i <= feature_count; i++)
-    {
-        features.insert({ifs.getFeatureID(i), i});
-        log_printf(DEBUG, "%s: 0x%02x : 0x%04x", name.c_str(), i, ifs.getFeatureID(i));
-    }
-
     return features;
 }
