@@ -4,6 +4,11 @@ This is an unofficial driver for Logitech mice and keyboard.
 
 This is currently only compatible with HID++ \>2.0 devices.
 
+## Configuration
+[Refer to the wiki for details.](https://github.com/PixlOne/logiops/wiki/Configuration)
+
+You may also refer to logid.example.cfg for an example.
+
 ## Building
 
 This project requires a C++14 compiler, cmake, libevdev, libconfig, and [my fork of libhidpp](https://github.com/PixlOne/hidpp)

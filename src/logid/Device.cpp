@@ -42,6 +42,8 @@ Device::Device(std::string p, const HIDPP::DeviceIndex i) : path(std::move(p)), 
 
 void Device::configure(bool scanning)
 {
+    // Divert buttons
+    divert_buttons();
     // Set DPI if it is set
     if(config->dpi != nullptr)
         set_dpi(*config->dpi, scanning);
@@ -51,8 +53,6 @@ void Device::configure(bool scanning)
     // Set Hires Scroll if it is set
     if(config->hiresscroll != nullptr)
         set_hiresscroll(*config->hiresscroll, scanning);
-    // Divert buttons
-    divert_buttons();
 }
 
 void Device::divert_buttons(bool scanning)
@@ -306,8 +306,12 @@ void Device::move_diverted(uint16_t cid, HIDPP20::IReprogControlsV4::Move m)
 
 std::map<uint16_t, uint8_t> Device::get_features()
 {
-    std::map<uint16_t, uint8_t> features;
+    std::map<uint16_t, uint8_t> _features;
     HIDPP20::IFeatureSet ifs (hidpp_dev);
     unsigned int feature_count = ifs.getCount();
-    return features;
+
+    for(int i = 0; i < feature_count; i++)
+        _features.insert( {i, ifs.getFeatureID(i) } );
+
+    return _features;
 }
