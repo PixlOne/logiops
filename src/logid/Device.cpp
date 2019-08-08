@@ -40,22 +40,41 @@ Device::Device(std::string p, const HIDPP::DeviceIndex i) : path(std::move(p)), 
     else config = global_config->devices.find(name)->second;
 }
 
-void Device::configure(bool scanning)
+void Device::configure()
 {
+    if(config->baseConfig)
+        config = new DeviceConfig(config, this);
+
+    configuring = true;
+    usleep(50000);
+    if(disconnected) {
+        configuring = false; return; }
+
     // Divert buttons
     divert_buttons();
+    if(disconnected) {
+        configuring = false; return; }
+
     // Set DPI if it is set
     if(config->dpi != nullptr)
-        set_dpi(*config->dpi, scanning);
+        set_dpi(*config->dpi);
+    if(disconnected) {
+        configuring = false; return; }
+
     // Set Smartshift if it is set
     if(config->smartshift != nullptr)
-        set_smartshift(*config->smartshift, scanning);
+        set_smartshift(*config->smartshift);
+    if(disconnected) {
+        configuring = false; return; }
+
     // Set Hires Scroll if it is set
     if(config->hiresscroll != nullptr)
-        set_hiresscroll(*config->hiresscroll, scanning);
+        set_hiresscroll(*config->hiresscroll);
+
+    configuring = false;
 }
 
-void Device::divert_buttons(bool scanning)
+void Device::divert_buttons()
 {
     try
     {
@@ -78,9 +97,13 @@ void Device::divert_buttons(bool scanning)
     {
         log_printf(DEBUG, "%s does not support Reprog controls, not diverting!", name.c_str());
     }
+    catch(HIDPP10::Error &e)
+    {
+        log_printf(DEBUG, "Could not divert buttons: HID++ 1.0 Error %s!", e.what());
+    }
 }
 
-void Device::set_smartshift(HIDPP20::ISmartShift::SmartshiftStatus ops, bool scanning)
+void Device::set_smartshift(HIDPP20::ISmartShift::SmartshiftStatus ops)
 {
     try
     {
@@ -97,7 +120,7 @@ void Device::set_smartshift(HIDPP20::ISmartShift::SmartshiftStatus ops, bool sca
     }
 }
 
-void Device::set_hiresscroll(uint8_t ops, bool scanning)
+void Device::set_hiresscroll(uint8_t ops)
 {
     try
     {
@@ -114,17 +137,12 @@ void Device::set_hiresscroll(uint8_t ops, bool scanning)
     }
 }
 
-void Device::set_dpi(int dpi, bool scanning)
+void Device::set_dpi(int dpi)
 {
     HIDPP20::IAdjustableDPI iad(hidpp_dev);
 
-    try { for(int i = 0; i < iad.getSensorCount(); i++) iad.setSensorDPI(i, dpi); }
-    catch (HIDPP20::Error &e)
-    {
-        if(scanning)
-            throw e;
-        log_printf(ERROR, "Error while setting DPI: %s", e.what());
-    }
+    try { for(unsigned int i = 0; i < iad.getSensorCount(); i++) iad.setSensorDPI(i, dpi); }
+    catch (HIDPP20::Error &e) { log_printf(ERROR, "Error while setting DPI: %s", e.what()); }
 }
 
 void Device::start()
@@ -192,7 +210,7 @@ void ReceiverHandler::handleEvent(const HIDPP::Report &event)
             {
                 if(it->first->path == dev->path && it->first->index == event.deviceIndex())
                 {
-                    log_printf(INFO, "%s (Device %d on %s) unpaired.", it->first->name.c_str(), event.deviceIndex(), dev->path);
+                    log_printf(INFO, "%s (Device %d on %s) unpaired.", it->first->name.c_str(), event.deviceIndex(), dev->path.c_str());
                     it->first->stop();
                     it->second.join();
                     finder->devices.erase(it);
@@ -202,18 +220,28 @@ void ReceiverHandler::handleEvent(const HIDPP::Report &event)
             break;
         }
         case HIDPP10::IReceiver::DevicePaired:
-        {
             break;
-        }
         case HIDPP10::IReceiver::ConnectionStatus:
         {
             auto status = HIDPP10::IReceiver::connectionStatusEvent(event);
             if(status == HIDPP10::IReceiver::LinkLoss)
-                log_printf(INFO, "Link lost to device %d on %s", event.deviceIndex(), dev->path.c_str());
+            {
+                log_printf(INFO, "Link lost to %s", dev->name.c_str());
+                dev->disconnected = true;
+            }
             else if (status == HIDPP10::IReceiver::ConnectionEstablished)
             {
-                dev->configure();
-                log_printf(INFO, "Connection established to device %d on %s", event.deviceIndex(), dev->path.c_str());
+                log_printf(INFO, "Connection established to %s", dev->name.c_str());
+                dev->disconnected = false;
+                std::thread
+                {
+                    [dev=this->dev]
+                    {
+                        while (dev->configuring)
+                            if(dev->disconnected) return;
+                        dev->configure();
+                    }
+                }.detach();
             }
             break;
         }
@@ -293,11 +321,16 @@ void Device::release_button(uint16_t cid)
 
 void Device::move_diverted(uint16_t cid, HIDPP20::IReprogControlsV4::Move m)
 {
-    auto action = config->actions.find(cid)->second;
-    switch(action->type)
+    auto action = config->actions.find(cid);
+    if(action == config->actions.end())
+    {
+        log_printf(DEBUG, "0x%x's RawXY was diverted with no action.", cid);
+        return;
+    }
+    switch(action->second->type)
     {
         case Action::Gestures:
-            ((GestureAction*)action)->move(m);
+            ((GestureAction*)action->second)->move(m);
             break;
         default:
             break;
@@ -308,9 +341,9 @@ std::map<uint16_t, uint8_t> Device::get_features()
 {
     std::map<uint16_t, uint8_t> _features;
     HIDPP20::IFeatureSet ifs (hidpp_dev);
-    unsigned int feature_count = ifs.getCount();
+    uint8_t feature_count = ifs.getCount();
 
-    for(int i = 0; i < feature_count; i++)
+    for(uint8_t i = 0; i < feature_count; i++)
         _features.insert( {i, ifs.getFeatureID(i) } );
 
     return _features;

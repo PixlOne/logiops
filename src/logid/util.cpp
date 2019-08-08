@@ -34,7 +34,7 @@ const char* level_prefix(LogLevel level)
 
 Direction get_direction(int x, int y)
 {
-    if(abs(x) < 50 && abs(y) < 50) return Direction::None;
+    if(x == 0 && y == 0) return Direction::None;
 
     double angle;
 
@@ -83,10 +83,12 @@ GestureMode string_to_gesturemode(std::string s)
     if(s == "nopress") return GestureMode::NoPress;
     if(s == "onrelease") return GestureMode::OnRelease;
     if(s == "onfewpixels") return GestureMode::OnFewPixels;
+    if(s == "axis") return GestureMode::Axis;
 
     s = original_str;
 
     log_printf(INFO, "%s is an invalid gesture mode. Defaulting to OnRelease", original_str);
+
 
     return GestureMode::OnRelease;
 }

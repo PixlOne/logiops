@@ -21,7 +21,7 @@ Configuration::Configuration(const char *config_file)
     }
     catch(const FileIOException &e)
     {
-        log_printf(ERROR, "%s", "I/O Error while reading configuration file!");
+        log_printf(ERROR, "I/O Error while reading configuration file: %s", e.what());
         throw e;
     }
     catch(const ParseException &e)
@@ -69,10 +69,7 @@ DeviceConfig::DeviceConfig(const libconfig::Setting &root)
             throw SettingTypeException(root["dpi"]);
         dpi = new int(d);
     }
-    catch(const SettingNotFoundException &e)
-    {
-        log_printf(INFO, "Missing dpi option, not setting.");
-    }
+    catch(const SettingNotFoundException &e) { }
     catch(const SettingTypeException &e)
     {
         log_printf(WARN, "Line %d: DPI must me an integer; not setting.", root["dpi"].getSourceLine());
@@ -325,6 +322,51 @@ ButtonAction* parse_action(Action type, const Setting* action_config, bool is_ge
                 continue;
             }
 
+            if(mode == GestureMode::Axis)
+            {
+                uint axis;
+                try
+                {
+                    std::string axis_str;
+                    if(!gesture_config.lookupValue("axis", axis_str))
+                        throw SettingTypeException(gesture_config["axis"]);
+                    axis = libevdev_event_code_from_name(EV_REL, axis_str.c_str());
+                }
+                catch(SettingNotFoundException &e)
+                {
+                    log_printf(WARN, "Line %d: No axis found, defaulting to no action.", gesture_config.getSourceLine());
+                    gestures.insert({direction, new Gesture(new NoAction(), GestureMode::NoPress)});
+                    continue;
+                }
+                catch(SettingTypeException &e)
+                {
+                    log_printf(WARN, "Line %d: Axis must be a string (e.g. 'REL_WHEEL')", gesture_config["axis"].getSourceLine());
+                    gestures.insert({direction, new Gesture(new NoAction(), GestureMode::NoPress)});
+                    continue;
+                }
+
+                float multiplier = 1;
+                try
+                {
+                    if(!gesture_config.lookupValue("axis_multiplier", multiplier))
+                    {
+                        int im = 1;
+                        if(!gesture_config.lookupValue("axis_multiplier", im))
+                            throw SettingTypeException(gesture_config["axis_multiplier"]);
+                        multiplier = im;
+                    }
+                }
+                catch(SettingNotFoundException &e) { }
+                catch(SettingTypeException &e)
+                {
+                    log_printf(WARN, "Line %d: axis_multiplier must be a float/integer", gesture_config["axis_multiplier"].getSourceLine());
+                    continue;
+                }
+
+                gestures.insert({direction, new Gesture(new NoAction(), GestureMode::Axis, 0, axis, multiplier)});
+                continue;
+            }
+
             Setting* g_action;
             try { g_action = &gesture_config["action"]; }
             catch(SettingNotFoundException &e)
@@ -412,6 +454,15 @@ ButtonAction* parse_action(Action type, const Setting* action_config, bool is_ge
 
     log_printf(ERROR, "This shouldn't have happened. Unhandled action type? Defaulting to NoAction");
     return new NoAction();
+}
+
+DeviceConfig::DeviceConfig(DeviceConfig* dc, Device* dev) : baseConfig (false)
+{
+    dpi = dc->dpi;
+    smartshift = dc->smartshift;
+    hiresscroll = dc->hiresscroll;
+    for(auto it : dc->actions)
+        actions.insert( { it.first, it.second->copy(dev) } );
 }
 
 DeviceConfig::DeviceConfig()

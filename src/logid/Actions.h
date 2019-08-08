@@ -28,7 +28,8 @@ enum class GestureMode
 {
     NoPress,
     OnRelease,
-    OnFewPixels
+    OnFewPixels,
+    Axis
 };
 
 class Device;
@@ -37,6 +38,7 @@ class ButtonAction
 {
 public:
     Action type;
+    virtual ButtonAction* copy(Device* dev) = 0;
     virtual void press() = 0;
     virtual void release() = 0;
 //    ButtonAction(const ButtonAction &a, Device* d) : type (a.type), device (d) {}
@@ -49,6 +51,7 @@ class NoAction : public ButtonAction
 {
 public:
     NoAction() : ButtonAction(Action::None) {}
+    virtual NoAction* copy(Device* dev);
     virtual void press() {}
     virtual void release() {}
 };
@@ -56,8 +59,7 @@ class KeyAction : public ButtonAction
 {
 public:
     explicit KeyAction(std::vector<unsigned int> k) : ButtonAction(Action::Keypress), keys (std::move(k)) {};
-    KeyAction(const KeyAction &a, Device* d);
-    //virtual KeyAction* create_instance(Device* d) { return new KeyAction(*this, d); };
+    virtual KeyAction* copy(Device* dev);
     virtual void press();
     virtual void release();
 private:
@@ -66,31 +68,42 @@ private:
 class Gesture
 {
 public:
-    Gesture(ButtonAction* ba, GestureMode m, int pp=0) : action (ba), mode (m), per_pixel (pp) {};
-    Gesture(const Gesture &g) : action (g.action), mode (g.mode), per_pixel (g.per_pixel) {};
+    Gesture(ButtonAction* ba, GestureMode m, int pp=0, uint a=0, float am=1)
+           : action (ba), mode (m), per_pixel (pp), axis (a), axis_multiplier (am)
+    {
+    }
+    Gesture(const Gesture &g, Device* dev)
+           : action (g.action->copy(dev)), mode (g.mode), per_pixel (g.per_pixel), axis (g.axis), axis_multiplier (g.axis_multiplier)
+    {
+    }
 
     ButtonAction* action;
-
     GestureMode mode;
     int per_pixel;
+    int per_pixel_mod;
+    uint axis;
+    float axis_multiplier;
 };
+
 class GestureAction : public ButtonAction
 {
 public:
     GestureAction(std::map<Direction, Gesture*> g) : ButtonAction(Action::Gestures), gestures (std::move(g)) {};
     std::map<Direction, Gesture*> gestures;
+    virtual GestureAction* copy(Device* dev);
     virtual void press();
-    void move(HIDPP20::IReprogControlsV4::Move m);
     virtual void release();
+    void move(HIDPP20::IReprogControlsV4::Move m);
 private:
     bool held;
-    int x;
-    int y;
+    int x = 0;
+    int y = 0;
 };
 class SmartshiftAction : public ButtonAction
 {
 public:
     SmartshiftAction() : ButtonAction(Action::ToggleSmartshift) {};
+    virtual SmartshiftAction* copy(Device* dev);
     virtual void press();
     virtual void release() {}
 };
@@ -98,6 +111,7 @@ class HiresScrollAction : public ButtonAction
 {
 public:
     HiresScrollAction() : ButtonAction(Action::ToggleHiresScroll) {};
+    virtual HiresScrollAction* copy(Device* dev);
     virtual void press();
     virtual void release() {}
 };
@@ -105,6 +119,7 @@ class CycleDPIAction : public ButtonAction
 {
 public:
     CycleDPIAction(std::vector<int> d) : ButtonAction(Action::CycleDPI), dpis (d) {};
+    virtual CycleDPIAction* copy(Device* dev);
     virtual void press();
     virtual void release() {}
 private:
@@ -114,6 +129,7 @@ class ChangeDPIAction : public ButtonAction
 {
 public:
     ChangeDPIAction(int i) : ButtonAction(Action::ChangeDPI), dpi_inc (i) {};
+    virtual ChangeDPIAction* copy(Device* dev);
     virtual void press();
     virtual void release() {}
 private:

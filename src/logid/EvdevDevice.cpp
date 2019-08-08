@@ -22,6 +22,12 @@ EvdevDevice::EvdevDevice(const char* name)
         throw std::system_error(-err, std::generic_category());
 }
 
+void EvdevDevice::move_axis(unsigned int axis, int movement)
+{
+    libevdev_uinput_write_event(ui_device, EV_REL, axis, movement);
+    libevdev_uinput_write_event(ui_device, EV_SYN, SYN_REPORT, 0);
+}
+
 void EvdevDevice::send_event(unsigned int type, unsigned int code, int value)
 {
     libevdev_uinput_write_event(ui_device, type, code, value);

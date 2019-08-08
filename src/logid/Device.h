@@ -21,7 +21,7 @@ public:
 
     std::string name;
 
-    void configure(bool scanning=false);
+    void configure();
 
     void press_button(uint16_t cid);
     void release_button(uint16_t cid);
@@ -39,15 +39,18 @@ public:
     HIDPP::Dispatcher* dispatcher;
     HIDPP20::Device* hidpp_dev;
 
+    bool configuring = false;
+    bool disconnected = false;
+
 protected:
     DeviceConfig* config;
     bool DeviceRemoved;
     EventListener* listener;
 
-    void divert_buttons(bool scanning=false);
-    void set_smartshift(HIDPP20::ISmartShift::SmartshiftStatus ops, bool scanning=false);
-    void set_hiresscroll(uint8_t flags, bool scanning=false);
-    void set_dpi(int dpi, bool scanning=false);
+    void divert_buttons();
+    void set_smartshift(HIDPP20::ISmartShift::SmartshiftStatus ops);
+    void set_hiresscroll(uint8_t flags);
+    void set_dpi(int dpi);
 };
 
 class EventHandler
@@ -81,6 +84,7 @@ public:
     ReceiverHandler (Device *d) : dev (d) { }
     const HIDPP20::FeatureInterface *feature () const
     {
+        return nullptr; // This sounds like a horrible idea
     }
     virtual const std::vector<uint8_t> featureIndices() const
     {

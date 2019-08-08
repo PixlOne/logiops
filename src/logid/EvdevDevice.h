@@ -9,6 +9,7 @@ class EvdevDevice
 public:
     EvdevDevice(const char* name);
     ~EvdevDevice();
+    void move_axis(unsigned int axis, int movement);
     void send_event(unsigned int type, unsigned int code, int value);
     libevdev* device;
     libevdev_uinput* ui_device;
