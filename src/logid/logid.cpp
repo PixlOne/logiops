@@ -18,15 +18,100 @@
 
 #define evdev_name "logid"
 
-LogLevel global_verbosity = DEBUG;
+LogLevel global_verbosity = INFO;
 Configuration* global_config;
 EvdevDevice* global_evdev;
 DeviceFinder* finder;
 
+enum class Option
+{
+    None,
+    Verbose,
+    Config,
+    Help
+};
+
 int main(int argc, char** argv)
 {
+    char* config_file = "/etc/logid.cfg";
+    for(int i = 1; i < argc; i++)
+    {
+        Option option = Option::None;
+        if(argv[i][0] == '-') // Option
+        {
+            switch(argv[i][1])
+            {
+                case '-': // Full option name
+                {
+                    std::string op_str = argv[i];
+                    if (op_str == "--verbose") option = Option::Verbose;
+                    if (op_str == "--config") option = Option::Config;
+                    if (op_str == "--help") option = Option::Help;
+                    break;
+                }
+                case 'v': // Verbosity
+                    option = Option::Verbose;
+                    break;
+                case 'c': // Config file path
+                    option = Option::Config;
+                    break;
+                case 'h': // Help
+                    option = Option::Help;
+                    break;
+                default:
+                    log_printf(WARN, "%s is not a valid option, ignoring.", argv[1]);
+            }
+            switch(option)
+            {
+                case Option::Verbose:
+                {
+                    if (++i >= argc)
+                    {
+                        global_verbosity = DEBUG; // Assume debug verbosity
+                        break;
+                    }
+                    std::string loglevel = argv[i];
+                    try { global_verbosity = string_to_loglevel(argv[i]); }
+                    catch (std::invalid_argument &e)
+                    {
+                        if (argv[i][0] == '-')
+                            global_verbosity = DEBUG; // Assume debug verbosity
+                        else
+                        {
+                            log_printf(WARN, e.what());
+                            printf("Valid verbosity levels are: Debug, Info, Warn/Warning, or Error.\n");
+                            return EXIT_FAILURE;
+                        }
+                    }
+                    break;
+                }
+                case Option::Config:
+                {
+                    if (++i >= argc)
+                    {
+                        log_printf(ERROR, "Config file is not specified.");
+                        return EXIT_FAILURE;
+                    }
+                    config_file = argv[i];
+                    break;
+                }
+                case Option::Help:
+                    printf(R"(Usage: %s [options]
+Possible options are:
+    -v,--verbose [level]       Set log level to debug/info/warn/error (leave blank for debug)
+    -c,--config [file path]    Change config file from default at %s
+    -h,--help                  Print this message.
+)", argv[0], config_file);
+
+                    return EXIT_SUCCESS;
+                case Option::None:
+                    break;
+            }
+        }
+    }
+
     // Read config
-    try { global_config = new Configuration("logid.cfg"); }
+    try { global_config = new Configuration(config_file); }
     catch (std::exception &e) { return EXIT_FAILURE; }
 
     //Create an evdev device called 'logid'

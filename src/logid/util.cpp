@@ -108,3 +108,16 @@ Action string_to_action(std::string s)
 
     throw std::invalid_argument(original_str + " is an invalid action.");
 }
+
+LogLevel string_to_loglevel(std::string s)
+{
+    std::string original_str = s;
+    std::transform(s.begin(), s.end(), s.begin(), ::tolower);
+
+    if(s == "debug") return DEBUG;
+    if(s == "info") return INFO;
+    if(s == "warn" || s == "warning") return WARN;
+    if(s == "error") return ERROR;
+
+    throw std::invalid_argument(original_str + " is an invalid log level.");
+}
