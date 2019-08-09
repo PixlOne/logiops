@@ -79,18 +79,24 @@ void Device::divert_buttons()
     try
     {
         HIDPP20::IReprogControls irc = HIDPP20::IReprogControls::auto_version(hidpp_dev);
-        for(auto it = config->actions.begin(); it != config->actions.end(); ++it)
+        int controlCount = irc.getControlCount();
+        for(int i = 0; i < controlCount; i++)
         {
+            uint16_t cid = irc.getControlInfo(i).control_id;
             uint8_t flags = 0;
             flags |= HIDPP20::IReprogControls::ChangeTemporaryDivert;
-            flags |= HIDPP20::IReprogControls::TemporaryDiverted;
-            if(it->second->type == Action::Gestures)
+            flags |= HIDPP20::IReprogControls::ChangeRawXYDivert;
+
+            auto action = config->actions.find(cid);
+            if(action != config->actions.end())
             {
-                flags |= HIDPP20::IReprogControls::ChangeRawXYDivert;
-                flags |= HIDPP20::IReprogControls::RawXYDiverted;
+                flags |= HIDPP20::IReprogControls::ChangeTemporaryDivert;
+                flags |= HIDPP20::IReprogControls::TemporaryDiverted;
+                if(action->second->type == Action::Gestures)
+                    flags |= HIDPP20::IReprogControls::RawXYDiverted;
             }
-            irc.setControlReporting(it->first, flags, it->first);
-            log_printf(DEBUG, "Diverted 0x%x.", it->first);
+
+            irc.setControlReporting(cid, flags, cid);
         }
     }
     catch(HIDPP20::UnsupportedFeature &e)
