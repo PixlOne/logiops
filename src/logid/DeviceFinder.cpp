@@ -115,6 +115,7 @@ void DeviceFinder::addDevice(const char *path)
                 }
             }
         }
+        catch(HIDPP::Dispatcher::NoHIDPPReportException &e) { }
         catch(std::system_error &e) { log_printf(WARN, "Failed to open %s: %s", string_path.c_str(), e.what()); }
 
         for(auto dev : _devs)

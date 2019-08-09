@@ -17,6 +17,7 @@
 #include "DeviceFinder.h"
 
 #define evdev_name "logid"
+#define DEFAULT_CONFIG_FILE "/etc/logid.cfg"
 
 LogLevel global_verbosity = INFO;
 Configuration* global_config;
@@ -33,7 +34,7 @@ enum class Option
 
 int main(int argc, char** argv)
 {
-    char* config_file = "/etc/logid.cfg";
+    std::string config_file = DEFAULT_CONFIG_FILE;
     for(int i = 1; i < argc; i++)
     {
         Option option = Option::None;
@@ -101,7 +102,7 @@ Possible options are:
     -v,--verbose [level]       Set log level to debug/info/warn/error (leave blank for debug)
     -c,--config [file path]    Change config file from default at %s
     -h,--help                  Print this message.
-)", argv[0], config_file);
+)", argv[0], DEFAULT_CONFIG_FILE);
 
                     return EXIT_SUCCESS;
                 case Option::None:
@@ -111,8 +112,8 @@ Possible options are:
     }
 
     // Read config
-    try { global_config = new Configuration(config_file); }
-    catch (std::exception &e) { return EXIT_FAILURE; }
+    try { global_config = new Configuration(config_file.c_str()); }
+    catch (std::exception &e) { global_config = new Configuration(); }
 
     //Create an evdev device called 'logid'
     try { global_evdev = new EvdevDevice(evdev_name); }

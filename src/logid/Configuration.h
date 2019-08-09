@@ -27,6 +27,7 @@ class Configuration
 {
 public:
     Configuration(const char* config_file);
+    Configuration() {}
     std::map<std::string, DeviceConfig*> devices;
 private:
     libconfig::Config cfg;

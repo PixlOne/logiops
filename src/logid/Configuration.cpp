@@ -21,7 +21,7 @@ Configuration::Configuration(const char *config_file)
     }
     catch(const FileIOException &e)
     {
-        log_printf(ERROR, "I/O Error while reading configuration file: %s", e.what());
+        log_printf(ERROR, "I/O Error while reading %s: %s", config_file, e.what());
         throw e;
     }
     catch(const ParseException &e)

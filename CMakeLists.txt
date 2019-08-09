@@ -8,7 +8,3 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_subdirectory(src/logid)
-
-if(NOT EXISTS "${PROJECT_BINARY_DIR}/logid.cfg")
-    configure_file("logid.example.cfg" "logid.cfg" COPYONLY)
-endif()

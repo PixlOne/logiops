@@ -22,7 +22,7 @@ cmake ..
 make
 ```
 
-Installation is currently not implemented.
+To install, run `sudo make install` after building. You can set the daemon to start at boot by running `sudo systemctl start logid`.
 
 ## Compatible Devices
 
