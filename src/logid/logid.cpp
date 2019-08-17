@@ -35,12 +35,13 @@ enum class Option
 int main(int argc, char** argv)
 {
     std::string config_file = DEFAULT_CONFIG_FILE;
+    // Read command line options
     for(int i = 1; i < argc; i++)
     {
         Option option = Option::None;
-        if(argv[i][0] == '-') // Option
+        if(argv[i][0] == '-') // This argument is an option
         {
-            switch(argv[i][1])
+            switch(argv[i][1]) // Set option
             {
                 case '-': // Full option name
                 {
@@ -76,7 +77,10 @@ int main(int argc, char** argv)
                     catch (std::invalid_argument &e)
                     {
                         if (argv[i][0] == '-')
+                        {
                             global_verbosity = DEBUG; // Assume debug verbosity
+                            i--; // Go back to last argument to continue loop.
+                        }
                         else
                         {
                             log_printf(WARN, e.what());

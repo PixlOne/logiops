@@ -472,3 +472,9 @@ DeviceConfig::DeviceConfig()
     smartshift = nullptr;
     actions = {};
 }
+
+DeviceConfig::~DeviceConfig()
+{
+    for(auto it : this->actions)
+        delete(it.second);
+}

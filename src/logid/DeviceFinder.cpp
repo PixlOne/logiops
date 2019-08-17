@@ -14,40 +14,15 @@
 #include "util.h"
 #include "Device.h"
 
-constexpr uint16_t DeviceFinder::UnifyingReceivers[];
-
 void DeviceFinder::addDevice(const char *path)
 {
     std::string string_path(path);
     // Asynchronously scan device
     std::thread{[=]()
     {
-        // Check /sys/class/hidraw/hidrawX/device/uevent for device details.
-        // Continue if HID_NAME contains 'Logitech' or is non-existent
-        // Otherwise, skip.
-        std::string hidraw_name;
-        std::size_t spos = string_path.rfind('/');
-        if(spos != std::string::npos) hidraw_name = string_path.substr(spos+1, string_path.size()-1);
-        else
-        {
-            log_printf(ERROR, "Expected file but got directory: %s", path);
-            return;
-        }
-        std::ifstream info_file("/sys/class/hidraw/" + hidraw_name + "/device/uevent");
-        std::map<std::string, std::string> hidraw_info;
-        std::string line;
-        while(std::getline(info_file, line))
-        {
-            if(line.find('=') == std::string::npos) continue;
-            hidraw_info.insert({line.substr(0, line.find('=')), line.substr(line.find('=') + 1, line.size()-1)});
-        }
-
-        if(hidraw_info.find("HID_NAME") != hidraw_info.end())
-            if (hidraw_info.find("HID_NAME")->second.find("Logitech") == std::string::npos) return;
-
         std::vector<Device*> _devs;
-        const int max_tries = 5;
-        const int try_delay = 50000;
+        const int max_tries = 10;
+        const int try_delay = 250000;
 
         //Check if device is an HID++ device and handle it accordingly
         try
@@ -119,10 +94,7 @@ void DeviceFinder::addDevice(const char *path)
         catch(std::system_error &e) { log_printf(WARN, "Failed to open %s: %s", string_path.c_str(), e.what()); }
 
         for(auto dev : _devs)
-        {
             devices.insert({dev, std::thread{[dev]() { dev->start(); }}});
-            devices[dev].detach();
-        }
 
     }}.detach();
 }
@@ -138,6 +110,7 @@ void DeviceFinder::removeDevice(const char* path)
             log_printf(INFO, "%s on %s disconnected.", it->first->name.c_str(), path);
             it->first->stop();
             it->second.join();
+            delete(it->first);
             devices.erase(it);
             it++;
         }

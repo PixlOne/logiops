@@ -14,6 +14,7 @@ class DeviceConfig
 {
 public:
     DeviceConfig();
+    ~DeviceConfig();
     DeviceConfig(DeviceConfig* dc, Device* dev);
     DeviceConfig(const libconfig::Setting& root);
     const int* dpi = nullptr;

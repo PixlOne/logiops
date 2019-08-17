@@ -18,10 +18,12 @@ class Device
 {
 public:
     Device(std::string p, const HIDPP::DeviceIndex i);
+    ~Device();
 
     std::string name;
 
     void configure();
+    void reset();
 
     void press_button(uint16_t cid);
     void release_button(uint16_t cid);

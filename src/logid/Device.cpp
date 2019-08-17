@@ -6,6 +6,7 @@
 #include <hidpp20/IFeatureSet.h>
 #include <hidpp20/Error.h>
 #include <hidpp20/IReprogControls.h>
+#include <hidpp20/IReset.h>
 #include <hidpp20/ISmartShift.h>
 #include <hidpp20/Device.h>
 #include <hidpp10/Error.h>
@@ -40,38 +41,68 @@ Device::Device(std::string p, const HIDPP::DeviceIndex i) : path(std::move(p)), 
     else config = global_config->devices.find(name)->second;
 }
 
+Device::~Device()
+{
+    if(!disconnected)
+        this->reset();
+    if(!config->baseConfig)
+        delete(this->config);
+}
+
 void Device::configure()
 {
     if(config->baseConfig)
         config = new DeviceConfig(config, this);
 
     configuring = true;
-    usleep(50000);
-    if(disconnected) {
-        configuring = false; return; }
+    usleep(250000);
 
-    // Divert buttons
-    divert_buttons();
-    if(disconnected) {
-        configuring = false; return; }
+    try
+    {
+        if(disconnected) {
+            configuring = false; return; }
 
-    // Set DPI if it is set
-    if(config->dpi != nullptr)
-        set_dpi(*config->dpi);
-    if(disconnected) {
-        configuring = false; return; }
+        // Divert buttons
+        divert_buttons();
+        if(disconnected) {
+            configuring = false; return; }
 
-    // Set Smartshift if it is set
-    if(config->smartshift != nullptr)
-        set_smartshift(*config->smartshift);
-    if(disconnected) {
-        configuring = false; return; }
+        // Set DPI if it is set
+        if(config->dpi != nullptr)
+            set_dpi(*config->dpi);
+        if(disconnected) {
+            configuring = false; return; }
 
-    // Set Hires Scroll if it is set
-    if(config->hiresscroll != nullptr)
-        set_hiresscroll(*config->hiresscroll);
+        // Set Smartshift if it is set
+        if(config->smartshift != nullptr)
+            set_smartshift(*config->smartshift);
+        if(disconnected) {
+            configuring = false; return; }
+
+        // Set Hires Scroll if it is set
+        if(config->hiresscroll != nullptr)
+            set_hiresscroll(*config->hiresscroll);
+    }
+    catch(HIDPP10::Error &e)
+    {
+        log_printf(ERROR, "HID++ 1.0 Error whjle configuring %s: %s", name.c_str(), e.what());
+    }
 
     configuring = false;
+}
+
+void Device::reset()
+{
+    try
+    {
+        HIDPP20::IReset iReset(hidpp_dev);
+        iReset.reset();
+    }
+    catch(HIDPP20::UnsupportedFeature &e) { }
+    catch(HIDPP10::Error &e)
+    {
+        log_printf(ERROR, "Failed to reset %s: %s", name.c_str(), e.what());
+    }
 }
 
 void Device::divert_buttons()
@@ -79,9 +110,11 @@ void Device::divert_buttons()
     try
     {
         HIDPP20::IReprogControls irc = HIDPP20::IReprogControls::auto_version(hidpp_dev);
+        if(disconnected) return;
         int controlCount = irc.getControlCount();
         for(int i = 0; i < controlCount; i++)
         {
+            if(disconnected) return;
             uint16_t cid = irc.getControlInfo(i).control_id;
             uint8_t flags = 0;
             flags |= HIDPP20::IReprogControls::ChangeTemporaryDivert;
@@ -95,7 +128,7 @@ void Device::divert_buttons()
                 if(action->second->type == Action::Gestures)
                     flags |= HIDPP20::IReprogControls::RawXYDiverted;
             }
-
+            if(disconnected) return;
             irc.setControlReporting(cid, flags, cid);
         }
     }
@@ -113,7 +146,9 @@ void Device::set_smartshift(HIDPP20::ISmartShift::SmartshiftStatus ops)
 {
     try
     {
+        if(disconnected) return;
         HIDPP20::ISmartShift ss(hidpp_dev);
+        if(disconnected) return;
         ss.setStatus(ops);
     }
     catch (HIDPP20::UnsupportedFeature &e)
@@ -130,7 +165,9 @@ void Device::set_hiresscroll(uint8_t ops)
 {
     try
     {
+        if(disconnected) return;
         HIDPP20::IHiresScroll hs(hidpp_dev);
+        if(disconnected) return;
         hs.setMode(ops);
     }
     catch (HIDPP20::UnsupportedFeature &e)
@@ -145,8 +182,9 @@ void Device::set_hiresscroll(uint8_t ops)
 
 void Device::set_dpi(int dpi)
 {
+    if(disconnected) return;
     HIDPP20::IAdjustableDPI iad(hidpp_dev);
-
+    if(disconnected) return;
     try { for(unsigned int i = 0; i < iad.getSensorCount(); i++) iad.setSensorDPI(i, dpi); }
     catch (HIDPP20::Error &e) { log_printf(ERROR, "Error while setting DPI: %s", e.what()); }
 }
@@ -239,15 +277,7 @@ void ReceiverHandler::handleEvent(const HIDPP::Report &event)
             {
                 log_printf(INFO, "Connection established to %s", dev->name.c_str());
                 dev->disconnected = false;
-                std::thread
-                {
-                    [dev=this->dev]
-                    {
-                        while (dev->configuring)
-                            if(dev->disconnected) return;
-                        dev->configure();
-                    }
-                }.detach();
+                dev->configure();
             }
             break;
         }
@@ -302,6 +332,7 @@ bool SimpleListener::event (EventHandler *handler, const HIDPP::Report &report)
 
 void Device::stop()
 {
+    disconnected = true;
     listener->stop();
 }
 
