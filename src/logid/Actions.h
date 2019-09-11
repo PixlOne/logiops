@@ -37,7 +37,7 @@ class Device;
 class ButtonAction
 {
 public:
-	virtual ~ButtonAction() = default;
+    virtual ~ButtonAction() = default;
 
     Action type;
     virtual ButtonAction* copy(Device* dev) = 0;
