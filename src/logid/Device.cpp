@@ -31,6 +31,7 @@ Device::Device(std::string p, const HIDPP::DeviceIndex i) : path(std::move(p)), 
     hidpp_dev = new HIDPP20::Device(dispatcher, index);
     name = hidpp_dev->name();
     features = get_features();
+    listener = new SimpleListener(new HIDPP::SimpleDispatcher(path.c_str()), index);
 
     // Set config, if none is found for this device then use default
     if(global_config->devices.find(name) == global_config->devices.end())
@@ -192,10 +193,9 @@ void Device::set_dpi(int dpi)
 void Device::start()
 {
     configure();
-    auto *d = new HIDPP::SimpleDispatcher(path.c_str());
-    listener = new SimpleListener(d, index);
     listener->addEventHandler( std::make_unique<ButtonHandler>(hidpp_dev, this) );
-    listener->addEventHandler( std::make_unique<ReceiverHandler>(this) );
+    if(index != HIDPP::DefaultDevice && index != HIDPP::CordedDevice)
+        listener->addEventHandler( std::make_unique<ReceiverHandler>(this) );
     listener->start();
 }
 
