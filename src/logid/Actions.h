@@ -37,6 +37,8 @@ class Device;
 class ButtonAction
 {
 public:
+    virtual ~ButtonAction() = default;
+
     Action type;
     virtual ButtonAction* copy(Device* dev) = 0;
     virtual void press() = 0;
