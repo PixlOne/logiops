@@ -1,5 +1,4 @@
-#ifndef DEVICEFINDER_H
-#define DEVICEFINDER_H
+#pragma once
 
 #include <hid/DeviceMonitor.h>
 #include <hidpp/SimpleDispatcher.h>
@@ -9,6 +8,7 @@
 #include <map>
 #include <thread>
 #include "Device.h"
+#include <mutex>
 
 class Device;
 
@@ -19,8 +19,9 @@ public:
 protected:
     void addDevice(const char* path);
     void removeDevice(const char* path);
+private:
+	std::mutex devicesMutex;
 };
 
 extern DeviceFinder* finder;
 
-#endif //DEVICEFINDER_H

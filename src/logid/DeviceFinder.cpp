@@ -20,7 +20,6 @@ void DeviceFinder::addDevice(const char *path)
     // Asynchronously scan device
     std::thread{[=]()
     {
-        std::vector<Device*> _devs;
         const int max_tries = 10;
         const int try_delay = 250000;
 
@@ -50,7 +49,16 @@ void DeviceFinder::addDevice(const char *path)
                         if(major > 1) // HID++ 2.0 devices only
                         {
                             auto dev = new Device(string_path, index);
-                            _devs.push_back(dev);
+
+							this->devicesMutex.lock();
+								this->devices.insert({
+									dev,
+									std::thread{[dev]() {
+										dev->start();
+									}}
+								});
+							this->devicesMutex.unlock();
+
                             log_printf(INFO, "%s detected: device %d on %s", d.name().c_str(), index, string_path.c_str());
                         }
                         break;
@@ -93,28 +101,23 @@ void DeviceFinder::addDevice(const char *path)
         catch(HIDPP::Dispatcher::NoHIDPPReportException &e) { }
         catch(std::system_error &e) { log_printf(WARN, "Failed to open %s: %s", string_path.c_str(), e.what()); }
 
-        for(auto dev : _devs)
-            devices.insert({dev, std::thread{[dev]() { dev->start(); }}});
-
     }}.detach();
 }
 
 void DeviceFinder::removeDevice(const char* path)
 {
-    // Iterate through Devices, stop all in path
-    auto it = devices.begin();
-    while (it != devices.end())
-    {
-        if(it->first->path == path)
-        {
-            log_printf(INFO, "%s on %s disconnected.", it->first->name.c_str(), path);
-            it->first->stop();
-            it->second.join();
-            delete(it->first);
-            devices.erase(it);
-            it++;
-        }
-        else
-            it++;
-    }
+	devicesMutex.lock();
+		// Iterate through Devices, stop all in path
+		for (auto it = devices.begin(); it != devices.end(); it++)
+		{
+			if(it->first->path == path)
+			{
+				log_printf(INFO, "%s on %s disconnected.", it->first->name.c_str(), path);
+				it->first->stop();
+				it->second.join();
+				delete(it->first);
+				devices.erase(it);
+			}
+		}
+	devicesMutex.unlock();
 }
