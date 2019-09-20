@@ -132,13 +132,18 @@ void DeviceFinder::addDevice(const char *path)
                     }
                     catch(HIDPP10::Error &e)
                     {
-                        if(e.errorCode() != HIDPP10::Error::UnknownDevice)
+                        if (e.errorCode() == HIDPP10::Error::ResourceError)
                         {
                             if(remaining_tries == 1)
                             {
-                                log_printf(WARN, "While querying %s, wireless device %d: %s", string_path.c_str(), index, e.what());
-                                remaining_tries += MAX_CONNECTION_TRIES;    // asleep wireless devices may raise this error, so warn but do not stop querying device
-                            }
+                                log_printf(WARN, "While querying %s (possibly asleep), wireless device %d: %s", string_path.c_str(), index, e.what());
+                                remaining_tries += MAX_CONNECTION_TRIES;  // asleep devices may raise a resource error, so do not count this try
+                            } 
+                        }
+                        else if(e.errorCode() != HIDPP10::Error::UnknownDevice)
+                        {
+                            if(remaining_tries == 1)
+                                log_printf(ERROR, "While querying %s, wireless device %d: %s", string_path.c_str(), index, e.what());
                         }
                         else device_unknown = true;
                     }
