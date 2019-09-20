@@ -18,71 +18,71 @@
 #define MAX_CONNECTION_TRIES 10
 #define TIME_BETWEEN_CONNECTION_TRIES 1s
 
-void stopAndDeletePairedDevice (PairedDevice &pairedDevice)
+void stopAndDeletePairedDevice (ConnectedDevice &connected_device)
 {
-    log_printf(INFO, "%s (Device %d on %s) disconnected", pairedDevice.device->name.c_str(), pairedDevice.device->index, pairedDevice.device->path.c_str()); 
-    pairedDevice.device->stop();
-    pairedDevice.associatedThread.join();
-    delete(pairedDevice.device);
+    log_printf(INFO, "%s (Device %d on %s) disconnected", connected_device.device->name.c_str(), connected_device.device->index, connected_device.device->path.c_str()); 
+    connected_device.device->stop();
+    connected_device.associatedThread.join();
+    delete(connected_device.device);
 }
 
 DeviceFinder::~DeviceFinder()
 {
-    this->devicesMutex.lock();
+    this->devices_mutex.lock();
         for (auto it = this->devices.begin(); it != this->devices.end(); it++) {
             for (auto jt = it->second.begin(); jt != it->second.end(); jt++) {
                 stopAndDeletePairedDevice(jt->second);
             }
         }
-    this->devicesMutex.unlock();
+    this->devices_mutex.unlock();
 }
 
 void DeviceFinder::insertNewDevice(const std::string &path, HIDPP::DeviceIndex index)
 {
     Device *device = new Device(path, index);
 
-    this->devicesMutex.lock();
+    this->devices_mutex.lock();
         log_printf(INFO, "%s detected: device %d on %s", device->name.c_str(), index, path.c_str());
-        auto pathBucket = this->devices.emplace(path, std::map<HIDPP::DeviceIndex, PairedDevice>()).first;
-        pathBucket->second.emplace(index, PairedDevice{
+        auto path_bucket = this->devices.emplace(path, std::map<HIDPP::DeviceIndex, ConnectedDevice>()).first;
+        path_bucket->second.emplace(index, ConnectedDevice{
             device,
             std::thread([device]() {
                 device->start();
             })
         });
-    this->devicesMutex.unlock();
+    this->devices_mutex.unlock();
 }
 
 void DeviceFinder::stopAndDeleteAllDevicesIn (const std::string &path)
 {
-    this->devicesMutex.lock();
-        auto pathBucket = this->devices.find(path);
-        if (pathBucket != this->devices.end())
+    this->devices_mutex.lock();
+        auto path_bucket = this->devices.find(path);
+        if (path_bucket != this->devices.end())
         {
-            for (auto& indexBucket : pathBucket->second) {
-                stopAndDeletePairedDevice(indexBucket.second);
+            for (auto& index_bucket : path_bucket->second) {
+                stopAndDeletePairedDevice(index_bucket.second);
             }
-            this->devices.erase(pathBucket);
+            this->devices.erase(path_bucket);
         }
-    this->devicesMutex.unlock();
+    this->devices_mutex.unlock();
 
     log_printf(WARN, "Attempted to disconnect not previously connected devices on %s", path.c_str());
 }
 
 void DeviceFinder::stopAndDeleteDevice (const std::string &path, HIDPP::DeviceIndex index)
 {
-    this->devicesMutex.lock();
-        auto pathBucket = this->devices.find(path);
-        if (pathBucket != this->devices.end())
+    this->devices_mutex.lock();
+        auto path_bucket = this->devices.find(path);
+        if (path_bucket != this->devices.end())
         {
-            auto indexBucket = pathBucket->second.find(index);
-            if (indexBucket != pathBucket->second.end())
+            auto index_bucket = path_bucket->second.find(index);
+            if (index_bucket != path_bucket->second.end())
             {
-                stopAndDeletePairedDevice(indexBucket->second);
-                pathBucket->second.erase(indexBucket);
+                stopAndDeletePairedDevice(index_bucket->second);
+                path_bucket->second.erase(index_bucket);
             }
         }
-    this->devicesMutex.unlock();
+    this->devices_mutex.unlock();
 
     log_printf(WARN, "Attempted to disconnect not previously connected device %d on %s", index, path.c_str());
 }

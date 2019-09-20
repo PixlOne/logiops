@@ -14,7 +14,7 @@
 
 class Device;
 
-struct PairedDevice {
+struct ConnectedDevice {
 	Device *device;
 	std::thread associatedThread;
 };
@@ -31,8 +31,8 @@ protected:
     void addDevice(const char* path);
     void removeDevice(const char* path);
 private:
-	std::mutex devicesMutex;
-    std::map<std::string, std::map<HIDPP::DeviceIndex, PairedDevice>> devices;
+	std::mutex devices_mutex;
+    std::map<std::string, std::map<HIDPP::DeviceIndex, ConnectedDevice>> devices;
 };
 
 extern DeviceFinder* finder;
