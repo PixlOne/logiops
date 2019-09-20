@@ -5,7 +5,7 @@
 #include <hidpp10/Device.h>
 #include <hidpp10/IReceiver.h>
 #include <hidpp20/IReprogControls.h>
-#include <unordered_map>
+#include <map>
 #include <list>
 #include <thread>
 #include <mutex>
