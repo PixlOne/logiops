@@ -5,22 +5,34 @@
 #include <hidpp10/Device.h>
 #include <hidpp10/IReceiver.h>
 #include <hidpp20/IReprogControls.h>
-#include <map>
+#include <unordered_map>
+#include <list>
 #include <thread>
-#include "Device.h"
 #include <mutex>
 
+#include "Device.h"
+
 class Device;
+
+struct PairedDevice {
+	Device *device;
+	std::thread associatedThread;
+};
 
 class DeviceFinder : public HID::DeviceMonitor
 {
 public:
-    std::map<Device*, std::thread> devices;
+	~DeviceFinder();
+
+	void insertNewDevice (const std::string &path, HIDPP::DeviceIndex index);
+	void stopAndDeleteAllDevicesIn (const std::string &path);
+	void stopAndDeleteDevice (const std::string &path, HIDPP::DeviceIndex index);
 protected:
     void addDevice(const char* path);
     void removeDevice(const char* path);
 private:
 	std::mutex devicesMutex;
+    std::map<std::string, std::map<HIDPP::DeviceIndex, PairedDevice>> devices;
 };
 
 extern DeviceFinder* finder;

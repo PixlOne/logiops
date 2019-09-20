@@ -14,6 +14,76 @@
 #include "util.h"
 #include "Device.h"
 
+void stopAndDeletePairedDevice (PairedDevice &pairedDevice)
+{
+    log_printf(INFO, "%s (Device %d on %s) disconnected", pairedDevice.device->name.c_str(), pairedDevice.device->index, pairedDevice.device->path.c_str()); 
+    pairedDevice.device->stop();
+    pairedDevice.associatedThread.join();
+    delete(pairedDevice.device);
+}
+
+DeviceFinder::~DeviceFinder()
+{
+    this->devicesMutex.lock();
+        for (auto it = this->devices.begin(); it != this->devices.end(); it++) {
+            for (auto jt = it->second.begin(); jt != it->second.end(); jt++) {
+                stopAndDeletePairedDevice(jt->second);
+            }
+        }
+    this->devicesMutex.unlock();
+}
+
+void DeviceFinder::insertNewDevice(const std::string &path, HIDPP::DeviceIndex index)
+{
+    Device *device = new Device(path, index);
+
+    this->devicesMutex.lock();
+        log_printf(INFO, "%s detected: device %d on %s", device->name.c_str(), index, path.c_str());
+        auto pathBucket = this->devices.emplace(path, std::map<HIDPP::DeviceIndex, PairedDevice>()).first;
+        pathBucket->second.emplace(index, PairedDevice{
+            device,
+            std::thread([device]() {
+                device->start();
+            })
+        });
+    this->devicesMutex.unlock();
+}
+
+void DeviceFinder::stopAndDeleteAllDevicesIn (const std::string &path)
+{
+    this->devicesMutex.lock();
+        auto pathBucket = this->devices.find(path);
+        if (pathBucket != this->devices.end())
+        {
+            for (auto& indexBucket : pathBucket->second) {
+                stopAndDeletePairedDevice(indexBucket.second);
+            }
+            this->devices.erase(pathBucket);
+        }
+    this->devicesMutex.unlock();
+
+    log_printf(WARN, "Attempted to disconnect not previously connected devices on %s", path.c_str());
+}
+
+void DeviceFinder::stopAndDeleteDevice (const std::string &path, HIDPP::DeviceIndex index)
+{
+    this->devicesMutex.lock();
+        auto pathBucket = this->devices.find(path);
+        if (pathBucket != this->devices.end())
+        {
+            auto indexBucket = pathBucket->second.find(index);
+            if (indexBucket != pathBucket->second.end())
+            {
+                stopAndDeletePairedDevice(indexBucket->second);
+                pathBucket->second.erase(indexBucket);
+            }
+        }
+    this->devicesMutex.unlock();
+
+    log_printf(WARN, "Attempted to disconnect not previously connected device %d on %s", index, path.c_str());
+}
+    
+
 void DeviceFinder::addDevice(const char *path)
 {
     std::string string_path(path);
@@ -34,6 +104,7 @@ void DeviceFinder::addDevice(const char *path)
                 HIDPP::WirelessDevice3, HIDPP::WirelessDevice4,
                 HIDPP::WirelessDevice5, HIDPP::WirelessDevice6})
             {
+
                 if(!has_receiver_index && index == HIDPP::WirelessDevice1)
                     break;
                 for(int i = 0; i < max_tries; i++)
@@ -48,18 +119,7 @@ void DeviceFinder::addDevice(const char *path)
                             has_receiver_index = true;
                         if(major > 1) // HID++ 2.0 devices only
                         {
-                            auto dev = new Device(string_path, index);
-
-							this->devicesMutex.lock();
-								this->devices.insert({
-									dev,
-									std::thread{[dev]() {
-										dev->start();
-									}}
-								});
-							this->devicesMutex.unlock();
-
-                            log_printf(INFO, "%s detected: device %d on %s", d.name().c_str(), index, string_path.c_str());
+                            this->insertNewDevice(string_path, index);
                         }
                         break;
                     }
@@ -106,18 +166,5 @@ void DeviceFinder::addDevice(const char *path)
 
 void DeviceFinder::removeDevice(const char* path)
 {
-	devicesMutex.lock();
-		// Iterate through Devices, stop all in path
-		for (auto it = devices.begin(); it != devices.end(); it++)
-		{
-			if(it->first->path == path)
-			{
-				log_printf(INFO, "%s on %s disconnected.", it->first->name.c_str(), path);
-				it->first->stop();
-				it->second.join();
-				delete(it->first);
-				devices.erase(it);
-			}
-		}
-	devicesMutex.unlock();
+    this->stopAndDeleteAllDevicesIn(std::string(path));
 }
