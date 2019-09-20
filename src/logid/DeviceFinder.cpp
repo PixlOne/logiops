@@ -18,7 +18,7 @@
 #define MAX_CONNECTION_TRIES 10
 #define TIME_BETWEEN_CONNECTION_TRIES 1s
 
-void stopAndDeletePairedDevice (ConnectedDevice &connected_device)
+void stopAndDeleteConnectedDevice (ConnectedDevice &connected_device)
 {
     log_printf(INFO, "%s (Device %d on %s) disconnected", connected_device.device->name.c_str(), connected_device.device->index, connected_device.device->path.c_str()); 
     connected_device.device->stop();
@@ -31,7 +31,7 @@ DeviceFinder::~DeviceFinder()
     this->devices_mutex.lock();
         for (auto it = this->devices.begin(); it != this->devices.end(); it++) {
             for (auto jt = it->second.begin(); jt != it->second.end(); jt++) {
-                stopAndDeletePairedDevice(jt->second);
+                stopAndDeleteConnectedDevice(jt->second);
             }
         }
     this->devices_mutex.unlock();
@@ -60,7 +60,7 @@ void DeviceFinder::stopAndDeleteAllDevicesIn (const std::string &path)
         if (path_bucket != this->devices.end())
         {
             for (auto& index_bucket : path_bucket->second) {
-                stopAndDeletePairedDevice(index_bucket.second);
+                stopAndDeleteConnectedDevice(index_bucket.second);
             }
             this->devices.erase(path_bucket);
         }
@@ -78,7 +78,7 @@ void DeviceFinder::stopAndDeleteDevice (const std::string &path, HIDPP::DeviceIn
             auto index_bucket = path_bucket->second.find(index);
             if (index_bucket != path_bucket->second.end())
             {
-                stopAndDeletePairedDevice(index_bucket->second);
+                stopAndDeleteConnectedDevice(index_bucket->second);
                 path_bucket->second.erase(index_bucket);
             }
         }
