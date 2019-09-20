@@ -6,7 +6,6 @@
 #include <hidpp10/IReceiver.h>
 #include <hidpp20/IReprogControls.h>
 #include <map>
-#include <list>
 #include <thread>
 #include <mutex>
 
