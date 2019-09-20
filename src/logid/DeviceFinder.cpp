@@ -9,10 +9,14 @@
 #include <thread>
 #include <fstream>
 #include <sstream>
+#include <chrono>
 
 #include "DeviceFinder.h"
 #include "util.h"
 #include "Device.h"
+
+#define MAX_CONNECTION_TRIES 10
+#define TIME_BETWEEN_CONNECTION_TRIES 1s
 
 void stopAndDeletePairedDevice (PairedDevice &pairedDevice)
 {
@@ -86,12 +90,12 @@ void DeviceFinder::stopAndDeleteDevice (const std::string &path, HIDPP::DeviceIn
 
 void DeviceFinder::addDevice(const char *path)
 {
+    using namespace std::chrono_literals;
+
     std::string string_path(path);
     // Asynchronously scan device
     std::thread{[=]()
     {
-        const int max_tries = 10;
-        const int try_delay = 250000;
 
         //Check if device is an HID++ device and handle it accordingly
         try
@@ -107,8 +111,11 @@ void DeviceFinder::addDevice(const char *path)
 
                 if(!has_receiver_index && index == HIDPP::WirelessDevice1)
                     break;
-                for(int i = 0; i < max_tries; i++)
-                {
+
+                bool device_not_connected = true;
+                bool device_unknown = false;
+                int remaining_tries = MAX_CONNECTION_TRIES;
+                do {
                     try
                     {
                         HIDPP::Device d(&dispatcher, index);
@@ -121,42 +128,45 @@ void DeviceFinder::addDevice(const char *path)
                         {
                             this->insertNewDevice(string_path, index);
                         }
-                        break;
+                        device_not_connected = false;
                     }
                     catch(HIDPP10::Error &e)
                     {
                         if(e.errorCode() != HIDPP10::Error::UnknownDevice)
                         {
-                            if(i == max_tries - 1)
-                                log_printf(ERROR, "Error while querying %s, wireless device %d: %s", string_path.c_str(), index, e.what());
-                            else usleep(try_delay);
+                            if(remaining_tries == 1)
+                            {
+                                log_printf(WARN, "While querying %s, wireless device %d: %s", string_path.c_str(), index, e.what());
+                                remaining_tries += MAX_CONNECTION_TRIES;    // asleep wireless devices may raise this error, so warn but do not stop querying device
+                            }
                         }
-                        else break;
+                        else device_unknown = true;
                     }
                     catch(HIDPP20::Error &e)
                     {
                         if(e.errorCode() != HIDPP20::Error::UnknownDevice)
                         {
-                            if(i == max_tries - 1)
+                            if(remaining_tries == 1)
                                 log_printf(ERROR, "Error while querying %s, device %d: %s", string_path.c_str(), index, e.what());
-                            else usleep(try_delay);
                         }
-                        else break;
+                        else device_unknown = true;
                     }
                     catch(HIDPP::Dispatcher::TimeoutError &e)
                     {
-                        if(i == max_tries - 1)
+                        if(remaining_tries == 1)
                             log_printf(ERROR, "Device %s (index %d) timed out.", string_path.c_str(), index);
-                        else usleep(try_delay);
                     }
                     catch(std::runtime_error &e)
                     {
-                        if(i == max_tries - 1)
+                        if(remaining_tries == 1)
                             log_printf(ERROR, "Runtime error on device %d on %s: %s", index, string_path.c_str(), e.what());
-                        else usleep(try_delay);
                     }
-                }
-            }
+
+                    remaining_tries--;
+                    std::this_thread::sleep_for(TIME_BETWEEN_CONNECTION_TRIES);
+
+                } while (device_not_connected && !device_unknown && remaining_tries > 0);
+            } 
         }
         catch(HIDPP::Dispatcher::NoHIDPPReportException &e) { }
         catch(std::system_error &e) { log_printf(WARN, "Failed to open %s: %s", string_path.c_str(), e.what()); }
