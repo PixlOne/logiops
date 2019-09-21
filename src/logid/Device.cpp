@@ -248,19 +248,7 @@ void ReceiverHandler::handleEvent(const HIDPP::Report &event)
     {
         case HIDPP10::IReceiver::DeviceUnpaired:
         {
-            // Find device, stop it, and delete it
-            auto it = finder->devices.begin();
-            while (it != finder->devices.end())
-            {
-                if(it->first->path == dev->path && it->first->index == event.deviceIndex())
-                {
-                    log_printf(INFO, "%s (Device %d on %s) unpaired.", it->first->name.c_str(), event.deviceIndex(), dev->path.c_str());
-                    it->first->stop();
-                    it->second.join();
-                    finder->devices.erase(it);
-                }
-                else it++;
-            }
+            finder->stopAndDeleteDevice(dev->path, event.deviceIndex());
             break;
         }
         case HIDPP10::IReceiver::DevicePaired:
