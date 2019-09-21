@@ -10,6 +10,7 @@
 #include <hidpp/Dispatcher.h>
 #include <hidpp/SimpleDispatcher.h>
 #include <hidpp10/IReceiver.h>
+#include <hidpp20/IWirelessDeviceStatus.h>
 
 class EventListener;
 class DeviceConfig;
@@ -68,15 +69,15 @@ public:
 class ButtonHandler : public EventHandler
 {
 public:
-    ButtonHandler (HIDPP20::Device *hidppdev, Device *d) : _irc (HIDPP20::IReprogControls::auto_version(hidppdev)), dev (d) { }
+    ButtonHandler (Device *d) : dev (d), _irc (HIDPP20::IReprogControls::auto_version(d->hidpp_dev)) { }
     const HIDPP20::FeatureInterface *feature () const
     {
         return &_irc;
     }
     void handleEvent (const HIDPP::Report &event);
 protected:
-    HIDPP20::IReprogControls _irc;
     Device* dev;
+    HIDPP20::IReprogControls _irc;
     std::vector<uint16_t> states;
     std::vector<uint16_t> new_states;
 };
@@ -95,6 +96,19 @@ public:
     void handleEvent (const HIDPP::Report &event);
 protected:
     Device* dev;
+};
+class WirelessStatusHandler : public EventHandler
+{
+public:
+    WirelessStatusHandler (Device *d) : dev (d), _iws (d->hidpp_dev) { }
+    const HIDPP20::FeatureInterface *feature () const
+    {
+        return &_iws;
+    }
+    void handleEvent (const HIDPP::Report &event);
+protected:
+    Device* dev;
+    HIDPP20::IWirelessDeviceStatus _iws;
 };
 
 class EventListener

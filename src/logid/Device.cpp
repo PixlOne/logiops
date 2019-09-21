@@ -193,9 +193,15 @@ void Device::set_dpi(int dpi)
 void Device::start()
 {
     configure();
-    listener->addEventHandler( std::make_unique<ButtonHandler>(hidpp_dev, this) );
+    try { listener->addEventHandler(std::make_unique<ButtonHandler>(this)); }
+    catch(HIDPP20::UnsupportedFeature &e) { }
     if(index != HIDPP::DefaultDevice && index != HIDPP::CordedDevice)
         listener->addEventHandler( std::make_unique<ReceiverHandler>(this) );
+    else
+    {
+        try { listener->addEventHandler( std::make_unique<WirelessStatusHandler>(this) ); }
+        catch(HIDPP20::UnsupportedFeature &e) { }
+    }
     listener->start();
 }
 
@@ -271,6 +277,25 @@ void ReceiverHandler::handleEvent(const HIDPP::Report &event)
         }
         default:
             break;
+    }
+}
+
+void WirelessStatusHandler::handleEvent(const HIDPP::Report &event)
+{
+    switch(event.function())
+    {
+        case HIDPP20::IWirelessDeviceStatus::StatusBroadcast:
+        {
+            auto status = HIDPP20::IWirelessDeviceStatus::statusBroadcastEvent(event);
+            if(status.ReconfNeeded)
+                dev->configure();
+            break;
+        }
+        default:
+        {
+            log_printf(DEBUG, "Undocumented event %02x from WirelessDeviceStatus", event.function());
+            break;
+        }
     }
 }
 
