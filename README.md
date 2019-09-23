@@ -11,7 +11,7 @@ You may also refer to logid.example.cfg for an example.
 
 ## Building
 
-This project requires a C++14 compiler, cmake, libevdev, libconfig, and [my fork of libhidpp](https://github.com/PixlOne/hidpp)
+This project requires a C++14 compiler, cmake, libevdev, libudev, and libconfig
 
 To build this project, run:
 

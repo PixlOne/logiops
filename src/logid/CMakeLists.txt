@@ -37,6 +37,39 @@ find_library(EVDEV_LIBRARY
 
 include_directories(${HIDPP_INCLUDE_DIR}/hidpp ${EVDEV_INCLUDE_DIR})
 
+
+if((NOT HIDPP_INCLUDE_DIR) OR (NOT EXISTS ${HIDPP_INCLUDE_DIR}) OR (NOT HIDPP_LIBRARY) OR FORCE_BUILD_HIDPP)
+    message("Could not find libhidpp include dir, getting submodule")
+
+    execute_process(COMMAND git submodule update --init -- hidpp
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+	    set(DEFAULT_HID_BACKEND "linux")
+    elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+	    set(DEFAULT_HID_BACKEND "windows")
+    else()
+	    message(WARNING "System is not supported")
+    endif()
+
+    set(HID_BACKEND "${DEFAULT_HID_BACKEND}" CACHE STRING "Backend used for accessing HID devices")
+    set_property(CACHE HID_BACKEND PROPERTY STRINGS linux windows)
+    
+    if("${HID_BACKEND}" STREQUAL "linux")
+	    pkg_check_modules(LIBUDEV libudev REQUIRED)
+    elseif("${HID_BACKEND}" STREQUAL "windows")
+    	add_definitions(-DUNICODE -D_UNICODE)
+	    add_definitions(-D_WIN32_WINNT=0x0600) # Use vista or later
+    else()
+	    message(FATAL_ERROR "HID_BACKEND is invalid.")
+    endif()
+
+    add_subdirectory(hidpp/src/libhidpp)
+
+    set(HIDPP_INCLUDE_DIR "hidpp/src/libhidpp/")
+    set(HIDPP_LIBRARY hidpp)
+endif()
+
 target_link_libraries(logid ${CMAKE_THREAD_LIBS_INIT} ${EVDEV_LIBRARY} config++ ${HIDPP_LIBRARY})
 
 install(TARGETS logid DESTINATION bin)
