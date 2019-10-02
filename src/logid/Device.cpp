@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <cstring>
 #include <utility>
+#include <set>
 #include <hidpp20/UnsupportedFeature.h>
 #include <hidpp20/IHiresScroll.h>
 
@@ -20,26 +21,41 @@
 #include "util.h"
 #include "EvdevDevice.h"
 
-
 using namespace std::chrono_literals;
 
 Device::Device(std::string p, const HIDPP::DeviceIndex i) : path(std::move(p)), index (i)
 {
-    // Initialise variables
-    DeviceRemoved = false;
+    disconnected = true;
     dispatcher = new HIDPP::SimpleDispatcher(path.c_str());
-    hidpp_dev = new HIDPP20::Device(dispatcher, index);
+    listener = new SimpleListener(new HIDPP::SimpleDispatcher(path.c_str()), index);
+    config = new DeviceConfig();
+}
+
+bool Device::init()
+{
+    // Initialise variables
+    disconnected = false;
+    try
+    {
+        hidpp_dev = new HIDPP20::Device(dispatcher, index);
+    }
+    catch(HIDPP10::Error &e) { return false; }
+    catch(HIDPP20::Error &e) { return false; }
+
     name = hidpp_dev->name();
     features = get_features();
-    listener = new SimpleListener(new HIDPP::SimpleDispatcher(path.c_str()), index);
-
     // Set config, if none is found for this device then use default
     if(global_config->devices.find(name) == global_config->devices.end())
-    {
         log_printf(INFO, "Device %s not configured, using default config.", hidpp_dev->name().c_str());
-        config = new DeviceConfig();
+    else
+    {
+        delete(config);
+        config = global_config->devices.find(name)->second;
     }
-    else config = global_config->devices.find(name)->second;
+
+    initialized = true;
+
+    return true;
 }
 
 Device::~Device()
@@ -55,32 +71,35 @@ void Device::configure()
     if(config->baseConfig)
         config = new DeviceConfig(config, this);
 
-    configuring = true;
-    usleep(250000);
+    if(!configuring.try_lock())
+    {
+        log_printf(DEBUG, "%s %d: skip config task", path.c_str(), index);
+        return;
+    }
+    usleep(500000);
 
     try
     {
-        if(disconnected) {
-            configuring = false; return; }
-
+        if(disconnected)
+            goto ret;
         // Divert buttons
         divert_buttons();
-        if(disconnected) {
-            configuring = false; return; }
 
-        // Set DPI if it is set
+        if(disconnected)
+            goto ret;
+        // Set DPI if it is configured
         if(config->dpi != nullptr)
             set_dpi(*config->dpi);
-        if(disconnected) {
-            configuring = false; return; }
 
-        // Set Smartshift if it is set
+        if(disconnected)
+            goto ret;
+        // Set Smartshift if it is configured
         if(config->smartshift != nullptr)
             set_smartshift(*config->smartshift);
-        if(disconnected) {
-            configuring = false; return; }
 
-        // Set Hires Scroll if it is set
+        if(disconnected)
+            goto ret;
+        // Set Hires Scroll if it is configured
         if(config->hiresscroll != nullptr)
             set_hiresscroll(*config->hiresscroll);
     }
@@ -89,7 +108,8 @@ void Device::configure()
         log_printf(ERROR, "HID++ 1.0 Error whjle configuring %s: %s", name.c_str(), e.what());
     }
 
-    configuring = false;
+ret:
+    configuring.unlock();
 }
 
 void Device::reset()
@@ -111,11 +131,13 @@ void Device::divert_buttons()
     try
     {
         HIDPP20::IReprogControls irc = HIDPP20::IReprogControls::auto_version(hidpp_dev);
-        if(disconnected) return;
+        if(disconnected)
+            return;
         int controlCount = irc.getControlCount();
         for(int i = 0; i < controlCount; i++)
         {
-            if(disconnected) return;
+            if(disconnected)
+                return;
             uint16_t cid = irc.getControlInfo(i).control_id;
             uint8_t flags = 0;
             flags |= HIDPP20::IReprogControls::ChangeTemporaryDivert;
@@ -129,7 +151,8 @@ void Device::divert_buttons()
                 if(action->second->type == Action::Gestures)
                     flags |= HIDPP20::IReprogControls::RawXYDiverted;
             }
-            if(disconnected) return;
+            if(disconnected)
+                return;
             irc.setControlReporting(cid, flags, cid);
         }
     }
@@ -190,19 +213,66 @@ void Device::set_dpi(int dpi)
     catch (HIDPP20::Error &e) { log_printf(ERROR, "Error while setting DPI: %s", e.what()); }
 }
 
+void Device::wait_for_receiver()
+{
+    while(true)
+    {
+        waiting_for_receiver = true;
+        listener->addEventHandler(std::make_unique<ReceiverHandler>(this));
+        listener->start();
+        // Listener stopped, check if stopped or ReceiverHandler event
+        if (waiting_for_receiver)
+            return;
+
+        usleep(200000);
+
+        if(this->init()) break;
+
+        log_printf(ERROR, "Failed to initialize device %d on %s, waiting for receiver");
+        delete(listener);
+        listener = new SimpleListener(new HIDPP::SimpleDispatcher(path.c_str()), index);
+    }
+    log_printf(INFO, "%s detected: device %d on %s", name.c_str(), index, path.c_str());
+    this->start();
+}
+
 void Device::start()
 {
     configure();
     try { listener->addEventHandler(std::make_unique<ButtonHandler>(this)); }
     catch(HIDPP20::UnsupportedFeature &e) { }
-    if(index != HIDPP::DefaultDevice && index != HIDPP::CordedDevice)
-        listener->addEventHandler( std::make_unique<ReceiverHandler>(this) );
-    else
+
+    if(index == HIDPP::DefaultDevice || index == HIDPP::CordedDevice)
     {
         try { listener->addEventHandler( std::make_unique<WirelessStatusHandler>(this) ); }
         catch(HIDPP20::UnsupportedFeature &e) { }
     }
     listener->start();
+}
+
+bool Device::testConnection()
+{
+    int i = MAX_CONNECTION_TRIES;
+    do {
+        try
+        {
+            HIDPP20::Device _hpp20dev(dispatcher, index);
+            return true;
+        }
+        catch(HIDPP10::Error &e)
+        {
+            if(e.errorCode() == HIDPP10::Error::ResourceError) // Asleep, wait for next event
+                return false;
+            if(i == MAX_CONNECTION_TRIES-1)
+                return false;
+        }
+        catch(std::exception &e)
+        {
+            if(i == MAX_CONNECTION_TRIES-1)
+                return false;
+        }
+        i++;
+    } while(i < MAX_CONNECTION_TRIES);
 }
 
 void ButtonHandler::handleEvent (const HIDPP::Report &event)
@@ -254,11 +324,26 @@ void ReceiverHandler::handleEvent(const HIDPP::Report &event)
     {
         case HIDPP10::IReceiver::DeviceUnpaired:
         {
-            finder->stopAndDeleteDevice(dev->path, event.deviceIndex());
+            log_printf(INFO, "%s (Device %d on %s) unpaired from receiver", dev->name.c_str(), dev->index, dev->path.c_str());
+            std::thread {[=]()
+                         {
+                            finder->stopAndDeleteDevice(dev->path, dev->index);
+                            finder->insertNewReceiverDevice(dev->path, dev->index);
+                         }}.detach();
             break;
         }
         case HIDPP10::IReceiver::DevicePaired:
+        {
+            log_printf(DEBUG, "Receiver on %s: Device %d paired", dev->path.c_str(), event.deviceIndex());
+            if(dev->waiting_for_receiver)
+            {
+                if(!dev->testConnection()) return;
+                dev->waiting_for_receiver = false;
+                dev->stop();
+            }
+            //else: Likely an enumeration event, ignore.
             break;
+        }
         case HIDPP10::IReceiver::ConnectionStatus:
         {
             auto status = HIDPP10::IReceiver::connectionStatusEvent(event);
@@ -269,9 +354,20 @@ void ReceiverHandler::handleEvent(const HIDPP::Report &event)
             }
             else if (status == HIDPP10::IReceiver::ConnectionEstablished)
             {
-                log_printf(INFO, "Connection established to %s", dev->name.c_str());
-                dev->disconnected = false;
-                dev->configure();
+                if(dev->waiting_for_receiver)
+                {
+                    log_printf(DEBUG, "Receiver on %s: Connection established to device %d", dev->path.c_str(), event.deviceIndex());
+                    if(!dev->testConnection()) return;
+                    dev->waiting_for_receiver = false;
+                    std::thread { [=]() { dev->stop(); } }.detach();
+                }
+                else
+                {
+                    if(!dev->initialized) return;
+                    dev->disconnected = false;
+                    dev->configure();
+                    log_printf(INFO, "Connection established to %s", dev->name.c_str());
+                }
             }
             break;
         }
@@ -328,12 +424,23 @@ void EventListener::addEventHandler(std::unique_ptr<EventHandler> &&handler)
 
 void SimpleListener::start()
 {
-    try { dispatcher->listen(); }
-    catch(std::system_error &e) { }
+    bool retry;
+    do
+    {
+        retry = false;
+        try { dispatcher->listen(); }
+        catch(std::system_error &e)
+        {
+            retry = true;
+            usleep(250000);
+        }
+    } while(retry && !stopped);
+
 }
 
 void SimpleListener::stop()
 {
+    this->stopped = true;
     dispatcher->stop();
 }
 
@@ -373,10 +480,7 @@ void Device::move_diverted(uint16_t cid, HIDPP20::IReprogControlsV4::Move m)
 {
     auto action = config->actions.find(cid);
     if(action == config->actions.end())
-    {
-        log_printf(DEBUG, "0x%x's RawXY was diverted with no action.", cid);
         return;
-    }
     switch(action->second->type)
     {
         case Action::Gestures:

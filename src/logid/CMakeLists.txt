@@ -35,9 +35,6 @@ find_path(EVDEV_INCLUDE_DIR libevdev/libevdev.h
 find_library(EVDEV_LIBRARY
         NAMES evdev libevdev)
 
-include_directories(${HIDPP_INCLUDE_DIR}/hidpp ${EVDEV_INCLUDE_DIR})
-
-
 if((NOT HIDPP_INCLUDE_DIR) OR (NOT EXISTS ${HIDPP_INCLUDE_DIR}) OR (NOT HIDPP_LIBRARY) OR FORCE_BUILD_HIDPP)
     message("Could not find libhidpp include dir, getting submodule")
 
@@ -68,7 +65,11 @@ if((NOT HIDPP_INCLUDE_DIR) OR (NOT EXISTS ${HIDPP_INCLUDE_DIR}) OR (NOT HIDPP_LI
 
     set(HIDPP_INCLUDE_DIR "hidpp/src/libhidpp/")
     set(HIDPP_LIBRARY hidpp)
+else()
+    set(HIDPP_INCLUDE_DIR ${HIDPP_INCLUDE_DIR}/hidpp)
 endif()
+
+include_directories(${HIDPP_INCLUDE_DIR} ${EVDEV_INCLUDE_DIR})
 
 target_link_libraries(logid ${CMAKE_THREAD_LIBS_INIT} ${EVDEV_LIBRARY} config++ ${HIDPP_LIBRARY})
 

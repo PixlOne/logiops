@@ -1,4 +1,5 @@
-#pragma once
+#ifndef DEVICEFINDER_H
+#define DEVICEFINDER_H
 
 #include <hid/DeviceMonitor.h>
 #include <hidpp/SimpleDispatcher.h>
@@ -10,6 +11,9 @@
 #include <mutex>
 
 #include "Device.h"
+
+#define MAX_CONNECTION_TRIES 10
+#define TIME_BETWEEN_CONNECTION_TRIES 500ms
 
 class Device;
 
@@ -23,7 +27,8 @@ class DeviceFinder : public HID::DeviceMonitor
 public:
 	~DeviceFinder();
 
-	void insertNewDevice (const std::string &path, HIDPP::DeviceIndex index);
+	Device* insertNewDevice (const std::string &path, HIDPP::DeviceIndex index);
+	Device* insertNewReceiverDevice (const std::string &path, HIDPP::DeviceIndex index);
 	void stopAndDeleteAllDevicesIn (const std::string &path);
 	void stopAndDeleteDevice (const std::string &path, HIDPP::DeviceIndex index);
 protected:
@@ -36,3 +41,4 @@ private:
 
 extern DeviceFinder* finder;
 
+#endif //DEVICEFINDER_H

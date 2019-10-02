@@ -7,6 +7,7 @@
 
 #include <map>
 #include <memory>
+#include <atomic>
 #include <hidpp/Dispatcher.h>
 #include <hidpp/SimpleDispatcher.h>
 #include <hidpp10/IReceiver.h>
@@ -23,6 +24,7 @@ public:
 
     std::string name;
 
+    bool init();
     void configure();
     void reset();
 
@@ -30,8 +32,10 @@ public:
     void release_button(uint16_t cid);
     void move_diverted(uint16_t cid, HIDPP20::IReprogControlsV4::Move move);
 
+    void wait_for_receiver();
     void start();
     void stop();
+    bool testConnection();
 
     std::map<uint16_t, uint8_t> get_features();
 
@@ -42,12 +46,13 @@ public:
     HIDPP::Dispatcher* dispatcher;
     HIDPP20::Device* hidpp_dev;
 
-    bool configuring = false;
-    bool disconnected = false;
+    std::mutex configuring;
+    std::atomic_bool disconnected;
+    bool initialized = false;
+    bool waiting_for_receiver = false;
 
 protected:
     DeviceConfig* config;
-    bool DeviceRemoved;
     EventListener* listener;
 
     void divert_buttons();
@@ -141,6 +146,7 @@ public:
     {
     }
 
+    bool stopped = false;
     virtual void start();
     virtual void stop();
 
