@@ -26,6 +26,7 @@ set_target_properties(logid PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_D
 
 pkg_check_modules(PC_EVDEV libevdev)
 pkg_check_modules(SYSTEMD "systemd")
+pkg_check_modules(LIBCONFIG libconfig)
 
 find_path(HIDPP_INCLUDE_DIR hidpp)
 find_library(HIDPP_LIBRARY libhidpp.so)
