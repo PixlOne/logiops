@@ -4,6 +4,8 @@
 
 #include "EvdevDevice.h"
 
+using namespace logid;
+
 EvdevDevice::EvdevDevice(const char* name)
 {
     device = libevdev_new();

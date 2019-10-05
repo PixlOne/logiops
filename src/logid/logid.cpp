@@ -19,10 +19,12 @@
 #define evdev_name "logid"
 #define DEFAULT_CONFIG_FILE "/etc/logid.cfg"
 
-LogLevel global_verbosity = INFO;
-Configuration* global_config;
-EvdevDevice* global_evdev;
-DeviceFinder* finder;
+using namespace logid;
+
+LogLevel logid::global_verbosity = INFO;
+Configuration* logid::global_config;
+EvdevDevice* logid::global_evdev;
+DeviceFinder* logid::finder;
 
 enum class Option
 {

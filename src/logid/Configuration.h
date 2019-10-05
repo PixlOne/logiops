@@ -1,41 +1,44 @@
-#ifndef CONFIGURATION_H
-#define CONFIGURATION_H
+#ifndef LOGID_CONFIGURATION_H
+#define LOGID_CONFIGURATION_H
 
 #include <map>
 #include <libconfig.h++>
 #include <hidpp20/ISmartShift.h>
 #include "Actions.h"
 
-class DeviceConfig;
-class ButtonAction;
-enum class Action;
-
-class DeviceConfig
+namespace logid
 {
-public:
-    DeviceConfig();
-    ~DeviceConfig();
-    DeviceConfig(DeviceConfig* dc, Device* dev);
-    DeviceConfig(const libconfig::Setting& root);
-    const int* dpi = nullptr;
-    HIDPP20::ISmartShift::SmartshiftStatus* smartshift;
-    const uint8_t* hiresscroll = nullptr;
-    std::map<uint16_t, ButtonAction*> actions;
-    const bool baseConfig = true;
-};
+    class DeviceConfig;
+    class ButtonAction;
+    enum class Action;
 
-class Configuration
-{
-public:
-    Configuration(const char* config_file);
-    Configuration() {}
-    std::map<std::string, DeviceConfig*> devices;
-private:
-    libconfig::Config cfg;
-};
+    class DeviceConfig
+    {
+    public:
+        DeviceConfig();
+        ~DeviceConfig();
+        DeviceConfig(DeviceConfig* dc, Device* dev);
+        DeviceConfig(const libconfig::Setting& root);
+        const int* dpi = nullptr;
+        HIDPP20::ISmartShift::SmartshiftStatus* smartshift;
+        const uint8_t* hiresscroll = nullptr;
+        std::map<uint16_t, ButtonAction*> actions;
+        const bool baseConfig = true;
+    };
 
-ButtonAction* parse_action(Action action, const libconfig::Setting* action_config, bool is_gesture=false);
+    class Configuration
+    {
+    public:
+        Configuration(const char* config_file);
+        Configuration() {}
+        std::map<std::string, DeviceConfig*> devices;
+    private:
+        libconfig::Config cfg;
+    };
 
-extern Configuration* global_config;
+    ButtonAction* parse_action(Action action, const libconfig::Setting* action_config, bool is_gesture=false);
 
-#endif //CONFIGURATION_H
+    extern Configuration* global_config;
+}
+
+#endif //LOGID_CONFIGURATION_H

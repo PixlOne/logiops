@@ -10,6 +10,7 @@
 #include "Configuration.h"
 #include "util.h"
 
+using namespace logid;
 using namespace libconfig;
 
 Configuration::Configuration(const char *config_file)
@@ -230,7 +231,7 @@ DeviceConfig::DeviceConfig(const libconfig::Setting &root)
     }
 }
 
-ButtonAction* parse_action(Action type, const Setting* action_config, bool is_gesture)
+ButtonAction* logid::parse_action(Action type, const Setting* action_config, bool is_gesture)
 {
     if(type == Action::None) return new NoAction();
     if(type == Action::Keypress)

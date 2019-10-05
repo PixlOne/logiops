@@ -21,6 +21,8 @@
 #include "util.h"
 #include "EvdevDevice.h"
 
+using namespace logid;
+
 using namespace std::chrono_literals;
 
 Device::Device(std::string p, const HIDPP::DeviceIndex i) : path(std::move(p)), index (i)

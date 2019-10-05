@@ -11,6 +11,8 @@
 #include "util.h"
 #include "EvdevDevice.h"
 
+using namespace logid;
+
 NoAction* NoAction::copy(Device *dev)
 {
     auto action = new NoAction();

@@ -17,6 +17,8 @@
 
 #define NON_WIRELESS_DEV(index) (index) == HIDPP::DefaultDevice ? "default" : "corderd"
 
+using namespace logid;
+
 void stopAndDeleteConnectedDevice (ConnectedDevice &connected_device)
 {
     if(!connected_device.device->waiting_for_receiver)

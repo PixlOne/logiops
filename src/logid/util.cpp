@@ -7,7 +7,9 @@
 
 #include "util.h"
 
-void log_printf(LogLevel level, const char* format, ...)
+using namespace logid;
+
+void logid::log_printf(LogLevel level, const char* format, ...)
 {
     if(global_verbosity > level) return;
 
@@ -22,7 +24,7 @@ void log_printf(LogLevel level, const char* format, ...)
     fprintf(stream, "\n");
 }
 
-const char* level_prefix(LogLevel level)
+const char* logid::level_prefix(LogLevel level)
 {
     if(level == DEBUG) return "DEBUG";
     if(level == INFO) return "INFO" ;
@@ -32,7 +34,7 @@ const char* level_prefix(LogLevel level)
     return "DEBUG";
 }
 
-Direction get_direction(int x, int y)
+Direction logid::get_direction(int x, int y)
 {
     if(x == 0 && y == 0) return Direction::None;
 
@@ -59,7 +61,7 @@ Direction get_direction(int x, int y)
     return Direction::None;
 }
 
-Direction string_to_direction(std::string s)
+Direction logid::string_to_direction(std::string s)
 {
     const char* original_str = s.c_str();
     std::transform(s.begin(), s.end(), s.begin(), ::tolower);
@@ -75,7 +77,7 @@ Direction string_to_direction(std::string s)
     throw std::invalid_argument(s + " is an invalid direction.");
 }
 
-GestureMode string_to_gesturemode(std::string s)
+GestureMode logid::string_to_gesturemode(std::string s)
 {
     const char* original_str = s.c_str();
     std::transform(s.begin(), s.end(), s.begin(), ::tolower);
@@ -93,7 +95,7 @@ GestureMode string_to_gesturemode(std::string s)
     return GestureMode::OnRelease;
 }
 
-Action string_to_action(std::string s)
+Action logid::string_to_action(std::string s)
 {
     std::string original_str = s;
     std::transform(s.begin(), s.end(), s.begin(), ::tolower);
@@ -109,7 +111,7 @@ Action string_to_action(std::string s)
     throw std::invalid_argument(original_str + " is an invalid action.");
 }
 
-LogLevel string_to_loglevel(std::string s)
+LogLevel logid::string_to_loglevel(std::string s)
 {
     std::string original_str = s;
     std::transform(s.begin(), s.end(), s.begin(), ::tolower);
