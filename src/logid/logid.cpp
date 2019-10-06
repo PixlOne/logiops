@@ -75,7 +75,7 @@ int main(int argc, char** argv)
                         break;
                     }
                     std::string loglevel = argv[i];
-                    try { global_verbosity = string_to_loglevel(argv[i]); }
+                    try { global_verbosity = stringToLogLevel(argv[i]); }
                     catch (std::invalid_argument &e)
                     {
                         if (argv[i][0] == '-')

@@ -30,16 +30,16 @@ namespace logid
         void configure();
         void reset();
 
-        void press_button(uint16_t cid);
-        void release_button(uint16_t cid);
-        void move_diverted(uint16_t cid, HIDPP20::IReprogControlsV4::Move move);
+        void pressButton(uint16_t cid);
+        void releaseButton(uint16_t cid);
+        void moveDiverted(uint16_t cid, HIDPP20::IReprogControlsV4::Move move);
 
-        void wait_for_receiver();
+        void waitForReceiver();
         void start();
         void stop();
         bool testConnection();
 
-        std::map<uint16_t, uint8_t> get_features();
+        std::map<uint16_t, uint8_t> getFeatures();
 
         std::map<uint16_t, uint8_t> features;
 
@@ -58,9 +58,9 @@ namespace logid
         EventListener* listener;
 
         void divert_buttons();
-        void set_smartshift(HIDPP20::ISmartShift::SmartshiftStatus ops);
-        void set_hiresscroll(uint8_t flags);
-        void set_dpi(int dpi);
+        void setSmartShift(HIDPP20::ISmartShift::SmartshiftStatus ops);
+        void setHiresScroll(uint8_t flags);
+        void setDPI(int dpi);
     };
 
     class EventHandler

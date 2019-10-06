@@ -213,7 +213,7 @@ DeviceConfig::DeviceConfig(const libconfig::Setting &root)
         {
             std::string action_type_str;
             action_config->lookupValue("type", action_type_str);
-            action_type = string_to_action(action_type_str);
+            action_type = stringToAction(action_type_str);
         }
         catch(SettingNotFoundException &e)
         {
@@ -285,7 +285,7 @@ ButtonAction* logid::parse_action(Action type, const Setting* action_config, boo
             try
             {
                 gesture_config.lookupValue("direction", direction_str);
-                direction = string_to_direction(direction_str);
+                direction = stringToDirection(direction_str);
             }
             catch(SettingNotFoundException &e)
             {
@@ -309,7 +309,7 @@ ButtonAction* logid::parse_action(Action type, const Setting* action_config, boo
             {
                 std::string mode_str;
                 gesture_config.lookupValue("mode", mode_str);
-                mode = string_to_gesturemode(mode_str);
+                mode = stringToGestureMode(mode_str);
             }
             catch (SettingNotFoundException &e)
             {
@@ -381,7 +381,7 @@ ButtonAction* logid::parse_action(Action type, const Setting* action_config, boo
             {
                 std::string type_str;
                 g_action->lookupValue("type", type_str);
-                g_type = string_to_action(type_str);
+                g_type = stringToAction(type_str);
             }
             catch(SettingNotFoundException &e)
             {

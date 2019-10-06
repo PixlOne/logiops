@@ -62,14 +62,14 @@ void KeyAction::press()
 {
     //KeyPress event for each in keys
     for(unsigned int i : keys)
-        global_evdev->send_event(EV_KEY, i, 1);
+        global_evdev->sendEvent(EV_KEY, i, 1);
 }
 
 void KeyAction::release()
 {
     //KeyRelease event for each in keys
     for(unsigned int i : keys)
-        global_evdev->send_event(EV_KEY, i, 0);
+        global_evdev->sendEvent(EV_KEY, i, 0);
 }
 
 void GestureAction::press()
@@ -89,7 +89,7 @@ void GestureAction::move(HIDPP20::IReprogControlsV4::Move m)
         if(g != gestures.end())
         {
             if (g->second->mode == GestureMode::Axis)
-                global_evdev->move_axis(g->second->axis, abs(m.y) * g->second->axis_multiplier);
+                global_evdev->moveAxis(g->second->axis, abs(m.y) * g->second->axis_multiplier);
             if (g->second->mode == GestureMode::OnFewPixels)
             {
                 g->second->per_pixel_mod += abs(m.y);
@@ -108,7 +108,7 @@ void GestureAction::move(HIDPP20::IReprogControlsV4::Move m)
         if(g != gestures.end())
         {
             if (g->second->mode == GestureMode::Axis)
-                global_evdev->move_axis(g->second->axis, abs(m.x) * g->second->axis_multiplier);
+                global_evdev->moveAxis(g->second->axis, abs(m.x) * g->second->axis_multiplier);
             if (g->second->mode == GestureMode::OnFewPixels)
             {
                 g->second->per_pixel_mod += abs(m.x);
@@ -128,7 +128,7 @@ void GestureAction::release()
     held = false;
     Direction direction;
     if(abs(x) < 50 && abs(y) < 50) direction = Direction::None;
-    else direction = get_direction(x, y);
+    else direction = getDirection(x, y);
     x = 0;
     y = 0;
 

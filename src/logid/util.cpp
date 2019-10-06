@@ -34,7 +34,7 @@ const char* logid::level_prefix(LogLevel level)
     return "DEBUG";
 }
 
-Direction logid::get_direction(int x, int y)
+Direction logid::getDirection(int x, int y)
 {
     if(x == 0 && y == 0) return Direction::None;
 
@@ -61,7 +61,7 @@ Direction logid::get_direction(int x, int y)
     return Direction::None;
 }
 
-Direction logid::string_to_direction(std::string s)
+Direction logid::stringToDirection(std::string s)
 {
     const char* original_str = s.c_str();
     std::transform(s.begin(), s.end(), s.begin(), ::tolower);
@@ -77,7 +77,7 @@ Direction logid::string_to_direction(std::string s)
     throw std::invalid_argument(s + " is an invalid direction.");
 }
 
-GestureMode logid::string_to_gesturemode(std::string s)
+GestureMode logid::stringToGestureMode(std::string s)
 {
     const char* original_str = s.c_str();
     std::transform(s.begin(), s.end(), s.begin(), ::tolower);
@@ -95,7 +95,7 @@ GestureMode logid::string_to_gesturemode(std::string s)
     return GestureMode::OnRelease;
 }
 
-Action logid::string_to_action(std::string s)
+Action logid::stringToAction(std::string s)
 {
     std::string original_str = s;
     std::transform(s.begin(), s.end(), s.begin(), ::tolower);
@@ -111,7 +111,7 @@ Action logid::string_to_action(std::string s)
     throw std::invalid_argument(original_str + " is an invalid action.");
 }
 
-LogLevel logid::string_to_loglevel(std::string s)
+LogLevel logid::stringToLogLevel(std::string s)
 {
     std::string original_str = s;
     std::transform(s.begin(), s.end(), s.begin(), ::tolower);

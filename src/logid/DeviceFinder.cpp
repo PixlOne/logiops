@@ -15,7 +15,7 @@
 #include "util.h"
 #include "Device.h"
 
-#define NON_WIRELESS_DEV(index) (index) == HIDPP::DefaultDevice ? "default" : "corderd"
+#define NON_WIRELESS_DEV(index) (index) == HIDPP::DefaultDevice ? "default" : "corded"
 
 using namespace logid;
 
@@ -68,7 +68,7 @@ Device* DeviceFinder::insertNewReceiverDevice(const std::string &path, HIDPP::De
     path_bucket->second.emplace(index, ConnectedDevice{
             device,
             std::thread([device]() {
-                device->wait_for_receiver();
+                device->waitForReceiver();
             })
     });
     this->devices_mutex.unlock();

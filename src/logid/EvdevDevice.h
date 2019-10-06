@@ -13,9 +13,9 @@ namespace logid
 
         ~EvdevDevice();
 
-        void move_axis(unsigned int axis, int movement);
+        void moveAxis(unsigned int axis, int movement);
 
-        void send_event(unsigned int type, unsigned int code, int value);
+        void sendEvent(unsigned int type, unsigned int code, int value);
 
         libevdev *device;
         libevdev_uinput *ui_device;

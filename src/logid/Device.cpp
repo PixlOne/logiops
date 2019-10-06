@@ -45,7 +45,7 @@ bool Device::init()
     catch(HIDPP20::Error &e) { return false; }
 
     name = hidpp_dev->name();
-    features = get_features();
+    features = getFeatures();
     // Set config, if none is found for this device then use default
     if(global_config->devices.find(name) == global_config->devices.end())
         log_printf(INFO, "Device %s not configured, using default config.", hidpp_dev->name().c_str());
@@ -91,19 +91,19 @@ void Device::configure()
             goto ret;
         // Set DPI if it is configured
         if(config->dpi != nullptr)
-            set_dpi(*config->dpi);
+            setDPI(*config->dpi);
 
         if(disconnected)
             goto ret;
         // Set Smartshift if it is configured
         if(config->smartshift != nullptr)
-            set_smartshift(*config->smartshift);
+            setSmartShift(*config->smartshift);
 
         if(disconnected)
             goto ret;
         // Set Hires Scroll if it is configured
         if(config->hiresscroll != nullptr)
-            set_hiresscroll(*config->hiresscroll);
+            setHiresScroll(*config->hiresscroll);
     }
     catch(HIDPP10::Error &e)
     {
@@ -168,7 +168,7 @@ void Device::divert_buttons()
     }
 }
 
-void Device::set_smartshift(HIDPP20::ISmartShift::SmartshiftStatus ops)
+void Device::setSmartShift(HIDPP20::ISmartShift::SmartshiftStatus ops)
 {
     try
     {
@@ -187,7 +187,7 @@ void Device::set_smartshift(HIDPP20::ISmartShift::SmartshiftStatus ops)
     }
 }
 
-void Device::set_hiresscroll(uint8_t ops)
+void Device::setHiresScroll(uint8_t ops)
 {
     try
     {
@@ -206,7 +206,7 @@ void Device::set_hiresscroll(uint8_t ops)
     }
 }
 
-void Device::set_dpi(int dpi)
+void Device::setDPI(int dpi)
 {
     if(disconnected) return;
     HIDPP20::IAdjustableDPI iad(hidpp_dev);
@@ -215,7 +215,7 @@ void Device::set_dpi(int dpi)
     catch (HIDPP20::Error &e) { log_printf(ERROR, "Error while setting DPI: %s", e.what()); }
 }
 
-void Device::wait_for_receiver()
+void Device::waitForReceiver()
 {
     while(true)
     {
@@ -275,6 +275,8 @@ bool Device::testConnection()
         }
         i++;
     } while(i < MAX_CONNECTION_TRIES);
+
+    return false;
 }
 
 void ButtonHandler::handleEvent (const HIDPP::Report &event)
@@ -287,7 +289,7 @@ void ButtonHandler::handleEvent (const HIDPP::Report &event)
             if (states.empty())
             {
                 for (uint16_t i : new_states)
-                    std::thread{[=]() { dev->press_button(i); }}.detach();
+                    std::thread{[=]() { dev->pressButton(i); }}.detach();
                 states = new_states;
                 break;
             }
@@ -300,9 +302,9 @@ void ButtonHandler::handleEvent (const HIDPP::Report &event)
                 if (std::find(new_states.begin(), new_states.end(), i) != new_states.end())
                 {
                     if (std::find(states.begin(), states.end(), i) == states.end())
-                        std::thread{[=]() { dev->press_button(i); }}.detach();
+                        std::thread{[=]() { dev->pressButton(i); }}.detach();
                 } else
-                    std::thread{[=]() { dev->release_button(i); }}.detach();
+                    std::thread{[=]() { dev->releaseButton(i); }}.detach();
             }
             states = new_states;
             break;
@@ -312,7 +314,7 @@ void ButtonHandler::handleEvent (const HIDPP::Report &event)
             auto raw_xy = HIDPP20::IReprogControlsV4::divertedRawXYEvent(event);
 
             for(uint16_t i : states)
-                std::thread{[=]() { dev->move_diverted(i, raw_xy); }}.detach();
+                std::thread{[=]() { dev->moveDiverted(i, raw_xy); }}.detach();
             break;
         }
         default:
@@ -458,7 +460,7 @@ void Device::stop()
     listener->stop();
 }
 
-void Device::press_button(uint16_t cid)
+void Device::pressButton(uint16_t cid)
 {
     if(config->actions.find(cid) == config->actions.end())
     {
@@ -468,7 +470,7 @@ void Device::press_button(uint16_t cid)
     config->actions.find(cid)->second->press();
 }
 
-void Device::release_button(uint16_t cid)
+void Device::releaseButton(uint16_t cid)
 {
     if(config->actions.find(cid) == config->actions.end())
     {
@@ -478,7 +480,7 @@ void Device::release_button(uint16_t cid)
     config->actions.find(cid)->second->release();
 }
 
-void Device::move_diverted(uint16_t cid, HIDPP20::IReprogControlsV4::Move m)
+void Device::moveDiverted(uint16_t cid, HIDPP20::IReprogControlsV4::Move m)
 {
     auto action = config->actions.find(cid);
     if(action == config->actions.end())
@@ -493,7 +495,7 @@ void Device::move_diverted(uint16_t cid, HIDPP20::IReprogControlsV4::Move m)
     }
 }
 
-std::map<uint16_t, uint8_t> Device::get_features()
+std::map<uint16_t, uint8_t> Device::getFeatures()
 {
     std::map<uint16_t, uint8_t> _features;
     HIDPP20::IFeatureSet ifs (hidpp_dev);
