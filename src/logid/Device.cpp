@@ -162,6 +162,15 @@ void Device::divert_buttons()
     {
         log_printf(DEBUG, "%s does not support Reprog controls, not diverting!", name.c_str());
     }
+    catch(HIDPP20::Error &e)
+    {
+        if(e.errorCode() == HIDPP20::Error::InvalidFunctionID) {
+            // Not really an error, the device does not support diverting buttons
+        }
+        else {
+            log_printf(ERROR, "Could not divert buttons: HID++ 2.0 Error %s!", e.what());
+        }
+    }
     catch(HIDPP10::Error &e)
     {
         log_printf(DEBUG, "Could not divert buttons: HID++ 1.0 Error %s!", e.what());
