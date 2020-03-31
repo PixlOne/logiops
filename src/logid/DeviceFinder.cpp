@@ -156,7 +156,7 @@ void DeviceFinder::addDevice(const char *path)
                         {
                             if(remaining_tries == 1)
                             {
-                                log_printf(WARN, "While querying %s (possibly asleep), %s device: %s", string_path.c_str(), NON_WIRELESS_DEV(index), e.what());
+                                log_printf(DEBUG, "While querying %s (possibly asleep), %s device: %s", string_path.c_str(), NON_WIRELESS_DEV(index), e.what());
                                 remaining_tries += MAX_CONNECTION_TRIES;  // asleep devices may raise a resource error, so do not count this try
                             }
                         }
@@ -180,7 +180,7 @@ void DeviceFinder::addDevice(const char *path)
                     {
                         if(remaining_tries == 1)
                         {
-                            log_printf(ERROR, "Time out on %s device: %s (possibly asleep)", NON_WIRELESS_DEV(index), string_path.c_str());
+                            log_printf(DEBUG, "Time out on %s device: %s (possibly asleep)", NON_WIRELESS_DEV(index), string_path.c_str());
                             remaining_tries += MAX_CONNECTION_TRIES;  // asleep devices may raise a timeout error, so do not count this try
                         }
                     }
