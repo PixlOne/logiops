@@ -404,12 +404,18 @@ ButtonAction* logid::parse_action(Action type, const Setting* action_config, boo
                 try
                 {
                     int pp;
-                    gesture_config.lookupValue("pixels", pp);
+                    if(!gesture_config.lookupValue("pixels", pp))
+                        throw SettingTypeException(gesture_config["pixels"]);
                     gestures.insert({direction, new Gesture(ba, mode, pp)});
                 }
                 catch(SettingNotFoundException &e)
                 {
                     log_printf(WARN, "Line %d: OnFewPixels requires a 'pixels' field.", gesture_config.getSourceLine());
+                }
+                catch(SettingTypeException &e)
+                {
+                    log_printf(WARN, "Line %d: pixels must be an integer", gesture_config["pixels"].getSourceLine());
+                    continue;
                 }
             }
             else gestures.insert({direction, new Gesture(ba, mode)});
