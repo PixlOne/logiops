@@ -325,13 +325,13 @@ ButtonAction* logid::parse_action(Action type, const Setting* action_config, boo
 
             if(mode == GestureMode::Axis)
             {
-                uint axis;
+                Gesture::axis_info axis;
                 try
                 {
                     std::string axis_str;
                     if(!gesture_config.lookupValue("axis", axis_str))
                         throw SettingTypeException(gesture_config["axis"]);
-                    axis = libevdev_event_code_from_name(EV_REL, axis_str.c_str());
+                    axis.code = libevdev_event_code_from_name(EV_REL, axis_str.c_str());
                 }
                 catch(SettingNotFoundException &e)
                 {
@@ -346,15 +346,15 @@ ButtonAction* logid::parse_action(Action type, const Setting* action_config, boo
                     continue;
                 }
 
-                float multiplier = 1;
+                axis.multiplier = 1;
                 try
                 {
-                    if(!gesture_config.lookupValue("axis_multiplier", multiplier))
+                    if(!gesture_config.lookupValue("axis_multiplier", axis.multiplier))
                     {
                         int im = 1;
                         if(!gesture_config.lookupValue("axis_multiplier", im))
                             throw SettingTypeException(gesture_config["axis_multiplier"]);
-                        multiplier = im;
+                        axis.multiplier = (float)im;
                     }
                 }
                 catch(SettingNotFoundException &e) { }
@@ -364,7 +364,7 @@ ButtonAction* logid::parse_action(Action type, const Setting* action_config, boo
                     continue;
                 }
 
-                gestures.insert({direction, new Gesture(new NoAction(), GestureMode::Axis, 0, axis, multiplier)});
+                gestures.insert({direction, new Gesture(new NoAction(), GestureMode::Axis, &axis)});
                 continue;
             }
 
@@ -406,7 +406,7 @@ ButtonAction* logid::parse_action(Action type, const Setting* action_config, boo
                     int pp;
                     if(!gesture_config.lookupValue("pixels", pp))
                         throw SettingTypeException(gesture_config["pixels"]);
-                    gestures.insert({direction, new Gesture(ba, mode, pp)});
+                    gestures.insert({direction, new Gesture(ba, mode, &pp)});
                 }
                 catch(SettingNotFoundException &e)
                 {

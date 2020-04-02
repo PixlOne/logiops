@@ -72,12 +72,15 @@ namespace logid
     class Gesture
     {
     public:
-        Gesture(ButtonAction* ba, GestureMode m, int pp=0, uint a=0, float am=1)
-               : action (ba), mode (m), per_pixel (pp), axis (a), axis_multiplier (am)
-        {
-        }
+        struct axis_info {
+            uint code;
+            float multiplier;
+        };
+
+        Gesture(ButtonAction* ba, GestureMode m, void* aux=nullptr);
         Gesture(const Gesture &g, Device* dev)
-               : action (g.action->copy(dev)), mode (g.mode), per_pixel (g.per_pixel), axis (g.axis), axis_multiplier (g.axis_multiplier)
+                : action (g.action->copy(dev)), mode (g.mode), per_pixel (g.per_pixel),
+                  axis (g.axis)
         {
         }
 
@@ -85,8 +88,7 @@ namespace logid
         GestureMode mode;
         int per_pixel;
         int per_pixel_mod;
-        uint axis;
-        float axis_multiplier;
+        axis_info axis;
     };
 
     class GestureAction : public ButtonAction

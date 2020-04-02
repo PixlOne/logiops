@@ -13,6 +13,21 @@
 
 using namespace logid;
 
+Gesture::Gesture(ButtonAction* ba, GestureMode m, void* aux) : action (ba), mode (m)
+{
+    switch(m)
+    {
+        case GestureMode::OnFewPixels:
+            per_pixel = *(int*)aux;
+            break;
+        case GestureMode::Axis:
+            axis = *(axis_info*)aux;
+            break;
+        default:
+            break;
+    }
+}
+
 NoAction* NoAction::copy(Device *dev)
 {
     auto action = new NoAction();
@@ -74,6 +89,9 @@ void KeyAction::release()
 
 void GestureAction::press()
 {
+    for(auto g : gestures)
+        g.second->per_pixel_mod = 0;
+
     held = true;
     x = 0;
     y = 0;
@@ -89,7 +107,7 @@ void GestureAction::move(HIDPP20::IReprogControlsV4::Move m)
         if(g != gestures.end())
         {
             if (g->second->mode == GestureMode::Axis)
-                global_evdev->moveAxis(g->second->axis, abs(m.y) * g->second->axis_multiplier);
+                global_evdev->moveAxis(g->second->axis.code, abs(m.y) * g->second->axis.multiplier);
             if (g->second->mode == GestureMode::OnFewPixels)
             {
                 g->second->per_pixel_mod += abs(m.y);
@@ -108,7 +126,7 @@ void GestureAction::move(HIDPP20::IReprogControlsV4::Move m)
         if(g != gestures.end())
         {
             if (g->second->mode == GestureMode::Axis)
-                global_evdev->moveAxis(g->second->axis, abs(m.x) * g->second->axis_multiplier);
+                global_evdev->moveAxis(g->second->axis.code, abs(m.x) * g->second->axis.multiplier);
             if (g->second->mode == GestureMode::OnFewPixels)
             {
                 g->second->per_pixel_mod += abs(m.x);
