@@ -1,5 +1,7 @@
 # logiops
 
+#### This branch is experimental. If you are a normal user, please use the master branch
+
 This is an unofficial driver for Logitech mice and keyboard.
 
 This is currently only compatible with HID++ \>2.0 devices.
