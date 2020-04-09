@@ -1,0 +1,83 @@
+<!--
+LogiOps interface xml:
+
+The logid dbus server will implement:
+io.githyb.pixlone.LogiOps.Control
+io.github.pixlone.LogiOps.Socket
+io.github.pixlone.LogiOps.Config
+io.github.pixlone.LogiOps.Device
+io.github.pixlone.LogiOps.Receiver
+
+How two-way communication sockets are established:
+liblogiops_client sends Socket FD to io.githyb.pixlone.LogiOps.Socket.Establish
+Respond over DBus with File Descriptor if successful
+Further communication is done through the socket
+
+Sample device name string: /dev/hidraw0:1
+Sample receiver string: /dev/hidraw0
+
+-->
+
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<node>
+    <interface name='io.github.pixlone.LogiOps.Control'>
+        <property name='Version' type='s' access='read' />
+        <method name='Reload'>
+        </method>
+    </interface>
+
+    <interface name='io.github.pixlone.LogiOps.Socket'>
+        <method name='Establish'>
+            <arg name='fd' type='h'  direction='in' />
+            <arg name='ret' type='h' direction='out' />
+        </method>
+    </interface>
+
+    <interface name='io.github.pixlone.LogiOps.Config'>
+        <method name='Get'>
+            <arg name='device'    type='s' direction='in' />
+            <arg name='property'  type='s' direction='in' />
+            <arg name='value'     type='s' direction='out' />
+        </method>
+        <method name='GetAll'>
+            <arg name='device'     type='s'  direction='in'/>
+            <arg name='properties' type='as' direction='out'/>
+        </method>
+    </interface>
+
+    <interface name='io.github.pixlone.LogiOps.Device'>
+        <method name='List'>
+            <arg name='devices' type='as' direction='out' />
+        </method>
+        <method name='Get'>
+
+        </method>
+        <method name='Features'>
+            <arg name='device'   type='s'  direction='in'  />
+            <arg name='features' type='as' direction='out' />
+        </method>
+    </interface>
+
+    <interface name='io.github.pixlone.LogiOps.Receiver'>
+        <method name='List'>
+            <arg name='receivers' type='as' direction='out' />
+        </method>
+
+        <method name='ListDevices'>
+            <arg name='receiver' type='s'  direction='in'  />
+            <arg name='devices'  type='as' direction='out' />
+        </method>
+
+        <method name='Pair'>
+            <arg name='receiver'     type='s'     direction='in'  />
+            <arg name='status'       type='i'     direction='out'  />
+        </method>
+
+        <method name='Unpair'>
+            <arg name='receiver'     type='s'     direction='in'  />
+            <arg name='device_index' type='i'     direction='in'  />
+            <arg name='status'       type='s'     direction='out' />
+        </method>
+    </interface>
+</node>

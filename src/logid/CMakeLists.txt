@@ -21,7 +21,10 @@ add_executable(logid
         DeviceFinder.cpp
         DeviceFinder.h
         EvdevDevice.cpp
-        EvdevDevice.h)
+        EvdevDevice.h
+        DBusServer.cpp
+        DBusServer.h)
+
 set_target_properties(logid PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 pkg_check_modules(PC_EVDEV libevdev)
@@ -74,7 +77,16 @@ include_directories(${HIDPP_INCLUDE_DIR} ${EVDEV_INCLUDE_DIR})
 
 target_link_libraries(logid ${CMAKE_THREAD_LIBS_INIT} ${EVDEV_LIBRARY} config++ ${HIDPP_LIBRARY})
 
+set(LOGID_DBUS_XML_LOCATION "${CMAKE_INSTALL_PREFIX}/share/logid/dbus.xml")
+message("logid DBus XML location set to: ${LOGID_DBUS_XML_LOCATION}")
+add_definitions( -DLOGID_DBUS_XML_LOCATION="${LOGID_DBUS_XML_LOCATION}" )
+
+configure_file(${CMAKE_SOURCE_DIR}/dbus/logid.xml ${CMAKE_BINARY_DIR}/dbus/logid.xml)
+
 install(TARGETS logid DESTINATION bin)
+install(FILES ${CMAKE_BINARY_DIR}/dbus/logid.xml
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/share/logiops/dbus/logid.xml
+        COMPONENT cp)
 
 if (SYSTEMD_FOUND AND "${SYSTEMD_SERVICES_INSTALL_DIR}" STREQUAL "")
     execute_process(COMMAND ${PKG_CONFIG_EXECUTABLE}
