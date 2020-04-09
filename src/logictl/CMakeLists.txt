@@ -7,6 +7,8 @@ set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/../CMake")
 
 find_package(Threads REQUIRED)
 find_package(PkgConfig REQUIRED)
+pkg_search_module(GLIB REQUIRED glib-2.0)
+find_package(DBus1 REQUIRED)
 
 add_executable(logictl
         logictl.cpp)

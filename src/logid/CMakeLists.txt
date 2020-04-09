@@ -7,6 +7,8 @@ set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/../CMake")
 
 find_package(Threads REQUIRED)
 find_package(PkgConfig REQUIRED)
+pkg_search_module(GLIB REQUIRED glib-2.0)
+find_package(DBus1 REQUIRED)
 
 add_executable(logid
         logid.cpp
@@ -73,9 +75,10 @@ else()
     set(HIDPP_INCLUDE_DIR ${HIDPP_INCLUDE_DIR}/hidpp)
 endif()
 
-include_directories(${HIDPP_INCLUDE_DIR} ${EVDEV_INCLUDE_DIR})
+include_directories(${HIDPP_INCLUDE_DIR} ${EVDEV_INCLUDE_DIR} ${DBUS_INCLUDE_DIRS} ${GLIB_INCLUDE_DIRS})
 
-target_link_libraries(logid ${CMAKE_THREAD_LIBS_INIT} ${EVDEV_LIBRARY} config++ ${HIDPP_LIBRARY})
+target_link_libraries(logid ${CMAKE_THREAD_LIBS_INIT} ${EVDEV_LIBRARY} config++ ${HIDPP_LIBRARY}
+        ${DBUS_LIBRARIES} ${GLIB_LDFLAGS})
 
 set(LOGID_DBUS_XML_LOCATION "${CMAKE_INSTALL_PREFIX}/share/logid/dbus.xml")
 message("logid DBus XML location set to: ${LOGID_DBUS_XML_LOCATION}")
