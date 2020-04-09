@@ -59,7 +59,7 @@ if((NOT HIDPP_INCLUDE_DIR) OR (NOT EXISTS ${HIDPP_INCLUDE_DIR}) OR (NOT HIDPP_LI
 
     set(HID_BACKEND "${DEFAULT_HID_BACKEND}" CACHE STRING "Backend used for accessing HID devices")
     set_property(CACHE HID_BACKEND PROPERTY STRINGS linux windows)
-    
+
     if("${HID_BACKEND}" STREQUAL "linux")
 	    pkg_check_modules(LIBUDEV libudev REQUIRED)
     elseif("${HID_BACKEND}" STREQUAL "windows")
