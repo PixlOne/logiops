@@ -19,6 +19,8 @@ add_library(liblogiops SHARED ${LIBLOGIOPS_SOURCES})
 
 target_link_libraries(liblogiops ${DBUS_LIBRARIES} ${GLIB_LDFLAGS})
 
+set_target_properties(liblogiops PROPERTIES PREFIX "")
+
 install(DIRECTORY "./" DESTINATION "include/liblogiops"
         FILES_MATCHING PATTERN "*.h")
 install(TARGETS liblogiops
