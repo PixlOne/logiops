@@ -10,10 +10,10 @@
 #include <string>
 
 namespace logid {
-    class DBusServer
+    class IPCServer
     {
     public:
-        DBusServer();
+        IPCServer();
     private:
          std::string dbus_xml;
     };

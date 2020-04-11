@@ -1,11 +1,11 @@
 #include <stdexcept>
 
 #include "util.h"
-#include "DBusServer.h"
+#include "IPCServer.h"
 
 using namespace logid;
 
-DBusServer::DBusServer()
+IPCServer::IPCServer()
 {
     FILE* dbus_fp;
     dbus_fp = fopen(LOGID_LOCAL_DBUS_XML, "r");

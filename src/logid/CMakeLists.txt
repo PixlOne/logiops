@@ -24,8 +24,8 @@ add_executable(logid
         DeviceFinder.h
         EvdevDevice.cpp
         EvdevDevice.h
-        DBusServer.cpp
-        DBusServer.h)
+        IPCServer.cpp
+        IPCServer.h)
 
 set_target_properties(logid PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
