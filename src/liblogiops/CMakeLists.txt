@@ -3,14 +3,14 @@ project(liblogiops)
 
 set(CMAKE_CXX_STANDARD 14)
 
-set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/../CMake")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
 set(LIBLOGIOPS_SOURCES
         liblogiops_client/Socket.cpp)
 
 find_package(PkgConfig REQUIRED)
 pkg_search_module(GLIB REQUIRED glib-2.0)
-find_package(DBus1 REQUIRED)
+find_package(DBus REQUIRED)
 include_directories(${DBUS_INCLUDE_DIRS} ${GLIB_INCLUDE_DIRS})
 
 include_directories(.)

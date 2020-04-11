@@ -3,12 +3,12 @@ project(logictl)
 
 set(CMAKE_CXX_STANDARD 14)
 
-set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/../CMake")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
 find_package(Threads REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_search_module(GLIB REQUIRED glib-2.0)
-find_package(DBus1 REQUIRED)
+find_package(DBus REQUIRED)
 
 add_executable(logictl
         logictl.cpp)
