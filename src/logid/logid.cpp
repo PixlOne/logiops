@@ -19,6 +19,11 @@
 #define evdev_name "logid"
 #define DEFAULT_CONFIG_FILE "/etc/logid.cfg"
 
+#ifndef LOGIOPS_VERSION
+#define LOGIOPS_VERSION "null"
+#warning Version is undefined!
+#endif
+
 using namespace logid;
 
 LogLevel logid::global_verbosity = INFO;
@@ -31,7 +36,8 @@ enum class Option
     None,
     Verbose,
     Config,
-    Help
+    Help,
+    Version
 };
 
 int main(int argc, char** argv)
@@ -51,10 +57,14 @@ int main(int argc, char** argv)
                     if (op_str == "--verbose") option = Option::Verbose;
                     if (op_str == "--config") option = Option::Config;
                     if (op_str == "--help") option = Option::Help;
+                    if (op_str == "--version") option = Option::Version;
                     break;
                 }
                 case 'v': // Verbosity
                     option = Option::Verbose;
+                    break;
+                case 'V': //Version
+                    option = Option::Version;
                     break;
                 case 'c': // Config file path
                     option = Option::Config;
@@ -103,14 +113,23 @@ int main(int argc, char** argv)
                     break;
                 }
                 case Option::Help:
-                    printf(R"(Usage: %s [options]
+                {
+                    printf(R"(logid version %s
+Usage: %s [options]
 Possible options are:
     -v,--verbose [level]       Set log level to debug/info/warn/error (leave blank for debug)
+    -V,--version               Print version number
     -c,--config [file path]    Change config file from default at %s
     -h,--help                  Print this message.
-)", argv[0], DEFAULT_CONFIG_FILE);
+)", LOGIOPS_VERSION, argv[0], DEFAULT_CONFIG_FILE);
 
                     return EXIT_SUCCESS;
+                }
+                case Option::Version:
+                {
+                    printf("%s\n", LOGIOPS_VERSION);
+                    return EXIT_SUCCESS;
+                }
                 case Option::None:
                     break;
             }
