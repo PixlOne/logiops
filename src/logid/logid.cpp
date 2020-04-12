@@ -15,6 +15,7 @@
 #include "Configuration.h"
 #include "EvdevDevice.h"
 #include "DeviceFinder.h"
+#include "IPCServer.h"
 
 #define evdev_name "logid"
 #define DEFAULT_CONFIG_FILE "/etc/logid.cfg"
@@ -30,6 +31,7 @@ LogLevel logid::global_verbosity = INFO;
 Configuration* logid::global_config;
 EvdevDevice* logid::global_evdev;
 DeviceFinder* logid::finder;
+IPCServer* logid::ipc_server;
 
 enum class Option
 {
@@ -147,6 +149,10 @@ Possible options are:
         log_printf(ERROR, "Could not create evdev device: %s", e.what());
         return EXIT_FAILURE;
     }
+
+    // Start IPC Server
+    ipc_server = new IPCServer();
+    ipc_server->start();
 
     // Scan devices, create listeners, handlers, etc.
     finder = new DeviceFinder();
