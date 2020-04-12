@@ -16,8 +16,8 @@ add_executable(logictl
 
 set_target_properties(logictl PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
-include_directories(${DBUSCXX_INCLUDE_DIR})
+include_directories(${DBUSCXX_INCLUDE_DIR} ../liblogiops)
 
-target_link_libraries(logictl ${CMAKE_THREAD_LIBS_INIT} ${DBUSCXX_LIBRARIES})
+target_link_libraries(logictl liblogiops ${CMAKE_THREAD_LIBS_INIT} ${DBUSCXX_LIBRARIES})
 
 install(TARGETS logictl DESTINATION bin)
