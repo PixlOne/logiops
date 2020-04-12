@@ -22,10 +22,14 @@ This project requires a C++14 compiler, cmake, libevdev, libudev, and libconfig.
 **Arch Linux:** `sudo pacman -S cmake libevdev libconfig libudev`
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 ## Building
 =======
 This project requires a C++14 compiler, cmake, libevdev, libudev, DBus 1.0, GLib 2.0, and libconfig
 >>>>>>> 7305c4f... Require DBus 1.0 and GLib 2.0
+=======
+This project requires a C++14 compiler, cmake, libevdev, libudev, libdbus-c++, and libconfig
+>>>>>>> 8170c18... Use dbus-c++ instead of dbus
 
 To build this project, run:
 

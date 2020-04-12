@@ -9,15 +9,14 @@ set(LIBLOGIOPS_SOURCES
         liblogiops_client/Socket.cpp)
 
 find_package(PkgConfig REQUIRED)
-pkg_search_module(GLIB REQUIRED glib-2.0)
-find_package(DBus REQUIRED)
-include_directories(${DBUS_INCLUDE_DIRS} ${GLIB_INCLUDE_DIRS})
+find_package(DBusCXX REQUIRED)
+include_directories(${DBUSCXX_INCLUDE_DIR})
 
 include_directories(.)
 
 add_library(liblogiops SHARED ${LIBLOGIOPS_SOURCES})
 
-target_link_libraries(liblogiops ${DBUS_LIBRARIES} ${GLIB_LDFLAGS})
+target_link_libraries(liblogiops ${DBUSCXX_LIBRARIES})
 
 set_target_properties(liblogiops PROPERTIES PREFIX "")
 
