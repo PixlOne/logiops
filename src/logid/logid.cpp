@@ -27,6 +27,8 @@
 
 using namespace logid;
 
+std::string config_file = DEFAULT_CONFIG_FILE;
+
 LogLevel logid::global_verbosity = INFO;
 Configuration* logid::global_config;
 EvdevDevice* logid::global_evdev;
@@ -42,10 +44,8 @@ enum class Option
     Version
 };
 
-int main(int argc, char** argv)
+void read_cli_options(int argc, char** argv)
 {
-    std::string config_file = DEFAULT_CONFIG_FILE;
-    // Read command line options
     for(int i = 1; i < argc; i++)
     {
         Option option = Option::None;
@@ -99,7 +99,7 @@ int main(int argc, char** argv)
                         {
                             log_printf(WARN, e.what());
                             printf("Valid verbosity levels are: Debug, Info, Warn/Warning, or Error.\n");
-                            return EXIT_FAILURE;
+                            exit(EXIT_FAILURE);
                         }
                     }
                     break;
@@ -109,7 +109,7 @@ int main(int argc, char** argv)
                     if (++i >= argc)
                     {
                         log_printf(ERROR, "Config file is not specified.");
-                        return EXIT_FAILURE;
+                        exit(EXIT_FAILURE);
                     }
                     config_file = argv[i];
                     break;
@@ -125,18 +125,23 @@ Possible options are:
     -h,--help                  Print this message.
 )", LOGIOPS_VERSION, argv[0], DEFAULT_CONFIG_FILE);
 
-                    return EXIT_SUCCESS;
+                    exit(EXIT_SUCCESS);
                 }
                 case Option::Version:
                 {
                     printf("%s\n", LOGIOPS_VERSION);
-                    return EXIT_SUCCESS;
+                    exit(EXIT_SUCCESS);
                 }
                 case Option::None:
                     break;
             }
         }
     }
+}
+
+int main(int argc, char** argv)
+{
+    read_cli_options(argc, argv);
 
     // Read config
     try { global_config = new Configuration(config_file.c_str()); }
