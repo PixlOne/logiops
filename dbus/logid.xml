@@ -29,8 +29,8 @@ Sample receiver string: /dev/hidraw0
 
     <interface name='io.github.pixlone.LogiOps.Socket'>
         <method name='Establish'>
-            <arg name='fd' type='h'  direction='in' />
-            <arg name='ret' type='h' direction='out' />
+            <arg name='fd' type='x'  direction='in' />
+            <arg name='ret' type='x' direction='out' />
         </method>
     </interface>
 
