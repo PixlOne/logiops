@@ -10,12 +10,14 @@ find_package(PkgConfig REQUIRED)
 find_package(DBusCXX REQUIRED)
 
 add_executable(logictl
-        logictl.cpp)
+        logictl.cpp
+        client/Control.cpp
+        client/Socket.cpp)
 
 set_target_properties(logictl PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
-include_directories(${DBUSCXX_INCLUDE_DIR} ../liblogiops)
+include_directories(${DBUSCXX_INCLUDE_DIR})
 
-target_link_libraries(logictl liblogiops ${CMAKE_THREAD_LIBS_INIT} ${DBUSCXX_LIBRARIES})
+target_link_libraries(logictl ${CMAKE_THREAD_LIBS_INIT} ${DBUSCXX_LIBRARIES})
 
 install(TARGETS logictl DESTINATION bin)

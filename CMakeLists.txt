@@ -49,5 +49,4 @@ endif()
 add_definitions( -DLOGIOPS_VERSION="${LOGIOPS_VERSION}")
 
 add_subdirectory(src/logid)
-add_subdirectory(src/liblogiops)
 add_subdirectory(src/logictl)
