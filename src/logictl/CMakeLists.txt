@@ -11,8 +11,8 @@ find_package(DBusCXX REQUIRED)
 
 add_executable(logictl
         logictl.cpp
-        client/Control.cpp
-        client/Socket.cpp)
+        function_map.cpp
+        Control.cpp)
 
 set_target_properties(logictl PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 

@@ -1,27 +1,29 @@
-#include "client/Control.h"
-#include <stdio.h>
+#include <cstdio>
 #include <cstring>
 
-using namespace LogiOpsClient;
+#include "logictl.h"
+
+using namespace logictl;
+
+DBus::BusDispatcher* logictl::dispatcher;
+DBus::Connection* logictl::bus;
+std::vector<std::string> logictl::args;
 
 int main(int argc, char** argv)
 {
-    DBus::BusDispatcher dispatcher;
+    dispatcher = new DBus::BusDispatcher();
+    DBus::default_dispatcher = dispatcher;
+    auto _bus = DBus::Connection::SessionBus();
+    bus = &_bus;
 
-    DBus::default_dispatcher = &dispatcher;
-    auto bus = DBus::Connection::SessionBus();
-    bus.request_name("io.github.pixlone.LogiOps.Control");
+    for(int i = 1; i < argc; i++)
+        logictl::args.emplace_back(argv[i]);
 
-    if(argc >= 1)
+    if(!args.empty())
     {
-        if(!strcmp(argv[1], "reload"))
-        {
-            Control control(bus);
-            control.Reload();
-            return 0;
-        }
-        else
-            printf("Unknown command: %s", argv[1]);
+        auto function = functions.find(args[0]);
+        if(function != functions.end())
+            function->second();
     }
 
     return 0;
