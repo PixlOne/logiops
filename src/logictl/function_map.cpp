@@ -2,5 +2,6 @@
 
 std::map<std::string, void(*)()> logictl::functions =
         {
-                {"reload", &(logictl::reload)}
+                {"help", logictl::help},
+                {"reload", logictl::reload}
         };
