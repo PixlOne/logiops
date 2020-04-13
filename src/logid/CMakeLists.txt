@@ -79,10 +79,6 @@ include_directories(${HIDPP_INCLUDE_DIR} ${EVDEV_INCLUDE_DIR} ${DBUSCXX_INCLUDE_
 target_link_libraries(logid ${CMAKE_THREAD_LIBS_INIT} ${EVDEV_LIBRARY} config++ ${HIDPP_LIBRARY}
         ${DBUSCXX_LIBRARIES})
 
-set(LOGID_DBUS_XML_LOCATION "${CMAKE_INSTALL_PREFIX}/share/logid/dbus.xml")
-message("logid DBus XML location set to: ${LOGID_DBUS_XML_LOCATION}")
-add_definitions( -DLOGID_DBUS_XML_LOCATION="${LOGID_DBUS_XML_LOCATION}" )
-
 configure_file(${CMAKE_SOURCE_DIR}/dbus/logid.xml ${CMAKE_BINARY_DIR}/dbus/logid.xml)
 
 install(TARGETS logid DESTINATION bin)

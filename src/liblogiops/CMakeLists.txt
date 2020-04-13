@@ -6,7 +6,8 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
 set(LIBLOGIOPS_SOURCES
-        liblogiops_client/Socket.cpp)
+        liblogiops_client/Socket.cpp
+        liblogiops_client/Control.cpp)
 
 find_package(PkgConfig REQUIRED)
 find_package(DBusCXX REQUIRED)

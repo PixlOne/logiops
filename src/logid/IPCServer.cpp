@@ -25,6 +25,8 @@ IPCServer::IPCServer()
 
     bus->request_name("io.github.pixlone.LogiOps.Control");
     _control = new IPC::Control(*bus);
+
+    ipc_thread = nullptr;
 }
 
 void IPCServer::start()
@@ -34,6 +36,9 @@ void IPCServer::start()
 
 void IPCServer::stop()
 {
-    dispatcher->leave();
-    ipc_thread->join();
+    if(ipc_thread != nullptr)
+    {
+        dispatcher->leave();
+        ipc_thread->join();
+    }
 }
