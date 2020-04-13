@@ -1,13 +1,7 @@
-#include <hidpp/SimpleDispatcher.h>
-#include <hidpp/DispatcherThread.h>
-#include <hidpp20/Device.h>
-#include <hidpp20/Error.h>
-#include <hidpp20/IReprogControls.h>
-#include <hidpp20/UnsupportedFeature.h>
-#include <hid/DeviceMonitor.h>
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
+#include <mutex>
 
 #include "util.h"
 #include "Device.h"
@@ -15,6 +9,8 @@
 #include "Configuration.h"
 #include "EvdevDevice.h"
 #include "DeviceFinder.h"
+#include "IPCServer.h"
+#include "logid.h"
 
 #define evdev_name "logid"
 #define DEFAULT_CONFIG_FILE "/etc/logid.cfg"
@@ -33,6 +29,9 @@ Configuration* logid::global_config;
 EvdevDevice* logid::global_evdev;
 DeviceFinder* logid::finder;
 
+bool logid::kill_logid = false;
+std::mutex logid::finder_reloading;
+
 enum class Option
 {
     None,
@@ -41,6 +40,19 @@ enum class Option
     Help,
     Version
 };
+
+void logid::reload()
+{
+    log_printf(INFO, "Reloading logid...");
+    finder_reloading.lock();
+    finder->stop();
+    Configuration* old_config = global_config;
+    global_config = new Configuration(config_file.c_str());
+    delete(old_config);
+    delete(finder);
+    finder = new DeviceFinder();
+    finder_reloading.unlock();
+}
 
 void read_cli_options(int argc, char** argv)
 {
@@ -155,7 +167,13 @@ int main(int argc, char** argv)
 
     // Scan devices, create listeners, handlers, etc.
     finder = new DeviceFinder();
-    finder->run();
+
+    while(!kill_logid)
+    {
+        finder_reloading.lock();
+        finder_reloading.unlock();
+        finder->run();
+    }
 
     return EXIT_SUCCESS;
 }
