@@ -1,4 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
+
+set(CMAKE_INSTALL_PREFIX /usr)
+
 project(logiops)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
