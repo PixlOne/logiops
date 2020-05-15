@@ -20,7 +20,7 @@ namespace logid
         DeviceConfig(DeviceConfig* dc, Device* dev);
         DeviceConfig(const libconfig::Setting& root);
         const int* dpi = nullptr;
-        HIDPP20::ISmartShift::SmartshiftStatus* smartshift;
+        HIDPP20::ISmartShift::SmartshiftStatus* smartshift = nullptr;
         const uint8_t* hiresscroll = nullptr;
         std::map<uint16_t, ButtonAction*> actions;
         const bool baseConfig = true;

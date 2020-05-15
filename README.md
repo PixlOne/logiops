@@ -29,6 +29,7 @@ To install, run `sudo make install` after building. You can set the daemon to st
 |  Device   | Compatible? |
 |:---------:|:-----------:|
 | MX Master |     Yes     |
+|MX Vertical|     Yes     |
 |   T400    |     Yes     |
 |   K400r   |  Untested   |
 |   K350    |  Untested   |
