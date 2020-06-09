@@ -103,7 +103,7 @@ Sample receiver string: /dev/hidraw0
     -->
     <interface name="pizza.pixl.logiops.Device.Button">
         <property name="Diverted" type="b" access="readwrite" />
-        <property name="ActionType" type="a" access="readwrite" />
+        <property name="ActionType" type="s" access="readwrite" />
         <property name="Action" type="a{sv}" access="readwrite" />
     </interface>
 </node>
