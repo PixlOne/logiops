@@ -1,4 +1,5 @@
 #include <stdexcept>
+#include <thread>
 
 #include "logid.h"
 #include "util.h"
@@ -6,9 +7,10 @@
 #include "IPCServer.h"
 
 using namespace logid;
-using namespace io::github::pixlone::LogiOps;
+using namespace pizza::pixl;
+using namespace pizza::pixl::logiops;
 
-void IPC::Control::Reload()
+void IPC::Root::Reload()
 {
     std::thread {[=]() {
         reload();
@@ -23,8 +25,8 @@ IPCServer::IPCServer()
     auto _bus = DBus::Connection::SessionBus();
     bus = &_bus;
 
-    bus->request_name("io.github.pixlone.LogiOps.Control");
-    _control = new IPC::Control(*bus);
+    bus->request_name("pizza.pixl.logiops");
+    _root = new IPC::Root(*bus);
 
     ipc_thread = nullptr;
 }

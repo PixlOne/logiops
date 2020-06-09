@@ -8,15 +8,15 @@
 namespace logid {
     namespace IPC
     {
-        using namespace io::github::pixlone::LogiOps;
+        using namespace pizza::pixl;
 
-        class Control : public Control_adaptor,
+        class Root : public logiops_adaptor,
                         public DBus::IntrospectableAdaptor,
                         public DBus::ObjectAdaptor
         {
         public:
-            Control(DBus::Connection &connection): DBus::ObjectAdaptor(
-                    connection, "io.github.pixlone.LogiOps.Control") {}
+            Root(DBus::Connection &connection): DBus::ObjectAdaptor(
+                    connection, "pizza.pixl.logiops") {}
 
             virtual void Reload();
         };
@@ -31,7 +31,7 @@ namespace logid {
     private:
         std::thread* ipc_thread;
         std::string dbus_xml;
-        IPC::Control* _control;
+        IPC::Root* _root;
         DBus::BusDispatcher* dispatcher;
         DBus::Connection* bus;
     };
