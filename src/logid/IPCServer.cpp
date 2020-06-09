@@ -10,13 +10,6 @@ using namespace logid;
 using namespace pizza::pixl;
 using namespace pizza::pixl::logiops;
 
-void IPC::Root::Reload()
-{
-    std::thread {[=]() {
-        reload();
-    } }.detach();
-}
-
 IPCServer::IPCServer()
 {
     dispatcher = new DBus::BusDispatcher;
