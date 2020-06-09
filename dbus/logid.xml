@@ -2,16 +2,12 @@
 LogiOps interface xml:
 
 The logid dbus server will implement:
-io.githyb.pixlone.LogiOps.Control
-io.github.pixlone.LogiOps.Socket
-io.github.pixlone.LogiOps.Config
-io.github.pixlone.LogiOps.Device
-io.github.pixlone.LogiOps.Receiver
-
-How two-way communication sockets are established:
-liblogiops_client sends Socket FD to io.githyb.pixlone.LogiOps.Socket.Establish
-Respond over DBus with File Descriptor if successful
-Further communication is done through the socket
+pizza.pixl.logiops
+pizza.pixl.logiops.DeviceManager
+pizza.pixl.logiops.Config
+pizza.pixl.logiops.Device
+pizza.pixl.logiops.Device.Button
+pizza.pixl.logiops.Receiver
 
 Sample device name string: /dev/hidraw0:1
 Sample receiver string: /dev/hidraw0
@@ -19,65 +15,95 @@ Sample receiver string: /dev/hidraw0
 -->
 
 <!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
-"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
-<node>
-    <interface name='io.github.pixlone.LogiOps.Control'>
-        <property name='Version' type='s' access='read' />
-        <method name='Reload'>
+"https://specifications.freedesktop.org/dbus/introspect-latest.dtd">
+<node name="/pizza/pixl/logiops">
+    <interface name="pizza.pixl.logiops">
+        <property name="Version" type="s" access="read" />
+        <property name="Receivers" type="as" access="read" />
+        <property name="Devices" type="as" access="read" />
+        <method name="Reload" />
+    </interface>
+
+    <interface name="pizza.pixl.logiops.DeviceManager">
+        <signal name="DeviceConnected">
+            <arg name="device" type="s" />
+        </signal>
+        <signal name="DeviceDisconnected">
+            <arg name="device" type="s" />
+        </signal>
+        <signal name="ReceiverConnected">
+            <arg name="receiver" type="s" />
+        </signal>
+        <signal name="ReceiverDisconnected">
+            <arg name="receiver" type="s" />
+        </signal>
+        <method name="ReloadDevice">
+            <arg name="device" type="s" />
         </method>
     </interface>
 
-    <interface name='io.github.pixlone.LogiOps.Socket'>
-        <method name='Establish'>
-            <arg name='fd' type='x'  direction='in' />
-            <arg name='ret' type='x' direction='out' />
+    <interface name="pizza.pixl.logiops.Config">
+        <property name="Devices" type="as" access="read" />
+        <method name="Get">
+            <arg name="device"   type="s" />
+            <arg name="property" type="s" />
+            <arg name="value"    type="v" direction="out" />
+        </method>
+        <method name="GetAll">
+            <arg name="device"     type="s" />
+            <arg name="properties" type="a{sv}" direction="out"/>
+        </method>
+        <method name="ReloadAll" />
+        <method name="ReloadDevice">
+            <arg name="device" type="s" />
+        </method>
+        <method name="SaveAll" />
+        <method name="SaveDevice">
+            <arg name="device" type="s" />
+        </method>
+        <method name="ClearAll">
+            <arg name="device" type="s" />
+        </method>
+        <method name="Clear">
+            <arg name="device"   type="s" />
+            <arg name="property" type="s" />
         </method>
     </interface>
 
-    <interface name='io.github.pixlone.LogiOps.Config'>
-        <method name='Get'>
-            <arg name='device'    type='s' direction='in' />
-            <arg name='property'  type='s' direction='in' />
-            <arg name='value'     type='s' direction='out' />
+    <!-- General interface for devices
+        Certain properties will be added as necessary (e.g. if a device
+        supports changing the DPI, a read/write property called DPI will be
+        added).
+        Example of node name: /pizza/pixl/logiops/device/hidraw0/1
+    -->
+    <interface name="pizza.pixl.logiops.Device">
+        <property name="Name" type="s" access="read" />
+        <property name="DeviceID" type="q" access="read" />
+        <method name="GetInfo">
+            <arg name="device" type="s" />
         </method>
-        <method name='GetAll'>
-            <arg name='device'     type='s'  direction='in'/>
-            <arg name='properties' type='as' direction='out'/>
+        <property name="Features" type="as" access="read" />
+    </interface>
+
+    <!-- General interface for receivers
+        Example of node name: /pizza/pixl/logiops/receiver/hidraw0
+    -->
+    <interface name="pizza.pixl.logiops.Receiver">
+        <property name="Devices" type="as" access="read" />
+        <method name="Pair">
+            <arg name="device" type="s" direction="out" />
+        </method>
+        <method name="Unpair">
+            <arg name="device" type="s" />
         </method>
     </interface>
 
-    <interface name='io.github.pixlone.LogiOps.Device'>
-        <method name='List'>
-            <arg name='devices' type='as' direction='out' />
-        </method>
-        <method name='Get'>
-
-        </method>
-        <method name='Features'>
-            <arg name='device'   type='s'  direction='in'  />
-            <arg name='features' type='as' direction='out' />
-        </method>
-    </interface>
-
-    <interface name='io.github.pixlone.LogiOps.Receiver'>
-        <method name='List'>
-            <arg name='receivers' type='as' direction='out' />
-        </method>
-
-        <method name='ListDevices'>
-            <arg name='receiver' type='s'  direction='in'  />
-            <arg name='devices'  type='as' direction='out' />
-        </method>
-
-        <method name='Pair'>
-            <arg name='receiver'     type='s'     direction='in'  />
-            <arg name='status'       type='i'     direction='out'  />
-        </method>
-
-        <method name='Unpair'>
-            <arg name='receiver'     type='s'     direction='in'  />
-            <arg name='device_index' type='i'     direction='in'  />
-            <arg name='status'       type='s'     direction='out' />
-        </method>
+    <!-- General interface for device buttons (only divertable buttons appear)
+        Example of node name: /pizza/pixl/logiops/device/hidraw0/1/buttons/c4
+    -->
+    <interface name="pizza.pixl.logiops.Device.Button">
+        <property name="Diverted" type="b" access="readwrite" />
+        <property name="ActionType" type="a" access="readwrite" />
+        <property name="Action" type="a{sv}" access="readwrite" />
     </interface>
 </node>
