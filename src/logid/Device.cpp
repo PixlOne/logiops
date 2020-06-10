@@ -141,6 +141,7 @@ void Device::divert_buttons()
             if(disconnected)
                 return;
             uint16_t cid = irc.getControlInfo(i).control_id;
+            log_printf(DEBUG, "Available CID: 0x%x!", cid);
             uint8_t flags = 0;
             flags |= HIDPP20::IReprogControls::ChangeTemporaryDivert;
             flags |= HIDPP20::IReprogControls::ChangeRawXYDivert;
