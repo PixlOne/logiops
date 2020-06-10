@@ -12,7 +12,7 @@ find_package(DBusCXX REQUIRED)
 add_executable(logictl
         logictl.cpp
         function_map.cpp
-        Control.cpp)
+        Root.cpp)
 
 set_target_properties(logictl PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
