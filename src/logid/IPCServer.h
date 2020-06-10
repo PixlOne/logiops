@@ -13,6 +13,10 @@ namespace logid {
         IPCServer();
         void start();
         void stop();
+        void addDevice(Device* device);
+        void removeDevice(std::string path, HIDPP::DeviceIndex index);
+        void addReceiver(std::string path);
+        void removeReceiver(std::string path);
     private:
         std::thread* ipc_thread;
         std::string dbus_xml;

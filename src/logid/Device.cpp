@@ -20,6 +20,7 @@
 #include "Device.h"
 #include "util.h"
 #include "EvdevDevice.h"
+#include "IPCServer.h"
 
 using namespace logid;
 
@@ -292,6 +293,7 @@ void Device::start()
         try { listener->addEventHandler( std::make_unique<WirelessStatusHandler>(this) ); }
         catch(HIDPP20::UnsupportedFeature &e) { }
     }
+    logid::ipc_server->addDevice(this);
     listener->start();
 }
 
@@ -501,6 +503,7 @@ void Device::stop()
 {
     disconnected = true;
     listener->stop();
+    ipc_server->removeDevice(path, index);
 }
 
 void Device::pressButton(uint16_t cid)

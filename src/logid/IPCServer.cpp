@@ -37,3 +37,23 @@ void IPCServer::stop()
         ipc_thread->join();
     }
 }
+
+void IPCServer::addDevice(Device* device)
+{
+    std::vector<std::string> devices = _root->Devices();
+    std::string device_path = device->path + ":" + std::to_string(device->index);
+    devices.push_back(device_path);
+    _root->Devices = devices;
+}
+
+void IPCServer::removeDevice(std::string path, HIDPP::DeviceIndex index) {
+    std::vector<std::string> devices = _root->Devices();
+    std::string device_path = path + ":" + std::to_string(index);
+    for(auto it = devices.begin(); it != devices.end(); it++) {
+        if(*it == device_path) {
+            devices.erase(it);
+            break;
+        }
+    }
+    _root->Devices = devices;
+}
