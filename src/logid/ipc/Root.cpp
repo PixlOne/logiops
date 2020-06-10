@@ -7,7 +7,7 @@ using namespace logid;
 using namespace pizza::pixl;
 
 Root::Root(DBus::Connection &connection): DBus::ObjectAdaptor(
-        connection, "pizza.pixl.logiops")
+        connection, "/pizza/pixl/logiops")
 {
 }
 
