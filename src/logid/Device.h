@@ -1,3 +1,4 @@
+
 #ifndef LOGID_DEVICE_H
 #define LOGID_DEVICE_H
 

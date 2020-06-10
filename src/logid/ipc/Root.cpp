@@ -10,9 +10,10 @@ Root::Root(DBus::Connection &connection): DBus::ObjectAdaptor(
         connection, "/pizza/pixl/logiops")
 {
     Version = LOGIOPS_VERSION;
-    std::vector<std::string> _empty;
-    Devices = _empty;
-    Receivers = _empty;
+    std::vector<std::string> _dev;
+    std::vector<std::string> _recv;
+    Devices = _dev;
+    Receivers = _recv;
 }
 
 void Root::Reload()
