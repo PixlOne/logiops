@@ -9,6 +9,7 @@ namespace IPC
 
     class Root : public logiops_adaptor,
                  public DBus::IntrospectableAdaptor,
+                 public DBus::PropertiesAdaptor,
                  public DBus::ObjectAdaptor
     {
     public:

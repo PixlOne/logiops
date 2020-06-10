@@ -9,6 +9,7 @@ using namespace pizza::pixl;
 Root::Root(DBus::Connection &connection): DBus::ObjectAdaptor(
         connection, "/pizza/pixl/logiops")
 {
+    Version = LOGIOPS_VERSION;
 }
 
 void Root::Reload()
