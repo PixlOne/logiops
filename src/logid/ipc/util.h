@@ -1,5 +1,5 @@
-#ifndef LOGID_IPC_DEVICEMANAGER_H
-#define LOGID_IPC_DEVICEMANAGER_H
+#ifndef LOGID_IPC_UTIL_H
+#define LOGID_IPC_UTIL_H
 
 #include <hidpp/defs.h>
 #include <string>
@@ -15,4 +15,4 @@ namespace logid::IPC
     std::string toDevName(std::string path, HIDPP::DeviceIndex index);
 }
 
-#endif //LOGID_IPC_DEVICEMANAGER_H
+#endif //LOGID_IPC_UTIL_H

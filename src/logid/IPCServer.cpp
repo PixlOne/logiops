@@ -42,22 +42,24 @@ void IPCServer::stop()
 void IPCServer::addDevice(Device* device)
 {
     std::vector<std::string> devices = _root->Devices();
-    std::string device_path = IPC::toDevName(device->path, device->index);
-    devices.push_back(device_path);
+    std::string device_name = IPC::toDevName(device->path, device->index);
+    devices.push_back(device_name);
     _root->Devices = devices;
+    _root->DeviceConnected(device_name);
 }
 
 void IPCServer::removeDevice(std::string path, HIDPP::DeviceIndex index)
 {
     std::vector<std::string> devices = _root->Devices();
-    std::string device_path = IPC::toDevName(path, index);
+    std::string device_name = IPC::toDevName(path, index);
     for(auto it = devices.begin(); it != devices.end(); it++) {
-        if(*it == device_path) {
+        if(*it == device_name) {
             devices.erase(it);
             break;
         }
     }
     _root->Devices = devices;
+    _root->DeviceDisconnected(device_name);
 }
 
 void IPCServer::addReceiver(std::string path)
@@ -65,6 +67,7 @@ void IPCServer::addReceiver(std::string path)
     std::vector<std::string> receivers = _root->Receivers();
     receivers.push_back(path);
     _root->Receivers = receivers;
+    _root->ReceiverConnected(path);
 }
 
 void IPCServer::removeReceiver(std::string path)
@@ -77,4 +80,5 @@ void IPCServer::removeReceiver(std::string path)
         }
     }
     _root->Receivers = receivers;
+    _root->ReceiverDisconnected(path);
 }
