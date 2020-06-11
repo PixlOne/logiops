@@ -45,28 +45,28 @@ Sample receiver string: /dev/hidraw0
     <interface name="pizza.pixl.logiops.Config">
         <property name="Devices" type="as" access="read" />
         <method name="Get">
-            <arg name="device"   type="s" />
-            <arg name="property" type="s" />
+            <arg name="device"   type="s" direction="in" />
+            <arg name="property" type="s" direction="in" />
             <arg name="value"    type="v" direction="out" />
         </method>
         <method name="GetAll">
-            <arg name="device"     type="s" />
+            <arg name="device"     type="s" direction="in" />
             <arg name="properties" type="a{sv}" direction="out"/>
         </method>
         <method name="ReloadAll" />
         <method name="ReloadDevice">
-            <arg name="device" type="s" />
+            <arg name="device" type="s" direction="in" />
         </method>
         <method name="SaveAll" />
         <method name="SaveDevice">
-            <arg name="device" type="s" />
+            <arg name="device" type="s" direction="in" />
         </method>
         <method name="ClearAll">
-            <arg name="device" type="s" />
+            <arg name="device" type="s" direction="in" />
         </method>
         <method name="Clear">
-            <arg name="device"   type="s" />
-            <arg name="property" type="s" />
+            <arg name="device"   type="s" direction="in" />
+            <arg name="property" type="s" direction="in" />
         </method>
     </interface>
 
@@ -80,7 +80,7 @@ Sample receiver string: /dev/hidraw0
         <property name="Name" type="s" access="read" />
         <property name="DeviceID" type="q" access="read" />
         <method name="GetInfo">
-            <arg name="device" type="s" />
+            <arg name="device" type="s" direction="in" />
         </method>
         <property name="Features" type="as" access="read" />
     </interface>
@@ -94,7 +94,7 @@ Sample receiver string: /dev/hidraw0
             <arg name="device" type="s" direction="out" />
         </method>
         <method name="Unpair">
-            <arg name="device" type="s" />
+            <arg name="device" type="s" direction="in" />
         </method>
     </interface>
 

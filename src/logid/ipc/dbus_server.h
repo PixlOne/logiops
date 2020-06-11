@@ -92,6 +92,7 @@ private:
         return reply;
     }
 };
+
 namespace logiops {
 
 class DeviceManager_adaptor
@@ -242,14 +243,14 @@ public:
     {
         static ::DBus::IntrospectedArgument Get_args[] = 
         {
-            { "device", "s", false },
-            { "property", "s", false },
+            { "device", "s", true },
+            { "property", "s", true },
             { "value", "v", false },
             { 0, 0, 0 }
         };
         static ::DBus::IntrospectedArgument GetAll_args[] = 
         {
-            { "device", "s", false },
+            { "device", "s", true },
             { "properties", "a{sv}", false },
             { 0, 0, 0 }
         };
@@ -259,7 +260,7 @@ public:
         };
         static ::DBus::IntrospectedArgument ReloadDevice_args[] = 
         {
-            { "device", "s", false },
+            { "device", "s", true },
             { 0, 0, 0 }
         };
         static ::DBus::IntrospectedArgument SaveAll_args[] = 
@@ -268,18 +269,18 @@ public:
         };
         static ::DBus::IntrospectedArgument SaveDevice_args[] = 
         {
-            { "device", "s", false },
+            { "device", "s", true },
             { 0, 0, 0 }
         };
         static ::DBus::IntrospectedArgument ClearAll_args[] = 
         {
-            { "device", "s", false },
+            { "device", "s", true },
             { 0, 0, 0 }
         };
         static ::DBus::IntrospectedArgument Clear_args[] = 
         {
-            { "device", "s", false },
-            { "property", "s", false },
+            { "device", "s", true },
+            { "property", "s", true },
             { 0, 0, 0 }
         };
         static ::DBus::IntrospectedMethod Config_adaptor_methods[] = 
@@ -325,14 +326,14 @@ public:
     /* methods exported by this interface,
      * you will have to implement them in your ObjectAdaptor
      */
-    virtual ::DBus::Variant Get() = 0;
-    virtual std::map< std::string, ::DBus::Variant > GetAll() = 0;
+    virtual ::DBus::Variant Get(const std::string& device, const std::string& property) = 0;
+    virtual std::map< std::string, ::DBus::Variant > GetAll(const std::string& device) = 0;
     virtual void ReloadAll() = 0;
-    virtual void ReloadDevice() = 0;
+    virtual void ReloadDevice(const std::string& device) = 0;
     virtual void SaveAll() = 0;
-    virtual void SaveDevice() = 0;
-    virtual void ClearAll() = 0;
-    virtual void Clear() = 0;
+    virtual void SaveDevice(const std::string& device) = 0;
+    virtual void ClearAll(const std::string& device) = 0;
+    virtual void Clear(const std::string& device, const std::string& property) = 0;
 
 public:
 
@@ -347,7 +348,9 @@ private:
     {
         ::DBus::MessageIter ri = call.reader();
 
-        ::DBus::Variant argout1 = Get();
+        std::string argin1; ri >> argin1;
+        std::string argin2; ri >> argin2;
+        ::DBus::Variant argout1 = Get(argin1, argin2);
         ::DBus::ReturnMessage reply(call);
         ::DBus::MessageIter wi = reply.writer();
         wi << argout1;
@@ -357,7 +360,8 @@ private:
     {
         ::DBus::MessageIter ri = call.reader();
 
-        std::map< std::string, ::DBus::Variant > argout1 = GetAll();
+        std::string argin1; ri >> argin1;
+        std::map< std::string, ::DBus::Variant > argout1 = GetAll(argin1);
         ::DBus::ReturnMessage reply(call);
         ::DBus::MessageIter wi = reply.writer();
         wi << argout1;
@@ -375,7 +379,8 @@ private:
     {
         ::DBus::MessageIter ri = call.reader();
 
-        ReloadDevice();
+        std::string argin1; ri >> argin1;
+        ReloadDevice(argin1);
         ::DBus::ReturnMessage reply(call);
         return reply;
     }
@@ -391,7 +396,8 @@ private:
     {
         ::DBus::MessageIter ri = call.reader();
 
-        SaveDevice();
+        std::string argin1; ri >> argin1;
+        SaveDevice(argin1);
         ::DBus::ReturnMessage reply(call);
         return reply;
     }
@@ -399,7 +405,8 @@ private:
     {
         ::DBus::MessageIter ri = call.reader();
 
-        ClearAll();
+        std::string argin1; ri >> argin1;
+        ClearAll(argin1);
         ::DBus::ReturnMessage reply(call);
         return reply;
     }
@@ -407,7 +414,9 @@ private:
     {
         ::DBus::MessageIter ri = call.reader();
 
-        Clear();
+        std::string argin1; ri >> argin1;
+        std::string argin2; ri >> argin2;
+        Clear(argin1, argin2);
         ::DBus::ReturnMessage reply(call);
         return reply;
     }
@@ -431,7 +440,7 @@ public:
     {
         static ::DBus::IntrospectedArgument GetInfo_args[] = 
         {
-            { "device", "s", false },
+            { "device", "s", true },
             { 0, 0, 0 }
         };
         static ::DBus::IntrospectedMethod Device_adaptor_methods[] = 
@@ -474,7 +483,7 @@ public:
     /* methods exported by this interface,
      * you will have to implement them in your ObjectAdaptor
      */
-    virtual void GetInfo() = 0;
+    virtual void GetInfo(const std::string& device) = 0;
 
 public:
 
@@ -489,7 +498,8 @@ private:
     {
         ::DBus::MessageIter ri = call.reader();
 
-        GetInfo();
+        std::string argin1; ri >> argin1;
+        GetInfo(argin1);
         ::DBus::ReturnMessage reply(call);
         return reply;
     }
@@ -517,7 +527,7 @@ public:
         };
         static ::DBus::IntrospectedArgument Unpair_args[] = 
         {
-            { "device", "s", false },
+            { "device", "s", true },
             { 0, 0, 0 }
         };
         static ::DBus::IntrospectedMethod Receiver_adaptor_methods[] = 
@@ -558,7 +568,7 @@ public:
      * you will have to implement them in your ObjectAdaptor
      */
     virtual std::string Pair() = 0;
-    virtual void Unpair() = 0;
+    virtual void Unpair(const std::string& device) = 0;
 
 public:
 
@@ -583,7 +593,8 @@ private:
     {
         ::DBus::MessageIter ri = call.reader();
 
-        Unpair();
+        std::string argin1; ri >> argin1;
+        Unpair(argin1);
         ::DBus::ReturnMessage reply(call);
         return reply;
     }
