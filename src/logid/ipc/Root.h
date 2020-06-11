@@ -3,7 +3,7 @@
 
 #include "dbus_server.h"
 
-namespace IPC
+namespace logid::IPC
 {
     using namespace pizza::pixl;
 

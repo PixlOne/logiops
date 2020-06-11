@@ -3,6 +3,7 @@
 
 #include "logid.h"
 #include "util.h"
+#include "ipc/util.h"
 #include "ipc/dbus_server.h"
 #include "IPCServer.h"
 
@@ -41,7 +42,7 @@ void IPCServer::stop()
 void IPCServer::addDevice(Device* device)
 {
     std::vector<std::string> devices = _root->Devices();
-    std::string device_path = device->path + ":" + std::to_string(device->index);
+    std::string device_path = IPC::toDevName(device->path, device->index);
     devices.push_back(device_path);
     _root->Devices = devices;
 }
@@ -49,7 +50,7 @@ void IPCServer::addDevice(Device* device)
 void IPCServer::removeDevice(std::string path, HIDPP::DeviceIndex index)
 {
     std::vector<std::string> devices = _root->Devices();
-    std::string device_path = path + ":" + std::to_string(index);
+    std::string device_path = IPC::toDevName(path, index);
     for(auto it = devices.begin(); it != devices.end(); it++) {
         if(*it == device_path) {
             devices.erase(it);

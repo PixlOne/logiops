@@ -2,7 +2,7 @@
 #include "../logid.h"
 #include <thread>
 
-using namespace IPC;
+using namespace logid::IPC;
 using namespace logid;
 using namespace pizza::pixl;
 
