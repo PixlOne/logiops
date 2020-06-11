@@ -3,7 +3,6 @@ LogiOps interface xml:
 
 The logid dbus server will implement:
 pizza.pixl.logiops
-pizza.pixl.logiops.DeviceManager
 pizza.pixl.logiops.Config
 pizza.pixl.logiops.Device
 pizza.pixl.logiops.Device.Button
@@ -22,9 +21,6 @@ Sample receiver string: /dev/hidraw0
         <property name="Receivers" type="as" access="read" />
         <property name="Devices" type="as" access="read" />
         <method name="Reload" />
-    </interface>
-
-    <interface name="pizza.pixl.logiops.DeviceManager">
         <signal name="DeviceConnected">
             <arg name="device" type="s" />
         </signal>
@@ -37,9 +33,6 @@ Sample receiver string: /dev/hidraw0
         <signal name="ReceiverDisconnected">
             <arg name="receiver" type="s" />
         </signal>
-        <method name="ReloadDevice">
-            <arg name="device" type="s" />
-        </method>
     </interface>
 
     <interface name="pizza.pixl.logiops.Config">

@@ -32,6 +32,26 @@ public:
         {
             { 0, 0, 0 }
         };
+        static ::DBus::IntrospectedArgument DeviceConnected_args[] = 
+        {
+            { "device", "s", false },
+            { 0, 0, 0 }
+        };
+        static ::DBus::IntrospectedArgument DeviceDisconnected_args[] = 
+        {
+            { "device", "s", false },
+            { 0, 0, 0 }
+        };
+        static ::DBus::IntrospectedArgument ReceiverConnected_args[] = 
+        {
+            { "receiver", "s", false },
+            { 0, 0, 0 }
+        };
+        static ::DBus::IntrospectedArgument ReceiverDisconnected_args[] = 
+        {
+            { "receiver", "s", false },
+            { 0, 0, 0 }
+        };
         static ::DBus::IntrospectedMethod logiops_adaptor_methods[] = 
         {
             { "Reload", Reload_args },
@@ -39,6 +59,10 @@ public:
         };
         static ::DBus::IntrospectedMethod logiops_adaptor_signals[] = 
         {
+            { "DeviceConnected", DeviceConnected_args },
+            { "DeviceDisconnected", DeviceDisconnected_args },
+            { "ReceiverConnected", ReceiverConnected_args },
+            { "ReceiverDisconnected", ReceiverDisconnected_args },
             { 0, 0 }
         };
         static ::DBus::IntrospectedProperty logiops_adaptor_properties[] = 
@@ -78,105 +102,6 @@ public:
 
     /* signal emitters for this interface
      */
-
-private:
-
-    /* unmarshalers (to unpack the DBus message before calling the actual interface method)
-     */
-    ::DBus::Message _Reload_stub(const ::DBus::CallMessage &call)
-    {
-        ::DBus::MessageIter ri = call.reader();
-
-        Reload();
-        ::DBus::ReturnMessage reply(call);
-        return reply;
-    }
-};
-
-namespace logiops {
-
-class DeviceManager_adaptor
-: public ::DBus::InterfaceAdaptor
-{
-public:
-
-    DeviceManager_adaptor()
-    : ::DBus::InterfaceAdaptor("pizza.pixl.logiops.DeviceManager")
-    {
-        register_method(DeviceManager_adaptor, ReloadDevice, _ReloadDevice_stub);
-    }
-
-    ::DBus::IntrospectedInterface *introspect() const 
-    {
-        static ::DBus::IntrospectedArgument ReloadDevice_args[] = 
-        {
-            { "device", "s", false },
-            { 0, 0, 0 }
-        };
-        static ::DBus::IntrospectedArgument DeviceConnected_args[] = 
-        {
-            { "device", "s", false },
-            { 0, 0, 0 }
-        };
-        static ::DBus::IntrospectedArgument DeviceDisconnected_args[] = 
-        {
-            { "device", "s", false },
-            { 0, 0, 0 }
-        };
-        static ::DBus::IntrospectedArgument ReceiverConnected_args[] = 
-        {
-            { "receiver", "s", false },
-            { 0, 0, 0 }
-        };
-        static ::DBus::IntrospectedArgument ReceiverDisconnected_args[] = 
-        {
-            { "receiver", "s", false },
-            { 0, 0, 0 }
-        };
-        static ::DBus::IntrospectedMethod DeviceManager_adaptor_methods[] = 
-        {
-            { "ReloadDevice", ReloadDevice_args },
-            { 0, 0 }
-        };
-        static ::DBus::IntrospectedMethod DeviceManager_adaptor_signals[] = 
-        {
-            { "DeviceConnected", DeviceConnected_args },
-            { "DeviceDisconnected", DeviceDisconnected_args },
-            { "ReceiverConnected", ReceiverConnected_args },
-            { "ReceiverDisconnected", ReceiverDisconnected_args },
-            { 0, 0 }
-        };
-        static ::DBus::IntrospectedProperty DeviceManager_adaptor_properties[] = 
-        {
-            { 0, 0, 0, 0 }
-        };
-        static ::DBus::IntrospectedInterface DeviceManager_adaptor_interface = 
-        {
-            "pizza.pixl.logiops.DeviceManager",
-            DeviceManager_adaptor_methods,
-            DeviceManager_adaptor_signals,
-            DeviceManager_adaptor_properties
-        };
-        return &DeviceManager_adaptor_interface;
-    }
-
-public:
-
-    /* properties exposed by this interface, use
-     * property() and property(value) to get and set a particular property
-     */
-
-public:
-
-    /* methods exported by this interface,
-     * you will have to implement them in your ObjectAdaptor
-     */
-    virtual void ReloadDevice() = 0;
-
-public:
-
-    /* signal emitters for this interface
-     */
     void DeviceConnected(const std::string& arg1)
     {
         ::DBus::SignalMessage sig("DeviceConnected");
@@ -210,15 +135,17 @@ private:
 
     /* unmarshalers (to unpack the DBus message before calling the actual interface method)
      */
-    ::DBus::Message _ReloadDevice_stub(const ::DBus::CallMessage &call)
+    ::DBus::Message _Reload_stub(const ::DBus::CallMessage &call)
     {
         ::DBus::MessageIter ri = call.reader();
 
-        ReloadDevice();
+        Reload();
         ::DBus::ReturnMessage reply(call);
         return reply;
     }
 };
+
+namespace logiops {
 
 class Config_adaptor
 : public ::DBus::InterfaceAdaptor
