@@ -12,3 +12,8 @@ IPC::Device::Device(DBus::Connection &connection, logid::Device* device): DBus::
     Features = features;
     DeviceID = device->pid;
 }
+
+void IPC::Device::GetInfo(const std::string& device)
+{
+
+}

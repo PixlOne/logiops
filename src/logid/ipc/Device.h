@@ -15,6 +15,7 @@ namespace logid::IPC
     {
     public:
         Device(DBus::Connection &connection, logid::Device* device);
+        virtual void GetInfo(const std::string& device);
     private:
         logid::Device* _device;
     };
