@@ -247,8 +247,30 @@ void Device::waitForReceiver()
     this->start();
 }
 
+void Device::printCIDs() {
+    try
+    {
+        HIDPP20::IReprogControls irc = HIDPP20::IReprogControls::auto_version(hidpp_dev);
+        if(disconnected)
+            return;
+        int controlCount = irc.getControlCount();
+        for(int i = 0; i < controlCount; i++)
+        {
+            if(disconnected)
+                return;
+            uint16_t cid = irc.getControlInfo(i).control_id;
+            log_printf(DEBUG, "Available CID: 0x%x", cid);
+        }
+    }
+    catch(HIDPP20::UnsupportedFeature &e)
+    {
+        log_printf(DEBUG, "%s does not support Reprog controls, not diverting!", name.c_str());
+    }
+}
+
 void Device::start()
 {
+    printCIDs();
     configure();
     try { listener->addEventHandler(std::make_unique<ButtonHandler>(this)); }
     catch(HIDPP20::UnsupportedFeature &e) { }

@@ -58,6 +58,7 @@ namespace logid
         EventListener* listener;
 
         void divert_buttons();
+        void printCIDs();
         void setSmartShift(HIDPP20::ISmartShift::SmartshiftStatus ops);
         void setHiresScroll(uint8_t flags);
         void setDPI(int dpi);
