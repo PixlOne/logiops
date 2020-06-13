@@ -26,7 +26,8 @@ add_executable(logid
         IPCServer.cpp
         IPCServer.h
         ipc/util.cpp
-        ipc/Root.cpp)
+        ipc/Root.cpp
+        ipc/Device.cpp)
 
 set_target_properties(logid PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 

@@ -36,6 +36,7 @@ namespace logid
         ~Device();
 
         std::string name;
+        uint16_t pid;
 
         bool init();
         void configure();

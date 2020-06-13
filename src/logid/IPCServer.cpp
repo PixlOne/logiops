@@ -45,6 +45,7 @@ void IPCServer::addDevice(Device* device)
     std::string device_name = IPC::toDevName(device->path, device->index);
     devices.push_back(device_name);
     _root->Devices = devices;
+    _devices.insert({device_name, new IPC::Device(_root->conn(), device)});
     _root->DeviceConnected(device_name);
 }
 
@@ -59,6 +60,12 @@ void IPCServer::removeDevice(std::string path, HIDPP::DeviceIndex index)
         }
     }
     _root->Devices = devices;
+    auto it = _devices.find(device_name);
+    if(it != _devices.end())
+    {
+        delete(it->second);
+        _devices.erase(it);
+    }
     _root->DeviceDisconnected(device_name);
 }
 
