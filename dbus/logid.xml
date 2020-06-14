@@ -72,9 +72,6 @@ Sample receiver string: /dev/hidraw0
     <interface name="pizza.pixl.logiops.Device">
         <property name="Name" type="s" access="read" />
         <property name="DeviceID" type="q" access="read" />
-        <method name="GetInfo">
-            <arg name="device" type="s" direction="in" />
-        </method>
         <property name="Features" type="as" access="read" />
     </interface>
 
@@ -92,11 +89,26 @@ Sample receiver string: /dev/hidraw0
     </interface>
 
     <!-- General interface for device buttons (only divertable buttons appear)
-        Example of node name: /pizza/pixl/logiops/device/hidraw0/1/buttons/c4
-    -->
+        Example of node name: /pizza/pixl/logiops/device/hidraw0/1/buttons/1   -->
     <interface name="pizza.pixl.logiops.Device.Button">
-        <property name="Diverted" type="b" access="readwrite" />
-        <property name="ActionType" type="s" access="readwrite" />
-        <property name="Action" type="a{sv}" access="readwrite" />
+        <property name="Remapped" type="b" access="read" />
+        <property name="ActionType" type="s" access="read" />
+        <property name="Action" type="a{sv}" access="read" />
+        <method name="Reset" />
+        <method name="ClearAction" />
+        <method name="Remap">
+            <arg name="actionType" type="s" direction="in" />
+            <arg name="action"     type="s" direction="in" />
+        </method>
+    </interface>
+
+    <!-- General interface for device buttons (only divertable buttons appear)
+        Example of node name: /pizza/pixl/logiops/device/hidraw0/1/dpi         -->
+    <interface name="pizza.pixl.logiops.Device.DPI">
+        <property name="DPI" type="i" access="read" />
+        <property name="AvailableDPIs" type="ai" access="read" />
+        <method name="SetDPI">
+            <arg name="DPI" type="i" direction="in" />
+        </method>
     </interface>
 </node>
