@@ -360,19 +360,12 @@ public:
         bind_property(Name, "s", true, false);
         bind_property(DeviceID, "q", true, false);
         bind_property(Features, "as", true, false);
-        register_method(Device_adaptor, GetInfo, _GetInfo_stub);
     }
 
     ::DBus::IntrospectedInterface *introspect() const 
     {
-        static ::DBus::IntrospectedArgument GetInfo_args[] = 
-        {
-            { "device", "s", true },
-            { 0, 0, 0 }
-        };
         static ::DBus::IntrospectedMethod Device_adaptor_methods[] = 
         {
-            { "GetInfo", GetInfo_args },
             { 0, 0 }
         };
         static ::DBus::IntrospectedMethod Device_adaptor_signals[] = 
@@ -410,7 +403,6 @@ public:
     /* methods exported by this interface,
      * you will have to implement them in your ObjectAdaptor
      */
-    virtual void GetInfo(const std::string& device) = 0;
 
 public:
 
@@ -421,15 +413,6 @@ private:
 
     /* unmarshalers (to unpack the DBus message before calling the actual interface method)
      */
-    ::DBus::Message _GetInfo_stub(const ::DBus::CallMessage &call)
-    {
-        ::DBus::MessageIter ri = call.reader();
-
-        std::string argin1; ri >> argin1;
-        GetInfo(argin1);
-        ::DBus::ReturnMessage reply(call);
-        return reply;
-    }
 };
 
 class Receiver_adaptor
@@ -537,15 +520,35 @@ public:
     Button_adaptor()
     : ::DBus::InterfaceAdaptor("pizza.pixl.logiops.Device.Button")
     {
-        bind_property(Diverted, "b", true, true);
-        bind_property(ActionType, "s", true, true);
-        bind_property(Action, "a{sv}", true, true);
+        bind_property(Remapped, "b", true, false);
+        bind_property(ActionType, "s", true, false);
+        bind_property(Action, "a{sv}", true, false);
+        register_method(Button_adaptor, Reset, _Reset_stub);
+        register_method(Button_adaptor, ClearAction, _ClearAction_stub);
+        register_method(Button_adaptor, Remap, _Remap_stub);
     }
 
     ::DBus::IntrospectedInterface *introspect() const 
     {
+        static ::DBus::IntrospectedArgument Reset_args[] = 
+        {
+            { 0, 0, 0 }
+        };
+        static ::DBus::IntrospectedArgument ClearAction_args[] = 
+        {
+            { 0, 0, 0 }
+        };
+        static ::DBus::IntrospectedArgument Remap_args[] = 
+        {
+            { "actionType", "s", true },
+            { "action", "s", true },
+            { 0, 0, 0 }
+        };
         static ::DBus::IntrospectedMethod Button_adaptor_methods[] = 
         {
+            { "Reset", Reset_args },
+            { "ClearAction", ClearAction_args },
+            { "Remap", Remap_args },
             { 0, 0 }
         };
         static ::DBus::IntrospectedMethod Button_adaptor_signals[] = 
@@ -554,9 +557,9 @@ public:
         };
         static ::DBus::IntrospectedProperty Button_adaptor_properties[] = 
         {
-            { "Diverted", "b", true, true },
-            { "ActionType", "s", true, true },
-            { "Action", "a{sv}", true, true },
+            { "Remapped", "b", true, false },
+            { "ActionType", "s", true, false },
+            { "Action", "a{sv}", true, false },
             { 0, 0, 0, 0 }
         };
         static ::DBus::IntrospectedInterface Button_adaptor_interface = 
@@ -574,7 +577,7 @@ public:
     /* properties exposed by this interface, use
      * property() and property(value) to get and set a particular property
      */
-    ::DBus::PropertyAdaptor< bool > Diverted;
+    ::DBus::PropertyAdaptor< bool > Remapped;
     ::DBus::PropertyAdaptor< std::string > ActionType;
     ::DBus::PropertyAdaptor< std::map< std::string, ::DBus::Variant > > Action;
 
@@ -583,6 +586,9 @@ public:
     /* methods exported by this interface,
      * you will have to implement them in your ObjectAdaptor
      */
+    virtual void Reset() = 0;
+    virtual void ClearAction() = 0;
+    virtual void Remap(const std::string& actionType, const std::string& action) = 0;
 
 public:
 
@@ -593,6 +599,112 @@ private:
 
     /* unmarshalers (to unpack the DBus message before calling the actual interface method)
      */
+    ::DBus::Message _Reset_stub(const ::DBus::CallMessage &call)
+    {
+        ::DBus::MessageIter ri = call.reader();
+
+        Reset();
+        ::DBus::ReturnMessage reply(call);
+        return reply;
+    }
+    ::DBus::Message _ClearAction_stub(const ::DBus::CallMessage &call)
+    {
+        ::DBus::MessageIter ri = call.reader();
+
+        ClearAction();
+        ::DBus::ReturnMessage reply(call);
+        return reply;
+    }
+    ::DBus::Message _Remap_stub(const ::DBus::CallMessage &call)
+    {
+        ::DBus::MessageIter ri = call.reader();
+
+        std::string argin1; ri >> argin1;
+        std::string argin2; ri >> argin2;
+        Remap(argin1, argin2);
+        ::DBus::ReturnMessage reply(call);
+        return reply;
+    }
+};
+
+class DPI_adaptor
+: public ::DBus::InterfaceAdaptor
+{
+public:
+
+    DPI_adaptor()
+    : ::DBus::InterfaceAdaptor("pizza.pixl.logiops.Device.DPI")
+    {
+        bind_property(DPI, "i", true, false);
+        bind_property(AvailableDPIs, "ai", true, false);
+        register_method(DPI_adaptor, SetDPI, _SetDPI_stub);
+    }
+
+    ::DBus::IntrospectedInterface *introspect() const 
+    {
+        static ::DBus::IntrospectedArgument SetDPI_args[] = 
+        {
+            { "DPI", "i", true },
+            { 0, 0, 0 }
+        };
+        static ::DBus::IntrospectedMethod DPI_adaptor_methods[] = 
+        {
+            { "SetDPI", SetDPI_args },
+            { 0, 0 }
+        };
+        static ::DBus::IntrospectedMethod DPI_adaptor_signals[] = 
+        {
+            { 0, 0 }
+        };
+        static ::DBus::IntrospectedProperty DPI_adaptor_properties[] = 
+        {
+            { "DPI", "i", true, false },
+            { "AvailableDPIs", "ai", true, false },
+            { 0, 0, 0, 0 }
+        };
+        static ::DBus::IntrospectedInterface DPI_adaptor_interface = 
+        {
+            "pizza.pixl.logiops.Device.DPI",
+            DPI_adaptor_methods,
+            DPI_adaptor_signals,
+            DPI_adaptor_properties
+        };
+        return &DPI_adaptor_interface;
+    }
+
+public:
+
+    /* properties exposed by this interface, use
+     * property() and property(value) to get and set a particular property
+     */
+    ::DBus::PropertyAdaptor< int32_t > DPI;
+    ::DBus::PropertyAdaptor< std::vector< int32_t > > AvailableDPIs;
+
+public:
+
+    /* methods exported by this interface,
+     * you will have to implement them in your ObjectAdaptor
+     */
+    virtual void SetDPI(const int32_t& DPI) = 0;
+
+public:
+
+    /* signal emitters for this interface
+     */
+
+private:
+
+    /* unmarshalers (to unpack the DBus message before calling the actual interface method)
+     */
+    ::DBus::Message _SetDPI_stub(const ::DBus::CallMessage &call)
+    {
+        ::DBus::MessageIter ri = call.reader();
+
+        int32_t argin1; ri >> argin1;
+        SetDPI(argin1);
+        ::DBus::ReturnMessage reply(call);
+        return reply;
+    }
 };
 
 } } } } 
