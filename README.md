@@ -24,6 +24,13 @@ make
 
 To install, run `sudo make install` after building. You can set the daemon to start at boot by running `sudo systemctl start logid`.
 
+## Donate
+This program is (and will always be) provided free of charge. If you would like to support the development of this project by donating, you can donate to my Ko-Fi below.
+
+<a href='https://ko-fi.com/R6R81QQ9M' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://cdn.ko-fi.com/cdn/kofi1.png?v=2' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
+
+I'm also looking for contributors to help in my project; feel free to submit a pull request or e-mail me if you would like to contribute.
+
 ## Compatible Devices
 
 |  Device   | Compatible? |
