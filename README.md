@@ -9,9 +9,15 @@ This is currently only compatible with HID++ \>2.0 devices.
 
 You may also refer to logid.example.cfg for an example.
 
-## Building
+## Dependencies
 
-This project requires a C++14 compiler, cmake, libevdev, libudev, and libconfig
+This project requires a C++14 compiler, cmake, libevdev, libudev, and libconfig. For popular distributions, I've included commands below. 
+
+**Debian/Ubuntu:** `sudo apt install cmake libevdev-dev libudev-dev libconfig++-dev`
+
+**Arch Linux:** `sudo pacman -S cmake libevdev libconfig libudev`
+
+## Building
 
 To build this project, run:
 
