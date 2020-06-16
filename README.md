@@ -40,7 +40,7 @@ I'm also looking for contributors to help in my project; feel free to submit a p
 ## Compatible Devices
 
 |  Device    | Compatible? |
-|:---------: |:-----------:|
+|:----------:|:-----------:|
 | MX Master 3|     Yes     |
 | MX Master 2|     Yes     |
 | MX Master  |     Yes     |
