@@ -1,6 +1,6 @@
 # logiops
 
-#### This branch is experimental. If you are a normal user, please use the master branch
+#### This branch is a WIP and currently does not function.
 
 This is an unofficial driver for Logitech mice and keyboard.
 
