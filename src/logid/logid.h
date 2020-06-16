@@ -5,7 +5,7 @@
 
 namespace logid
 {
-    void reload();
+    // void reload();
 
     extern bool kill_logid;
     extern std::mutex finder_reloading;

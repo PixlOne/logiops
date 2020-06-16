@@ -1,7 +1,7 @@
 #ifndef LOGID_UTIL_H
 #define LOGID_UTIL_H
 
-#include "Actions.h"
+//#include "Actions.h"
 
 namespace logid
 {
@@ -19,10 +19,12 @@ namespace logid
 
     const char* level_prefix(LogLevel level);
 
+    /*
     Direction getDirection(int x, int y);
     Direction stringToDirection(std::string s);
     GestureMode stringToGestureMode(std::string s);
     Action stringToAction(std::string s);
+     */
     LogLevel stringToLogLevel(std::string s);
 }
 

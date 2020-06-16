@@ -4,12 +4,7 @@
 #include <mutex>
 
 #include "util.h"
-#include "Device.h"
-#include "Actions.h"
-#include "Configuration.h"
-#include "EvdevDevice.h"
-#include "DeviceFinder.h"
-#include "IPCServer.h"
+#include "DeviceMonitor.h"
 #include "logid.h"
 
 #define evdev_name "logid"
@@ -25,9 +20,8 @@ using namespace logid;
 std::string config_file = DEFAULT_CONFIG_FILE;
 
 LogLevel logid::global_verbosity = INFO;
-Configuration* logid::global_config;
-EvdevDevice* logid::global_evdev;
-DeviceFinder* logid::finder;
+// Configuration* logid::global_config;
+DeviceMonitor* logid::finder;
 
 bool logid::kill_logid = false;
 std::mutex logid::finder_reloading;
@@ -41,6 +35,7 @@ enum class Option
     Version
 };
 
+/*
 void logid::reload()
 {
     log_printf(INFO, "Reloading logid...");
@@ -50,9 +45,10 @@ void logid::reload()
     global_config = new Configuration(config_file.c_str());
     delete(old_config);
     delete(finder);
-    finder = new DeviceFinder();
+    finder = new DeviceMonitor();
     finder_reloading.unlock();
 }
+ */
 
 void read_cli_options(int argc, char** argv)
 {
@@ -153,9 +149,11 @@ int main(int argc, char** argv)
 {
     read_cli_options(argc, argv);
 
+    /*
     // Read config
     try { global_config = new Configuration(config_file.c_str()); }
     catch (std::exception &e) { global_config = new Configuration(); }
+
 
     //Create an evdev device called 'logid'
     try { global_evdev = new EvdevDevice(evdev_name); }
@@ -165,8 +163,10 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
+    */
+    
     // Scan devices, create listeners, handlers, etc.
-    finder = new DeviceFinder();
+    finder = new DeviceMonitor();
 
     while(!kill_logid)
     {
