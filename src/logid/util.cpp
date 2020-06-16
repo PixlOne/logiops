@@ -4,6 +4,7 @@
 #include <cstdarg>
 #include <cmath>
 #include <algorithm>
+#include <stdexcept>
 
 #include "util.h"
 
@@ -34,6 +35,7 @@ const char* logid::level_prefix(LogLevel level)
     return "DEBUG";
 }
 
+/*
 Direction logid::getDirection(int x, int y)
 {
     if(x == 0 && y == 0) return Direction::None;
@@ -110,6 +112,8 @@ Action logid::stringToAction(std::string s)
 
     throw std::invalid_argument(original_str + " is an invalid action.");
 }
+
+ */
 
 LogLevel logid::stringToLogLevel(std::string s)
 {

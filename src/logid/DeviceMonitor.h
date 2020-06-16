@@ -1,16 +1,12 @@
-#ifndef LOGID_DEVICEFINDER_H
-#define LOGID_DEVICEFINDER_H
+#ifndef LOGID_DEVICEMONITOR_H
+#define LOGID_DEVICEMONITOR_H
 
-#include <hid/DeviceMonitor.h>
-#include <hidpp/SimpleDispatcher.h>
-#include <hidpp10/Device.h>
-#include <hidpp10/IReceiver.h>
-#include <hidpp20/IReprogControls.h>
 #include <map>
 #include <thread>
 #include <mutex>
 
-#include "Device.h"
+#include "backend/raw/DeviceMonitor.h"
+#include "backend/hidpp/Device.h"
 
 #define MAX_CONNECTION_TRIES 10
 #define TIME_BETWEEN_CONNECTION_TRIES 500ms
@@ -25,24 +21,26 @@ namespace logid
     	std::thread associatedThread;
     };
 
-    class DeviceFinder : public HID::DeviceMonitor
+    class DeviceMonitor : public backend::raw::DeviceMonitor
     {
     public:
-    	~DeviceFinder();
+    	~DeviceMonitor();
 
+    	/*
     	Device* insertNewDevice (const std::string &path, HIDPP::DeviceIndex index);
     	Device* insertNewReceiverDevice (const std::string &path, HIDPP::DeviceIndex index);
     	void stopAndDeleteAllDevicesIn (const std::string &path);
     	void stopAndDeleteDevice (const std::string &path, HIDPP::DeviceIndex index);
+    	 */
     protected:
-        void addDevice(const char* path);
-        void removeDevice(const char* path);
+        void addDevice(std::string path) override;
+        void removeDevice(std::string path) override;
     private:
     	std::mutex devices_mutex;
-        std::map<std::string, std::map<HIDPP::DeviceIndex, ConnectedDevice>> devices;
+        std::map<std::string, std::map<backend::hidpp::DeviceIndex, ConnectedDevice>> devices;
     };
 
-    extern DeviceFinder* finder;
+    extern DeviceMonitor* finder;
 }
 
 #endif //LOGID_DEVICEFINDER_H

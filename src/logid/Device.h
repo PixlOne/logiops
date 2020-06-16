@@ -3,7 +3,7 @@
 #define LOGID_DEVICE_H
 
 #include "Actions.h"
-#include "DeviceFinder.h"
+#include "DeviceMonitor.h"
 #include "Configuration.h"
 
 #include <map>
