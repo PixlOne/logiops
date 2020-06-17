@@ -194,7 +194,7 @@ void RawDevice::stopListener()
     interruptRead();
 }
 
-void RawDevice::addEventHandler(const std::string &nickname, RawEventHandler &handler)
+void RawDevice::addEventHandler(const std::string& nickname, RawEventHandler& handler)
 {
     auto it = event_handlers.find(nickname);
     assert(it == event_handlers.end());

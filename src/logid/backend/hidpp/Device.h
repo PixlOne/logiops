@@ -44,7 +44,7 @@ namespace hidpp
         void listen(); // Runs asynchronously
         void stopListening();
 
-        void addEventHandler(const std::string& nickname, EventHandler& handler);
+        void addEventHandler(const std::string& nickname, const std::shared_ptr<EventHandler>& handler);
         void removeEventHandler(const std::string& nickname);
 
         Report sendReport(Report& report);
@@ -56,7 +56,7 @@ namespace hidpp
         DeviceIndex index;
         uint8_t supported_reports;
 
-        std::map<std::string, EventHandler> event_handlers;
+        std::map<std::string, std::shared_ptr<EventHandler>> event_handlers;
     };
 } } }
 
