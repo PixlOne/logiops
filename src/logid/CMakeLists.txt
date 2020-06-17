@@ -12,11 +12,13 @@ add_executable(logid
         logid.cpp
         util.cpp
         DeviceMonitor.cpp
+        backend/Error.cpp
         backend/raw/DeviceMonitor.cpp
         backend/raw/RawDevice.cpp
         backend/hidpp/Device.cpp
         backend/hidpp/Report.cpp
-        backend/dj/Report.cpp)
+        backend/dj/Report.cpp
+        util/mutex_queue.h)
 
 set_target_properties(logid PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
