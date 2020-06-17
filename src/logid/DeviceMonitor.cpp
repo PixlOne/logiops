@@ -102,9 +102,29 @@ void DeviceMonitor::stopAndDeleteDevice (const std::string &path, HIDPP::DeviceI
 void DeviceMonitor::addDevice(std::string path)
 {
     try {
-        backend::hidpp::Device device(path, hidpp::DeviceIndex::DefaultDevice);
-
+        backend::hidpp::Device device(path, hidpp::DeviceIndex::WirelessDevice1);
         log_printf(DEBUG, "Detected HID++ device at %s", path.c_str());
+
+        backend::hidpp::EventHandler eventHandler;
+        eventHandler.condition = [device](backend::hidpp::Report& report)->bool
+        {
+            return true;
+        };
+        eventHandler.callback = [device](backend::hidpp::Report& report)->void
+        {
+            log_printf(DEBUG, "Event on %s:%d", device.devicePath().c_str(),
+                    device.deviceIndex());
+            for(auto& i : report.rawReport())
+                    printf("%02x ", i);
+            printf("\n");
+        };
+
+        device.addEventHandler("MONITOR_ALL", eventHandler);
+
+        std::thread([](backend::hidpp::Device device) { device.listen(); }, device).detach();
+
+        /* This is a temporary solution to avoid std::bad_function_call */
+        while(true) {}
     }
     catch(backend::hidpp::Device::InvalidDevice &e)
     {

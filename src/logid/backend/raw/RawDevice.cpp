@@ -1,9 +1,11 @@
 #include "RawDevice.h"
+#include "../Error.h"
 
 #include <string>
 #include <system_error>
-#include <utility>
+#include <cassert>
 
+#define MAX_DATA_LENGTH 32
 
 extern "C"
 {
@@ -76,29 +78,43 @@ RawDevice::~RawDevice()
     }
 }
 
-void RawDevice::sendReport(std::vector<uint8_t> report)
+std::vector<uint8_t> RawDevice::sendReport(const std::vector<uint8_t>& report)
 {
-    _sendReport(std::move(report));
+    std::packaged_task<std::vector<uint8_t>()> task(
+            [=]() {
+        _sendReport(report);
+        std::vector<uint8_t> response;
+        _readReport(response, MAX_DATA_LENGTH);
+        return response;
+    });
+
+    /* If the listener will stop, handle I/O manually.
+     * Otherwise, push to queue and wait for result. */
+    if(continue_listen)
+    {
+        auto f = task.get_future();
+        write_queue.push(&task);
+        return f.get();
+    }
+    else
+        return task.get_future().get();
 }
 
-std::vector<uint8_t> RawDevice::readReport(std::size_t maxDataLength)
-{
-    return _readReport(maxDataLength);
-}
-
-void RawDevice::_sendReport(std::vector<uint8_t> report)
+int RawDevice::_sendReport(const std::vector<uint8_t>& report)
 {
     std::lock_guard<std::mutex> lock(dev_io);
     int ret = ::write(fd, report.data(), report.size());
     if(ret == -1)
         throw std::system_error(errno, std::system_category(), "_sendReport write failed");
+
+    return ret;
 }
 
-std::vector<uint8_t> RawDevice::_readReport(std::size_t maxDataLength)
+int RawDevice::_readReport(std::vector<uint8_t>& report, std::size_t maxDataLength)
 {
     std::lock_guard<std::mutex> lock(dev_io);
     int ret;
-    std::vector<uint8_t> report(maxDataLength);
+    report.resize(maxDataLength);
 
     timeval timeout = { duration_cast<milliseconds>(HIDPP_IO_TIMEOUT).count(),
                        duration_cast<microseconds>(HIDPP_IO_TIMEOUT).count() };
@@ -133,7 +149,10 @@ std::vector<uint8_t> RawDevice::_readReport(std::size_t maxDataLength)
             throw std::system_error(errno, std::system_category(), "_readReport read pipe failed");
     }
 
-    return report;
+    if(0 == ret)
+        throw backend::TimeoutError();
+
+    return ret;
 }
 
 void RawDevice::interruptRead()
@@ -144,4 +163,62 @@ void RawDevice::interruptRead()
 
     // Ensure I/O has halted
     std::lock_guard<std::mutex> lock(dev_io);
+}
+
+void RawDevice::listen()
+{
+    std::lock_guard<std::mutex> lock(listening);
+
+    continue_listen = true;
+    while(continue_listen)
+    {
+        while(!write_queue.empty())
+        {
+            auto task = write_queue.front();
+            (*task)();
+            write_queue.pop();
+        }
+        std::vector<uint8_t> report;
+        _readReport(report, MAX_DATA_LENGTH);
+        std::thread([this](std::vector<uint8_t> report) {
+            this->handleEvent(report);
+        }, report).detach();
+    }
+
+    continue_listen = false;
+}
+
+void RawDevice::stopListener()
+{
+    continue_listen = false;
+    interruptRead();
+}
+
+void RawDevice::addEventHandler(const std::string &nickname, RawEventHandler &handler)
+{
+    auto it = event_handlers.find(nickname);
+    assert(it == event_handlers.end());
+    event_handlers.emplace(nickname, handler);
+}
+
+void RawDevice::removeEventHandler(const std::string &nickname)
+{
+    event_handlers.erase(nickname);
+}
+
+void RawDevice::handleEvent(std::vector<uint8_t> &report)
+{
+    for(auto& handler : event_handlers)
+        if(handler.second.condition(report))
+            handler.second.callback(report);
+}
+
+bool RawDevice::isListening()
+{
+    bool ret = listening.try_lock();
+
+    if(ret)
+        listening.unlock();
+
+    return ret;
 }

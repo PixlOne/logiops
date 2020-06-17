@@ -3,22 +3,21 @@
 
 #include <string>
 #include <memory>
+#include <functional>
+#include <map>
 #include "../raw/RawDevice.h"
+#include "Report.h"
+#include "defs.h"
 
-namespace logid::backend::hidpp
+namespace logid {
+namespace backend {
+namespace hidpp
 {
-    enum DeviceIndex: uint8_t
+    struct EventHandler
     {
-        DefaultDevice = 0,
-        WirelessDevice1 = 1,
-        WirelessDevice2 = 2,
-        WirelessDevice3 = 3,
-        WirelessDevice4 = 4,
-        WirelessDevice5 = 5,
-        WirelessDevice6 = 6,
-        CordedDevice = 0xff
+        std::function<bool(Report&)> condition;
+        std::function<void(Report&)> callback;
     };
-
     class Device
     {
     public:
@@ -35,17 +34,30 @@ namespace logid::backend::hidpp
             virtual Reason code() const noexcept;
         private:
             Reason _reason;
-
         };
-        Device(std::string path, DeviceIndex index);
+
+        Device(const std::string& path, DeviceIndex index);
+
         std::string devicePath() const { return path; }
         DeviceIndex deviceIndex() const { return index; }
+
+        void listen(); // Runs asynchronously
+        void stopListening();
+
+        void addEventHandler(const std::string& nickname, EventHandler& handler);
+        void removeEventHandler(const std::string& nickname);
+
+        Report sendReport(Report& report);
+
+        void handleEvent(Report& report);
     private:
-        std::shared_ptr<logid::backend::raw::RawDevice> raw_device;
+        std::shared_ptr<raw::RawDevice> raw_device;
         std::string path;
         DeviceIndex index;
         uint8_t supported_reports;
+
+        std::map<std::string, EventHandler> event_handlers;
     };
-}
+} } }
 
 #endif //LOGID_HIDPP_DEVICE_H

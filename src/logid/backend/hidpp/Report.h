@@ -3,9 +3,7 @@
 
 #include <cstdint>
 #include "../raw/RawDevice.h"
-#include "Device.h"
-
-#define LOGID_HIDPP_SW_ID 0x0f
+#include "defs.h"
 
 /* Some devices only support a subset of these reports */
 #define HIDPP_REPORT_SHORT_SUPPORTED      1U
@@ -15,6 +13,16 @@
 namespace logid::backend::hidpp
 {
     uint8_t getSupportedReports(std::vector<uint8_t>&& rdesc);
+
+    namespace Offset
+    {
+        static constexpr uint8_t Type = 0;
+        static constexpr uint8_t DeviceIndex = 1;
+        static constexpr uint8_t Feature = 2;
+        static constexpr uint8_t Function = 3;
+        static constexpr uint8_t Parameters = 4;
+    }
+
     class Report
     {
     public:
@@ -24,30 +32,43 @@ namespace logid::backend::hidpp
             Long = 0x11
         };
 
-        class InvalidReportID: std::exception
+        class InvalidReportID: public std::exception
         {
-            InvalidReportID();
+        public:
+            InvalidReportID() = default;
             virtual const char* what() const noexcept;
         };
 
-        class InvalidReportLength: std::exception
+        class InvalidReportLength: public std::exception
         {
-            InvalidReportLength();
+        public:
+            InvalidReportLength() = default;;
             virtual const char* what() const noexcept;
         };
 
-        static constexpr std::size_t MaxDataLength = 32;
+        static constexpr std::size_t MaxDataLength = 20;
+        static constexpr uint8_t swIdMask = 0x0f;
+        static constexpr uint8_t functionMask = 0x0f;
 
-        Report(uint8_t report_id, const uint8_t* data, std::size_t length);
-        Report(std::vector<uint8_t> data);
+        Report(Type type, DeviceIndex device_index,
+                uint8_t feature_index,
+                uint8_t function,
+                uint8_t sw_id);
+        explicit Report(const std::vector<uint8_t>& data);
 
-        Type type() const;
+        Type type() const { return static_cast<Type>(_data[Offset::Type]); };
         void setType(Report::Type type);
 
-        logid::backend::hidpp::DeviceIndex deviceIndex();
+        std::vector<uint8_t>::const_iterator paramBegin() const { return _data.begin() + Offset::Parameters; }
+        std::vector<uint8_t>::const_iterator paramEnd() const { return _data.end(); }
+        void setParams(const std::vector<uint8_t>& _params);
+
+        logid::backend::hidpp::DeviceIndex deviceIndex()
+        {
+            return static_cast<DeviceIndex>(_data[Offset::DeviceIndex]);
+        }
 
         std::vector<uint8_t> rawReport () const { return _data; }
-
     private:
         static constexpr std::size_t HeaderLength = 4;
         std::vector<uint8_t> _data;

@@ -38,6 +38,7 @@ namespace logid
     private:
     	std::mutex devices_mutex;
         std::map<std::string, std::map<backend::hidpp::DeviceIndex, ConnectedDevice>> devices;
+        backend::hidpp::EventHandler eventHandler;
     };
 
     extern DeviceMonitor* finder;

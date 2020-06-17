@@ -1,5 +1,6 @@
 #include <array>
 #include <algorithm>
+#include <cassert>
 #include "Report.h"
 
 using namespace logid::backend::hidpp;
@@ -80,4 +81,80 @@ uint8_t hidpp::getSupportedReports(std::vector<uint8_t>&& rdesc)
         ret |= HIDPP_REPORT_LONG_SUPPORTED;
 
     return ret;
+}
+
+const char *Report::InvalidReportID::what() const noexcept
+{
+    return "Invalid report ID";
+}
+
+const char *Report::InvalidReportLength::what() const noexcept
+{
+    return "Invalid report length";
+}
+
+Report::Report(Report::Type type, DeviceIndex device_index,
+        uint8_t feature_index, uint8_t function, uint8_t sw_id)
+{
+    assert(!(function & functionMask));
+    assert(!(sw_id & swIdMask));
+
+    switch(type)
+    {
+        case Short:
+            _data.resize(HeaderLength + ShortParamLength);
+            break;
+        case Long:
+            _data.resize(HeaderLength + LongParamLength);
+            break;
+        default:
+            throw InvalidReportID();
+    }
+
+    _data[Offset::Type] = type;
+    _data[Offset::DeviceIndex] = device_index;
+    _data[Offset::Feature] = feature_index;
+    _data[Offset::Function] = (function & functionMask) << 4 | (sw_id & swIdMask);
+}
+
+Report::Report(const std::vector<uint8_t>& data)
+{
+    _data = data;
+
+    switch(_data[Offset::Type])
+    {
+        case Short:
+            _data.resize(HeaderLength + ShortParamLength);
+            break;
+        case Long:
+            _data.resize(HeaderLength + LongParamLength);
+            break;
+        default:
+            throw InvalidReportID();
+    }
+}
+
+void Report::setType(Report::Type type)
+{
+    switch(type)
+    {
+        case Short:
+            _data.resize(HeaderLength + ShortParamLength);
+            break;
+        case Long:
+            _data.resize(HeaderLength + LongParamLength);
+            break;
+        default:
+            throw InvalidReportID();
+    }
+
+    _data[Offset::Type] = type;
+}
+
+void Report::setParams(const std::vector<uint8_t>& _params)
+{
+    assert(_params.size() <= _data.size()-HeaderLength);
+
+    for(std::size_t i = 0; i < _params.size(); i++)
+        _data[Offset::Parameters + i] = _params[i];
 }
