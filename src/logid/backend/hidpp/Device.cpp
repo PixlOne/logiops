@@ -45,7 +45,7 @@ Device::Device(const std::string& path, DeviceIndex index):
     raw_device->addEventHandler("DEV_" + std::to_string(index), rawEventHandler);
 }
 
-void Device::addEventHandler(const std::string& nickname, EventHandler& handler)
+void Device::addEventHandler(const std::string& nickname, const std::shared_ptr<EventHandler>& handler)
 {
     auto it = event_handlers.find(nickname);
     assert(it == event_handlers.end());
@@ -61,8 +61,8 @@ void Device::removeEventHandler(const std::string& nickname)
 void Device::handleEvent(Report& report)
 {
     for(auto& handler : event_handlers)
-        if(handler.second.condition(report))
-            handler.second.callback(report);
+        if(handler.second->condition(report))
+            handler.second->callback(report);
 }
 
 Report Device::sendReport(Report& report)

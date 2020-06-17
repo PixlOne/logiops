@@ -37,8 +37,8 @@ namespace logid
         void removeDevice(std::string path) override;
     private:
     	std::mutex devices_mutex;
-        std::map<std::string, std::map<backend::hidpp::DeviceIndex, ConnectedDevice>> devices;
-        backend::hidpp::EventHandler eventHandler;
+    	std::vector<std::shared_ptr<backend::hidpp::Device>> devices; //tmp
+        //std::map<std::string, std::map<backend::hidpp::DeviceIndex, ConnectedDevice>> devices;
     };
 
     extern DeviceMonitor* finder;
