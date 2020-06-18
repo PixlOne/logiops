@@ -7,8 +7,6 @@
 namespace logid {
 namespace backend {
 namespace hidpp20 {
-    class Feature
-    {
     class UnsupportedFeature : public std::exception
     {
     public:
@@ -19,13 +17,14 @@ namespace hidpp20 {
         uint16_t _f_id;
     };
 
+    class Feature
+    {
     public:
         static const uint16_t ID;
         virtual uint16_t getID() = 0;
 
     protected:
         explicit Feature(Device* dev, uint16_t _id);
-        explicit Feature(Device* dev, uint8_t _index);
         std::vector<uint8_t> callFunction(uint8_t function_id,
             std::vector<uint8_t>& params);
     private:
