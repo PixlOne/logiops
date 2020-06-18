@@ -23,7 +23,7 @@ namespace hidpp20
         Root(Device* device);
 
         feature_info getFeature (uint16_t feature_id);
-        void ping();
+        std::tuple<uint8_t, uint8_t> getVersion();
     private:
         enum FeatureFlag : uint8_t
         {
