@@ -2,6 +2,8 @@
 #include "Device.h"
 #include "Report.h"
 #include "../hidpp20/features/Root.h"
+#include "../hidpp20/Error.h"
+#include "../hidpp10/Error.h"
 
 using namespace logid::backend;
 using namespace logid::backend::hidpp;
@@ -30,13 +32,24 @@ Device::Device(const std::string& path, DeviceIndex index):
     if(!supported_reports)
         throw InvalidDevice(InvalidDevice::NoHIDPPReport);
 
-    Report versionRequest(Report::Type::Short, index, hidpp20::FeatureID::ROOT,
-            hidpp20::Root::Ping, LOGID_HIDPP_SOFTWARE_ID);
+    try
+    {
+        Report versionRequest(Report::Type::Short, index, hidpp20::FeatureID::ROOT,
+        hidpp20::Root::Ping, LOGID_HIDPP_SOFTWARE_ID);
 
-    ///TODO: Catch error
-    auto versionResponse = sendReport(versionRequest);
-    auto versionResponse_params = versionResponse.paramBegin();
-    _version = std::make_tuple(versionResponse_params[0], versionResponse_params[1]);
+        auto versionResponse = sendReport(versionRequest);
+        auto versionResponse_params = versionResponse.paramBegin();
+        _version = std::make_tuple(versionResponse_params[0], versionResponse_params[1]);
+    }
+    catch(hidpp10::Error &e)
+    {
+        // Valid HID++ 1.0 devices should send an InvalidSubID error
+        if(e.code() != hidpp10::Error::InvalidSubID)
+            throw;
+
+        // HID++ 2.0 is not supported, assume HID++ 1.0
+        _version = std::make_tuple(1, 0);
+    }
 
     // Pass all HID++ events with device index to this device.
     RawEventHandler rawEventHandler;
@@ -88,7 +101,18 @@ Report Device::sendReport(Report& report)
     }
 
     auto raw_response = raw_device->sendReport(report.rawReport());
-    return Report(raw_response);
+
+    Report response(raw_response);
+
+    Report::hidpp10_error hidpp10Error{};
+    if(response.isError10(&hidpp10Error))
+        throw hidpp10::Error(hidpp10Error.error_code);
+
+    Report::hidpp20_error hidpp20Error{};
+    if(response.isError20(&hidpp20Error))
+        throw hidpp10::Error(hidpp20Error.error_code);
+
+    return response;
 }
 
 void Device::listen()
