@@ -91,7 +91,7 @@ std::vector<uint8_t> RawDevice::sendReport(const std::vector<uint8_t>& report)
 {
     assert(supportedReportID(report[0]));
 
-        /* If the listener will stop, handle I/O manually.
+    /* If the listener will stop, handle I/O manually.
      * Otherwise, push to queue and wait for result. */
     if(continue_listen)
     {
@@ -118,9 +118,8 @@ std::vector<uint8_t> RawDevice::_respondToReport
         // All reports have the device index at byte 2
         if(response[1] != request[1])
         {
-            std::thread([this](std::vector<uint8_t> report) {
-                this->handleEvent(report);
-            }, request).detach();
+            if(continue_listen)
+                this->handleEvent(response);
             continue;
         }
 
@@ -130,9 +129,8 @@ std::vector<uint8_t> RawDevice::_respondToReport
             if(hidpp::ReportType::Short != response[0] &&
                hidpp::ReportType::Long != response[0])
             {
-                std::thread([this](std::vector<uint8_t> report) {
-                    this->handleEvent(report);
-                }, request).detach();
+                if(continue_listen)
+                    this->handleEvent(response);
                 continue;
             }
 
@@ -160,9 +158,8 @@ std::vector<uint8_t> RawDevice::_respondToReport
                 return response;
         }
 
-        std::thread([this](std::vector<uint8_t> report) {
-            this->handleEvent(report);
-        }, request).detach();
+        if(continue_listen)
+            this->handleEvent(response);
     }
 }
 
@@ -246,9 +243,8 @@ void RawDevice::listen()
         }
         std::vector<uint8_t> report;
         _readReport(report, MAX_DATA_LENGTH);
-        std::thread([this](std::vector<uint8_t> report) {
-            this->handleEvent(report);
-        }, report).detach();
+
+        this->handleEvent(report);
     }
 
     continue_listen = false;
