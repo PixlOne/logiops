@@ -1,5 +1,7 @@
 #include "RawDevice.h"
 #include "../Error.h"
+#include "../hidpp/defs.h"
+#include "../dj/defs.h"
 
 #include <string>
 #include <system_error>
@@ -16,9 +18,16 @@ extern "C"
 }
 
 using namespace logid::backend::raw;
+using namespace logid::backend;
 using namespace std::chrono;
 
-RawDevice::RawDevice(std::string path) : path (path)
+bool RawDevice::supportedReportID(uint8_t id)
+{
+    return (hidpp::ReportType::Short == id) || (hidpp::ReportType::Long == id) ||
+           (dj::ReportType::Short == id) || (dj::ReportType::Long == id);
+}
+
+RawDevice::RawDevice(std::string path) : path (path), continue_listen (false)
 {
     int ret;
 
@@ -80,24 +89,81 @@ RawDevice::~RawDevice()
 
 std::vector<uint8_t> RawDevice::sendReport(const std::vector<uint8_t>& report)
 {
-    std::packaged_task<std::vector<uint8_t>()> task(
-            [=]() {
-        _sendReport(report);
-        std::vector<uint8_t> response;
-        _readReport(response, MAX_DATA_LENGTH);
-        return response;
-    });
+    assert(supportedReportID(report[0]));
 
-    /* If the listener will stop, handle I/O manually.
+        /* If the listener will stop, handle I/O manually.
      * Otherwise, push to queue and wait for result. */
     if(continue_listen)
     {
+        std::packaged_task<std::vector<uint8_t>()> task( [this, report]() {
+            return this->_respondToReport(report);
+        });
         auto f = task.get_future();
         write_queue.push(&task);
         return f.get();
     }
     else
-        return task.get_future().get();
+        return _respondToReport(report);
+}
+
+std::vector<uint8_t> RawDevice::_respondToReport
+    (const std::vector<uint8_t>& request)
+{
+    _sendReport(request);
+    while(true)
+    {
+        std::vector<uint8_t> response;
+        _readReport(response, MAX_DATA_LENGTH);
+
+        // All reports have the device index at byte 2
+        if(response[1] != request[1])
+        {
+            std::thread([this](std::vector<uint8_t> report) {
+                this->handleEvent(report);
+            }, request).detach();
+            continue;
+        }
+
+        if(hidpp::ReportType::Short == request[0] ||
+            hidpp::ReportType::Long == request[0])
+        {
+            if(hidpp::ReportType::Short != response[0] &&
+               hidpp::ReportType::Long != response[0])
+            {
+                std::thread([this](std::vector<uint8_t> report) {
+                    this->handleEvent(report);
+                }, request).detach();
+                continue;
+            }
+
+            // Error; leave to device to handle
+            if(response[2] == 0x8f || response[2] == 0xff)
+                return response;
+
+            bool others_match = true;
+            for(int i = 2; i < 4; i++)
+            {
+                if(response[i] != request[i])
+                    others_match = false;
+            }
+
+            if(others_match)
+                return response;
+        }
+        else if(dj::ReportType::Short == request[0] ||
+            dj::ReportType::Long == request[0])
+        {
+            //Error; leave to device ot handle
+            if(0x7f == response[2])
+                return response;
+            else if(response[2] == request[2])
+                return response;
+        }
+
+        std::thread([this](std::vector<uint8_t> report) {
+            this->handleEvent(report);
+        }, request).detach();
+    }
 }
 
 int RawDevice::_sendReport(const std::vector<uint8_t>& report)

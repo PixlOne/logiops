@@ -26,11 +26,7 @@ namespace logid::backend::hidpp
     class Report
     {
     public:
-        enum Type: uint8_t
-        {
-            Short = 0x10,
-            Long = 0x11
-        };
+        typedef ReportType::ReportType Type;
 
         class InvalidReportID: public std::exception
         {
@@ -50,18 +46,25 @@ namespace logid::backend::hidpp
         static constexpr uint8_t swIdMask = 0x0f;
         static constexpr uint8_t functionMask = 0x0f;
 
-        Report(Type type, DeviceIndex device_index,
+        Report(Report::Type type, DeviceIndex device_index,
                 uint8_t feature_index,
                 uint8_t function,
                 uint8_t sw_id);
         explicit Report(const std::vector<uint8_t>& data);
 
-        Type type() const { return static_cast<Type>(_data[Offset::Type]); };
+        Report::Type type() const { return static_cast<Report::Type>(_data[Offset::Type]); };
         void setType(Report::Type type);
 
-        std::vector<uint8_t>::const_iterator paramBegin() const { return _data.begin() + Offset::Parameters; }
-        std::vector<uint8_t>::const_iterator paramEnd() const { return _data.end(); }
+        std::vector<uint8_t>::iterator paramBegin() { return _data.begin() + Offset::Parameters; }
+        std::vector<uint8_t>::iterator paramEnd() { return _data.end(); }
         void setParams(const std::vector<uint8_t>& _params);
+
+        struct hidpp20_error
+        {
+            uint8_t feature_index, function, software_id, error_code;
+        };
+
+        bool isError20(hidpp20_error* error);
 
         logid::backend::hidpp::DeviceIndex deviceIndex()
         {
