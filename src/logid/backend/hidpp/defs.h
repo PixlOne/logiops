@@ -16,14 +16,14 @@ namespace logid::backend::hidpp
 
     enum DeviceIndex: uint8_t
     {
-        DefaultDevice = 0,
+        DefaultDevice = 0xff,
+        CordedDevice = 0,
         WirelessDevice1 = 1,
         WirelessDevice2 = 2,
         WirelessDevice3 = 3,
         WirelessDevice4 = 4,
         WirelessDevice5 = 5,
         WirelessDevice6 = 6,
-        CordedDevice = 0xff
     };
 
     static constexpr std::size_t ShortParamLength = 3;
