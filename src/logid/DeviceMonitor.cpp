@@ -3,6 +3,7 @@
 
 #include "DeviceMonitor.h"
 #include "util.h"
+#include "backend/hidpp10/Error.h"
 
 #define NON_WIRELESS_DEV(index) (index) == HIDPP::DefaultDevice ? "default" : "corded"
 
@@ -128,7 +129,13 @@ void DeviceMonitor::addDevice(std::string path)
 
         std::thread([device]() { device->listen(); }).detach();
     }
-    catch(backend::hidpp::Device::InvalidDevice &e)
+    catch(hidpp10::Error &e)
+    {
+        if(e.code() == hidpp10::Error::UnknownDevice) {}
+        else
+            throw;
+    }
+    catch(hidpp::Device::InvalidDevice &e)
     {
         log_printf(DEBUG, "Detected device at %s but %s", path.c_str(), e.what());
     }

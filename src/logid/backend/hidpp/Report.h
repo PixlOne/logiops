@@ -18,6 +18,7 @@ namespace logid::backend::hidpp
     {
         static constexpr uint8_t Type = 0;
         static constexpr uint8_t DeviceIndex = 1;
+        static constexpr uint8_t SubID = 2;
         static constexpr uint8_t Feature = 2;
         static constexpr uint8_t Function = 3;
         static constexpr uint8_t Parameters = 4;
@@ -58,6 +59,13 @@ namespace logid::backend::hidpp
         std::vector<uint8_t>::iterator paramBegin() { return _data.begin() + Offset::Parameters; }
         std::vector<uint8_t>::iterator paramEnd() { return _data.end(); }
         void setParams(const std::vector<uint8_t>& _params);
+
+        struct hidpp10_error
+        {
+            uint8_t sub_id, address, error_code;
+        };
+
+        bool isError10(hidpp10_error* error);
 
         struct hidpp20_error
         {

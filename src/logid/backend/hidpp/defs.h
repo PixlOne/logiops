@@ -1,7 +1,7 @@
 #ifndef LOGID_HIDPP_DEFS_H
 #define LOGID_HIDPP_DEFS_H
 
-#define LOGID_HIDPP_SOFTWARE_ID 1
+#define LOGID_HIDPP_SOFTWARE_ID 0
 
 namespace logid::backend::hidpp
 {

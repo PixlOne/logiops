@@ -18,6 +18,7 @@ add_executable(logid
         backend/raw/RawDevice.cpp
         backend/hidpp/Device.cpp
         backend/hidpp/Report.cpp
+        backend/hidpp10/Error.cpp
         backend/hidpp20/Device.cpp
         backend/hidpp20/Error.cpp
         backend/hidpp20/Feature.cpp

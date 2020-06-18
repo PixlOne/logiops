@@ -2,6 +2,8 @@
 #include <algorithm>
 #include <cassert>
 #include "Report.h"
+#include "../hidpp10/Error.h"
+#include "../hidpp20/Error.h"
 
 using namespace logid::backend::hidpp;
 using namespace logid::backend;
@@ -159,9 +161,31 @@ void Report::setParams(const std::vector<uint8_t>& _params)
         _data[Offset::Parameters + i] = _params[i];
 }
 
+bool Report::isError10(Report::hidpp10_error *error)
+{
+    assert(error != nullptr);
+
+    if(_data[Offset::Type] != Type::Short ||
+        _data[Offset::SubID] != hidpp10::ErrorID)
+        return false;
+
+    error->sub_id = _data[3];
+    error->address = _data[4];
+    error->error_code = _data[5];
+
+    return true;
+}
+
 bool Report::isError20(Report::hidpp20_error* error)
 {
     if(_data[Offset::Type] != Type::Long ||
-        _data[Offset::Feature] != 0xff)
+        _data[Offset::Feature] != hidpp20::ErrorID)
         return false;
+
+    error->feature_index= _data[3];
+    error->function = (_data[4] >> 4) & 0x0f;
+    error->software_id = _data[4] & 0x0f;
+    error->error_code = _data[5];
+
+    return true;
 }
