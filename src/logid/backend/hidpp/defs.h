@@ -5,6 +5,15 @@
 
 namespace logid::backend::hidpp
 {
+    namespace ReportType
+    {
+        enum ReportType : uint8_t
+        {
+            Short = 0x10,
+            Long = 0x11
+        };
+    }
+
     enum DeviceIndex: uint8_t
     {
         DefaultDevice = 0,

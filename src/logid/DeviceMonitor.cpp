@@ -105,6 +105,9 @@ void DeviceMonitor::addDevice(std::string path)
         auto device = std::make_shared<backend::hidpp::Device>(path, hidpp::DeviceIndex::WirelessDevice1);
         log_printf(DEBUG, "Detected HID++ device at %s", path.c_str());
 
+        auto version = device->version();
+        log_printf(DEBUG, "HID++ version: %d.%d", std::get<0>(version), std::get<1>(version));
+
         auto eventHandler = std::make_shared<backend::hidpp::EventHandler>();
         eventHandler->condition = [device](backend::hidpp::Report& report)->bool
         {

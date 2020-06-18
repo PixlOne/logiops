@@ -7,6 +7,7 @@
 #include <map>
 #include <atomic>
 #include <future>
+#include <set>
 
 #include "../defs.h"
 #include "../../util/mutex_queue.h"
@@ -20,12 +21,13 @@ namespace raw
     class RawDevice
     {
     public:
+        static bool supportedReportID(uint8_t id);
+
         RawDevice(std::string path);
         ~RawDevice();
         std::string hidrawPath() const { return path; }
         std::vector<uint8_t> reportDescriptor() const { return rdesc; }
 
-        /// TODO: Process reports in a queue.
         std::vector<uint8_t> sendReport(const std::vector<uint8_t>& report);
         void interruptRead();
 
@@ -54,6 +56,8 @@ namespace raw
         /* These will only be used internally and processed with a queue */
         int _sendReport(const std::vector<uint8_t>& report);
         int _readReport(std::vector<uint8_t>& report, std::size_t maxDataLength);
+
+        std::vector<uint8_t> _respondToReport(const std::vector<uint8_t>& request);
 
         mutex_queue<std::packaged_task<std::vector<uint8_t>()>*> write_queue;
     };

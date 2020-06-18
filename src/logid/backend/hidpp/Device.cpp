@@ -1,6 +1,7 @@
 #include <assert.h>
 #include "Device.h"
 #include "Report.h"
+#include "../hidpp20/features/Root.h"
 
 using namespace logid::backend;
 using namespace logid::backend::hidpp;
@@ -29,12 +30,20 @@ Device::Device(const std::string& path, DeviceIndex index):
     if(!supported_reports)
         throw InvalidDevice(InvalidDevice::NoHIDPPReport);
 
+    Report versionRequest(Report::Type::Short, index, hidpp20::FeatureID::ROOT,
+            hidpp20::Root::Ping, LOGID_HIDPP_SOFTWARE_ID);
+
+    ///TODO: Catch error
+    auto versionResponse = sendReport(versionRequest);
+    auto versionResponse_params = versionResponse.paramBegin();
+    _version = std::make_tuple(versionResponse_params[0], versionResponse_params[1]);
+
     // Pass all HID++ events with device index to this device.
     RawEventHandler rawEventHandler;
     rawEventHandler.condition = [index](std::vector<uint8_t>& report)->bool
     {
-        return (report[Offset::Type] == Report::Short ||
-            report[Offset::Type] == Report::Long) && (report[Offset::DeviceIndex] == index);
+        return (report[Offset::Type] == Report::Type::Short ||
+            report[Offset::Type] == Report::Type::Long) && (report[Offset::DeviceIndex] == index);
     };
     rawEventHandler.callback = [this](std::vector<uint8_t>& report)->void
     {
@@ -69,11 +78,11 @@ Report Device::sendReport(Report& report)
 {
     switch(report.type())
     {
-        case Report::Short:
+        case Report::Type::Short:
             if(!(supported_reports & HIDPP_REPORT_SHORT_SUPPORTED))
-                report.setType(Report::Long);
+                report.setType(Report::Type::Long);
             break;
-        case Report::Long:
+        case Report::Type::Long:
             /* Report can be truncated, but that isn't a good idea. */
             assert(supported_reports & HIDPP_REPORT_LONG_SUPPORTED);
     }

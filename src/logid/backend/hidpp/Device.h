@@ -40,6 +40,7 @@ namespace hidpp
 
         std::string devicePath() const { return path; }
         DeviceIndex deviceIndex() const { return index; }
+        std::tuple<uint8_t, uint8_t> version() const { return _version; }
 
         void listen(); // Runs asynchronously
         void stopListening();
@@ -55,6 +56,8 @@ namespace hidpp
         std::string path;
         DeviceIndex index;
         uint8_t supported_reports;
+
+        std::tuple<uint8_t, uint8_t> _version;
 
         std::map<std::string, std::shared_ptr<EventHandler>> event_handlers;
     };

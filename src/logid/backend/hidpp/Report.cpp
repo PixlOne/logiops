@@ -96,15 +96,15 @@ const char *Report::InvalidReportLength::what() const noexcept
 Report::Report(Report::Type type, DeviceIndex device_index,
         uint8_t feature_index, uint8_t function, uint8_t sw_id)
 {
-    assert(!(function & functionMask));
-    assert(!(sw_id & swIdMask));
+    assert(function <= functionMask);
+    assert(sw_id <= swIdMask);
 
     switch(type)
     {
-        case Short:
+        case Type::Short:
             _data.resize(HeaderLength + ShortParamLength);
             break;
-        case Long:
+        case Type::Long:
             _data.resize(HeaderLength + LongParamLength);
             break;
         default:
@@ -123,10 +123,10 @@ Report::Report(const std::vector<uint8_t>& data)
 
     switch(_data[Offset::Type])
     {
-        case Short:
+        case Type::Short:
             _data.resize(HeaderLength + ShortParamLength);
             break;
-        case Long:
+        case Type::Long:
             _data.resize(HeaderLength + LongParamLength);
             break;
         default:
@@ -138,10 +138,10 @@ void Report::setType(Report::Type type)
 {
     switch(type)
     {
-        case Short:
+        case Type::Short:
             _data.resize(HeaderLength + ShortParamLength);
             break;
-        case Long:
+        case Type::Long:
             _data.resize(HeaderLength + LongParamLength);
             break;
         default:
@@ -157,4 +157,11 @@ void Report::setParams(const std::vector<uint8_t>& _params)
 
     for(std::size_t i = 0; i < _params.size(); i++)
         _data[Offset::Parameters + i] = _params[i];
+}
+
+bool Report::isError20(Report::hidpp20_error* error)
+{
+    if(_data[Offset::Type] != Type::Long ||
+        _data[Offset::Feature] != 0xff)
+        return false;
 }
