@@ -15,6 +15,12 @@ namespace dj
             Long = 0x21
         };
     }
+
+    static constexpr uint8_t ErrorFeature = 0x7f;
+
+    static constexpr std::size_t HeaderLength = 3;
+    static constexpr std::size_t ShortParamLength = 12;
+    static constexpr std::size_t LongParamLength = 29;
 }}}
 
 #endif //LOGID_BACKEND_DJ_DEFS_H

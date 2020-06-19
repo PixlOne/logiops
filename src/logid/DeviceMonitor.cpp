@@ -4,6 +4,7 @@
 #include "DeviceMonitor.h"
 #include "util.h"
 #include "backend/hidpp10/Error.h"
+#include "backend/dj/Receiver.h"
 
 #define NON_WIRELESS_DEV(index) (index) == HIDPP::DefaultDevice ? "default" : "corded"
 
@@ -103,12 +104,26 @@ void DeviceMonitor::stopAndDeleteDevice (const std::string &path, HIDPP::DeviceI
 void DeviceMonitor::addDevice(std::string path)
 {
     try {
-        auto device = std::make_shared<backend::hidpp::Device>(path, hidpp::DeviceIndex::WirelessDevice1);
-        log_printf(DEBUG, "Detected HID++ device at %s", path.c_str());
+        std::tuple<uint8_t, uint8_t> version;
+        try
+        {
+            hidpp::Device device(path, hidpp::DefaultDevice);
 
-        auto version = device->version();
-        log_printf(DEBUG, "HID++ version: %d.%d", std::get<0>(version), std::get<1>(version));
+            log_printf(DEBUG, "Detected HID++ device at %s", path.c_str());
 
+            version = device.version();
+            log_printf(DEBUG, "HID++ version: %d.%d", std::get<0>(version), std::get<1>(version));
+        } catch(std::system_error &e) { }
+
+        if(version == std::make_tuple(1, 0))
+        {
+            // This is a receiver
+            dj::Receiver receiver(path);
+            receiver.enumerate();
+            receiver.listen();
+            while(true) {}
+        }
+        /*
         auto eventHandler = std::make_shared<backend::hidpp::EventHandler>();
         eventHandler->condition = [device](backend::hidpp::Report& report)->bool
         {
@@ -125,9 +140,9 @@ void DeviceMonitor::addDevice(std::string path)
 
         device->addEventHandler("MONITOR_ALL", eventHandler);
 
-        devices.push_back(device);
+        devices.push_back(device);*/
 
-        std::thread([device]() { device->listen(); }).detach();
+        //std::thread([device]() { device->listen(); }).detach();
     }
     catch(hidpp10::Error &e)
     {
@@ -139,10 +154,11 @@ void DeviceMonitor::addDevice(std::string path)
     {
         log_printf(DEBUG, "Detected device at %s but %s", path.c_str(), e.what());
     }
+    /*
     catch(std::system_error &e)
     {
         log_printf(WARN, "Failed to open %s: %s", path.c_str(), e.what());
-    }
+    } */
 }
 
 void DeviceMonitor::removeDevice(std::string path)

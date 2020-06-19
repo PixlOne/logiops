@@ -20,6 +20,7 @@ namespace logid::backend::hidpp
         static constexpr uint8_t DeviceIndex = 1;
         static constexpr uint8_t SubID = 2;
         static constexpr uint8_t Feature = 2;
+        static constexpr uint8_t Address = 3;
         static constexpr uint8_t Function = 3;
         static constexpr uint8_t Parameters = 4;
     }
@@ -48,15 +49,36 @@ namespace logid::backend::hidpp
         static constexpr uint8_t functionMask = 0x0f;
 
         Report(Report::Type type, DeviceIndex device_index,
+               uint8_t sub_id,
+               uint8_t address);
+        Report(Report::Type type, DeviceIndex device_index,
                 uint8_t feature_index,
                 uint8_t function,
                 uint8_t sw_id);
         explicit Report(const std::vector<uint8_t>& data);
 
-        Report::Type type() const { return static_cast<Report::Type>(_data[Offset::Type]); };
+        Report::Type type() const;
         void setType(Report::Type type);
 
-        std::vector<uint8_t>::iterator paramBegin() { return _data.begin() + Offset::Parameters; }
+        uint8_t feature() const;
+        void setFeature(uint8_t feature);
+
+        uint8_t subId() const;
+        void setSubId(uint8_t sub_id);
+
+        uint8_t function() const;
+        void setFunction(uint8_t function);
+
+        uint8_t swId() const;
+        void setSwId(uint8_t sw_id);
+
+        uint8_t address() const;
+        void setAddress(uint8_t address);
+
+        std::vector<uint8_t>::iterator paramBegin()
+        {
+            return _data.begin() + Offset::Parameters;
+        }
         std::vector<uint8_t>::iterator paramEnd() { return _data.end(); }
         void setParams(const std::vector<uint8_t>& _params);
 
