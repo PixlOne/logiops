@@ -3,17 +3,35 @@
 
 #include <cstdint>
 #include "../raw/RawDevice.h"
+#include "defs.h"
+#include "../hidpp/defs.h"
 
 namespace logid::backend::dj
 {
-    bool supportsDjReports(std::vector<uint8_t>& rawDevice);
+    namespace Offset
+    {
+        static constexpr uint8_t Type = 0;
+        static constexpr uint8_t DeviceIndex = 1;
+        static constexpr uint8_t Feature = 2;
+        static constexpr uint8_t Parameters = 3;
+    }
+
+    bool supportsDjReports(std::vector<uint8_t>&& rdesc);
     class Report
     {
-        enum Type: uint8_t
-        {
-            Short = 0x20, // Short DJ reports use 12 byte parameters
-            Long = 0x21   // Long DJ reports use 29 byte parameters
-        };
+    public:
+        typedef ReportType::ReportType Type;
+
+        explicit Report(std::vector<uint8_t>& data);
+        Report(Type type, hidpp::DeviceIndex index, uint8_t feature);
+
+        Type type() const;
+        hidpp::DeviceIndex index() const;
+        uint8_t feature() const;
+        std::vector<uint8_t>::iterator paramBegin();
+        std::vector<uint8_t> rawData() const;
+    private:
+        std::vector<uint8_t> _data;
     };
 }
 

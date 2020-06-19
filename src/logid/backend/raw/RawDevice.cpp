@@ -75,6 +75,8 @@ RawDevice::RawDevice(std::string path) : path (path), continue_listen (false)
         close(fd);
         throw std::system_error(err, std::system_category(), "RawDevice pipe open failed");
     }
+
+    continue_listen = false;
 }
 
 RawDevice::~RawDevice()
@@ -104,6 +106,27 @@ std::vector<uint8_t> RawDevice::sendReport(const std::vector<uint8_t>& report)
     }
     else
         return _respondToReport(report);
+}
+
+// DJ commands are not systematically acknowledged, do not expect a result.
+void RawDevice::sendReportNoResponse(const std::vector<uint8_t>& report)
+{
+    assert(supportedReportID(report[0]));
+
+    /* If the listener will stop, handle I/O manually.
+     * Otherwise, push to queue and wait for result. */
+    if(continue_listen)
+    {
+        std::packaged_task<std::vector<uint8_t>()> task([this, report]() {
+            this->_sendReport(report);
+            return std::vector<uint8_t>();
+        });
+        auto f = task.get_future();
+        write_queue.push(&task);
+        f.get();
+    }
+    else
+        _sendReport(report);
 }
 
 std::vector<uint8_t> RawDevice::_respondToReport

@@ -26,7 +26,19 @@ Device::InvalidDevice::Reason Device::InvalidDevice::code() const noexcept
 
 /// TODO: Initialize a single RawDevice for each path.
 Device::Device(const std::string& path, DeviceIndex index):
-    raw_device (std::make_shared<raw::RawDevice>(path)), path (path), index (index)
+    raw_device (std::make_shared<raw::RawDevice>(path)), path (path),
+    _index (index)
+{
+    _init();
+}
+
+Device::Device(std::shared_ptr<raw::RawDevice> raw_device, DeviceIndex index) :
+    raw_device (raw_device), _index (index)
+{
+    _init();
+}
+
+void Device::_init()
 {
     supported_reports = getSupportedReports(raw_device->reportDescriptor());
     if(!supported_reports)
@@ -34,8 +46,9 @@ Device::Device(const std::string& path, DeviceIndex index):
 
     try
     {
-        Report versionRequest(Report::Type::Short, index, hidpp20::FeatureID::ROOT,
-        hidpp20::Root::Ping, LOGID_HIDPP_SOFTWARE_ID);
+        Report versionRequest(Report::Type::Short, _index,
+                hidpp20::FeatureID::ROOT,hidpp20::Root::Ping,
+                LOGID_HIDPP_SOFTWARE_ID);
 
         auto versionResponse = sendReport(versionRequest);
         auto versionResponse_params = versionResponse.paramBegin();
@@ -53,10 +66,11 @@ Device::Device(const std::string& path, DeviceIndex index):
 
     // Pass all HID++ events with device index to this device.
     RawEventHandler rawEventHandler;
-    rawEventHandler.condition = [index](std::vector<uint8_t>& report)->bool
+    rawEventHandler.condition = [this](std::vector<uint8_t>& report)->bool
     {
         return (report[Offset::Type] == Report::Type::Short ||
-            report[Offset::Type] == Report::Type::Long) && (report[Offset::DeviceIndex] == index);
+                report[Offset::Type] == Report::Type::Long) &&
+                (report[Offset::DeviceIndex] == this->_index);
     };
     rawEventHandler.callback = [this](std::vector<uint8_t>& report)->void
     {
@@ -64,7 +78,15 @@ Device::Device(const std::string& path, DeviceIndex index):
         this->handleEvent(_report);
     };
 
-    raw_device->addEventHandler("DEV_" + std::to_string(index), rawEventHandler);
+    raw_device->addEventHandler("DEV_" + std::to_string(_index), rawEventHandler);
+}
+
+Device::~Device()
+{
+    raw_device->removeEventHandler("DEV_" + std::to_string(_index));
+    ///TODO: tmp
+    raw_device->stopListener();
+    raw_device.reset();
 }
 
 void Device::addEventHandler(const std::string& nickname, const std::shared_ptr<EventHandler>& handler)

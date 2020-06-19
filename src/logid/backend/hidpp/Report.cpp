@@ -96,6 +96,27 @@ const char *Report::InvalidReportLength::what() const noexcept
 }
 
 Report::Report(Report::Type type, DeviceIndex device_index,
+        uint8_t sub_id, uint8_t address)
+{
+    switch(type)
+    {
+        case Type::Short:
+            _data.resize(HeaderLength + ShortParamLength);
+            break;
+        case Type::Long:
+            _data.resize(HeaderLength + LongParamLength);
+            break;
+        default:
+            throw InvalidReportID();
+    }
+
+    _data[Offset::Type] = type;
+    _data[Offset::DeviceIndex] = device_index;
+    _data[Offset::SubID] = sub_id;
+    _data[Offset::Address] = address;
+}
+
+Report::Report(Report::Type type, DeviceIndex device_index,
         uint8_t feature_index, uint8_t function, uint8_t sw_id)
 {
     assert(function <= functionMask);
@@ -123,6 +144,7 @@ Report::Report(const std::vector<uint8_t>& data)
 {
     _data = data;
 
+    // Truncating data is entirely valid here.
     switch(_data[Offset::Type])
     {
         case Type::Short:
@@ -134,6 +156,11 @@ Report::Report(const std::vector<uint8_t>& data)
         default:
             throw InvalidReportID();
     }
+}
+
+Report::Type Report::type() const
+{
+    return static_cast<Report::Type>(_data[Offset::Type]);
 }
 
 void Report::setType(Report::Type type)
@@ -151,6 +178,58 @@ void Report::setType(Report::Type type)
     }
 
     _data[Offset::Type] = type;
+}
+
+uint8_t Report::feature() const
+{
+    return _data[Offset::Feature];
+}
+
+void Report::setFeature(uint8_t feature)
+{
+    _data[Offset::Parameters] = feature;
+}
+
+uint8_t Report::subId() const
+{
+    return _data[Offset::SubID];
+}
+
+void Report::setSubId(uint8_t sub_id)
+{
+    _data[Offset::SubID] = sub_id;
+}
+
+uint8_t Report::function() const
+{
+    return (_data[Offset::Function] >> 4) & 0x0f;
+}
+
+void Report::setFunction(uint8_t function)
+{
+    _data[Offset::Function] &= 0x0f;
+    _data[Offset::Function] |= (function << 4) & 0x0f;
+}
+
+uint8_t Report::swId() const
+{
+    return _data[Offset::Function] & 0x0f;
+}
+
+void Report::setSwId(uint8_t sub_id)
+{
+    _data[Offset::Function] &= 0x0f;
+    _data[Offset::Function] |= sub_id & 0x0f;
+}
+
+uint8_t Report::address() const
+{
+    return _data[Offset::Address];
+}
+
+void Report::setAddress(uint8_t address)
+{
+    _data[Offset::Address] = address;
 }
 
 void Report::setParams(const std::vector<uint8_t>& _params)

@@ -37,9 +37,11 @@ namespace hidpp
         };
 
         Device(const std::string& path, DeviceIndex index);
+        Device(std::shared_ptr<raw::RawDevice> raw_device, DeviceIndex index);
+        ~Device();
 
         std::string devicePath() const { return path; }
-        DeviceIndex deviceIndex() const { return index; }
+        DeviceIndex deviceIndex() const { return _index; }
         std::tuple<uint8_t, uint8_t> version() const { return _version; }
 
         void listen(); // Runs asynchronously
@@ -52,9 +54,11 @@ namespace hidpp
 
         void handleEvent(Report& report);
     private:
+        void _init();
+
         std::shared_ptr<raw::RawDevice> raw_device;
         std::string path;
-        DeviceIndex index;
+        DeviceIndex _index;
         uint8_t supported_reports;
 
         std::tuple<uint8_t, uint8_t> _version;
