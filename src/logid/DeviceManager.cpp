@@ -1,7 +1,7 @@
 #include <thread>
 #include <sstream>
 
-#include "DeviceMonitor.h"
+#include "DeviceManager.h"
 #include "Receiver.h"
 #include "util.h"
 #include "backend/hidpp10/Error.h"
@@ -12,7 +12,7 @@
 using namespace logid;
 using namespace logid::backend;
 
-void DeviceMonitor::addDevice(std::string path)
+void DeviceManager::addDevice(std::string path)
 {
     bool defaultExists = true;
     bool isReceiver = false;
@@ -59,7 +59,7 @@ void DeviceMonitor::addDevice(std::string path)
     }
 }
 
-void DeviceMonitor::removeDevice(std::string path)
+void DeviceManager::removeDevice(std::string path)
 {
     auto receiver = _receivers.find(path);
 

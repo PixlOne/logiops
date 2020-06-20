@@ -4,7 +4,7 @@
 #include <mutex>
 
 #include "util.h"
-#include "DeviceMonitor.h"
+#include "DeviceManager.h"
 #include "logid.h"
 
 #define evdev_name "logid"
@@ -21,7 +21,7 @@ std::string config_file = DEFAULT_CONFIG_FILE;
 
 LogLevel logid::global_verbosity = INFO;
 // Configuration* logid::global_config;
-DeviceMonitor* logid::finder;
+DeviceManager* logid::finder;
 
 bool logid::kill_logid = false;
 std::mutex logid::finder_reloading;
@@ -166,7 +166,7 @@ int main(int argc, char** argv)
     */
     
     // Scan devices, create listeners, handlers, etc.
-    finder = new DeviceMonitor();
+    finder = new DeviceManager();
 
     while(!kill_logid)
     {
