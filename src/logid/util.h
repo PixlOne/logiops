@@ -1,7 +1,7 @@
 #ifndef LOGID_UTIL_H
 #define LOGID_UTIL_H
 
-//#include "Actions.h"
+#include <string>
 
 namespace logid
 {
