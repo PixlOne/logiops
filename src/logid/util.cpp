@@ -27,6 +27,7 @@ void logid::log_printf(LogLevel level, const char* format, ...)
 
 const char* logid::level_prefix(LogLevel level)
 {
+    if(level == RAWREPORT) return "RAWREPORT";
     if(level == DEBUG) return "DEBUG";
     if(level == INFO) return "INFO" ;
     if(level == WARN) return "WARN";
@@ -120,6 +121,7 @@ LogLevel logid::stringToLogLevel(std::string s)
     std::string original_str = s;
     std::transform(s.begin(), s.end(), s.begin(), ::tolower);
 
+    if(s == "rawreport") return RAWREPORT;
     if(s == "debug") return DEBUG;
     if(s == "info") return INFO;
     if(s == "warn" || s == "warning") return WARN;
