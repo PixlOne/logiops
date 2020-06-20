@@ -86,33 +86,49 @@ namespace dj
 
         std::map<hidpp::DeviceIndex, uint8_t> getDeviceActivity();
 
-        struct pairing_info
+        struct PairingInfo
         {
-            uint8_t destination_id;
-            uint8_t report_interval;
+            uint8_t destinationId;
+            uint8_t reportInterval;
             uint16_t pid;
-            uint8_t device_type; ///TODO: Create enum for DeviceType
+            DeviceType::DeviceType deviceType;
         };
 
-        struct extended_pairing_info
+        struct ExtendedPairingInfo
         {
-            uint32_t serial_number;
-            uint8_t report_types[4];
-            uint8_t power_switch_location; ///TODO: Create enum
+            uint32_t serialNumber;
+            uint8_t reportTypes[4];
+            uint8_t powerSwitchLocation; ///TODO: Make enum
         };
 
-        pairing_info getPairingInfo(hidpp::DeviceIndex index);
-        extended_pairing_info getExtendedPairingInfo(hidpp::DeviceIndex index);
+        struct PairingInfo getPairingInfo(hidpp::DeviceIndex index);
+        struct ExtendedPairingInfo getExtendedPairingInfo(hidpp::DeviceIndex
+                index);
 
         std::string getDeviceName(hidpp::DeviceIndex index);
 
-        hidpp::DeviceIndex deviceConnectionEvent(hidpp::Report& report);
-        hidpp::DeviceIndex deviceDisconnectionEvent(hidpp::Report& report);
+        struct DeviceConnectionEvent
+        {
+            hidpp::DeviceIndex index;
+            uint16_t pid;
+            DeviceType::DeviceType deviceType;
+            bool unifying;
+            bool softwarePresent;
+            bool encrypted;
+            bool linkEstablished;
+            bool withPayload;
+        };
+
+        static hidpp::DeviceIndex deviceDisconnectionEvent(
+                hidpp::Report& report);
+        static DeviceConnectionEvent deviceConnectionEvent(
+                hidpp::Report& report);
 
         void handleDjEvent(dj::Report& report);
         void handleHidppEvent(hidpp::Report& report);
 
         void listen();
+        void stopListening();
     private:
         void sendDjRequest(hidpp::DeviceIndex index, uint8_t function,
                 const std::vector<uint8_t>&& params);
