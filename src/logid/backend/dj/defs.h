@@ -16,6 +16,21 @@ namespace dj
         };
     }
 
+    namespace DeviceType
+    {
+        enum DeviceType : uint8_t
+        {
+            Unknown = 0x00,
+            Keyboard = 0x01,
+            Mouse = 0x02,
+            Numpad = 0x03,
+            Presenter = 0x04,
+            /* 0x05-0x07 is reserved */
+            Trackball = 0x08,
+            Touchpad = 0x09
+        };
+    }
+
     static constexpr uint8_t ErrorFeature = 0x7f;
 
     static constexpr std::size_t HeaderLength = 3;

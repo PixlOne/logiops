@@ -12,7 +12,13 @@ InvalidReceiver::InvalidReceiver(Reason reason) : _reason (reason)
 
 const char* InvalidReceiver::what() const noexcept
 {
-    return "Invalid receiver";
+    switch(_reason)
+    {
+        case NoDJReports:
+            return "No DJ reports";
+        default:
+            return "Invalid receiver";
+    }
 }
 
 InvalidReceiver::Reason InvalidReceiver::code() const noexcept
@@ -69,10 +75,11 @@ Receiver::notification_flags Receiver::getHidppNotifications()
     auto response = _hidpp10_device.getRegister(EnableHidppNotifications, {});
 
     notification_flags flags{};
-
     flags.device_battery_status = response[0] & (1 << 4);
     flags.receiver_wireless_notifications = response[1] & (1 << 0);
     flags.receiver_software_present = response[1] & (1 << 3);
+
+    return flags;
 }
 
 void Receiver::enableHidppNotifications(notification_flags flags)
@@ -142,7 +149,8 @@ std::map<hidpp::DeviceIndex, uint8_t> Receiver::getDeviceActivity()
     return device_activity;
 }
 
-Receiver::pairing_info Receiver::getPairingInfo(hidpp::DeviceIndex index)
+struct Receiver::PairingInfo
+    Receiver::getPairingInfo(hidpp::DeviceIndex index)
 {
     std::vector<uint8_t> request(1);
     request[0] = index;
@@ -150,17 +158,17 @@ Receiver::pairing_info Receiver::getPairingInfo(hidpp::DeviceIndex index)
 
     auto response = _hidpp10_device.getRegister(PairingInfo, request);
 
-    pairing_info info{};
-    info.destination_id = response[0];
-    info.report_interval = response[1];
+    struct PairingInfo info{};
+    info.destinationId = response[0];
+    info.reportInterval = response[1];
     info.pid = response[2];
     info.pid |= (response[3] << 8);
-    info.device_type = response[6];
+    info.deviceType = static_cast<DeviceType::DeviceType>(response[6]);
 
     return info;
 }
 
-Receiver::extended_pairing_info
+struct Receiver::ExtendedPairingInfo
     Receiver::getExtendedPairingInfo(hidpp::DeviceIndex index)
 {
     std::vector<uint8_t> request(1);
@@ -169,16 +177,16 @@ Receiver::extended_pairing_info
 
     auto response = _hidpp10_device.getRegister(PairingInfo, request);
 
-    extended_pairing_info info{};
+    ExtendedPairingInfo info{};
 
-    info.serial_number = 0;
+    info.serialNumber = 0;
     for(uint8_t i = 0; i < 4; i++)
-        info.serial_number |= (response[i] << 8*i);
+        info.serialNumber |= (response[i] << 8*i);
 
     for(uint8_t i = 0; i < 4; i++)
-        info.report_types[i] = response[i + 4];
+        info.reportTypes[i] = response[i + 4];
 
-    info.power_switch_location = response[8] & 0xf;
+    info.powerSwitchLocation = response[8] & 0xf;
 
     return info;
 }
@@ -201,16 +209,33 @@ std::string Receiver::getDeviceName(hidpp::DeviceIndex index)
     return name;
 }
 
-hidpp::DeviceIndex Receiver::deviceConnectionEvent(hidpp::Report &report)
-{
-    assert(report.subId() == DeviceConnection);
-    return report.deviceIndex();
-}
-
 hidpp::DeviceIndex Receiver::deviceDisconnectionEvent(hidpp::Report& report)
 {
     assert(report.subId() == DeviceDisconnection);
     return report.deviceIndex();
+}
+
+Receiver::DeviceConnectionEvent Receiver::deviceConnectionEvent(
+        hidpp::Report &report)
+{
+    assert(report.subId() == DeviceConnection);
+
+    DeviceConnectionEvent event{};
+
+    event.index = report.deviceIndex();
+    event.unifying = ((report.paramBegin()[0] & 0b111) == 0x04);
+
+    event.deviceType = static_cast<DeviceType::DeviceType>(
+            report.paramBegin()[1] & 0x0f);
+    event.softwarePresent = report.paramBegin()[1] & (1<<4);
+    event.encrypted = report.paramBegin()[1] & (1<<5);
+    event.linkEstablished = report.paramBegin()[1] & (1<<6);
+    event.withPayload = report.paramBegin()[1] & (1<<7);
+
+    event.pid = report.paramBegin()[3];
+    event.pid |= (report.paramBegin()[2] << 8);
+
+    return event;
 }
 
 void Receiver::handleDjEvent(Report& report)
@@ -252,4 +277,9 @@ void Receiver::sendDjRequest(hidpp::DeviceIndex index, uint8_t function,
 void Receiver::listen()
 {
     std::thread{[=]() { raw_device->listen(); }}.detach();
+}
+
+void Receiver::stopListening()
+{
+    raw_device->stopListener();
 }

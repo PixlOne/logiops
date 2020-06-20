@@ -19,6 +19,7 @@ add_executable(logid
         backend/raw/DeviceMonitor.cpp
         backend/raw/RawDevice.cpp
         backend/dj/Receiver.cpp
+        backend/dj/ReceiverMonitor.cpp
         backend/dj/Error.cpp
         backend/hidpp/Device.cpp
         backend/hidpp/Report.cpp
