@@ -12,7 +12,7 @@ find_package(DBusCXX REQUIRED)
 add_executable(logid
         logid.cpp
         util.cpp
-        DeviceMonitor.cpp
+        DeviceManager.cpp
         Device.cpp
         Receiver.cpp
         backend/Error.cpp

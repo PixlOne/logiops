@@ -13,10 +13,10 @@
 namespace logid
 {
 
-    class DeviceMonitor : public backend::raw::DeviceMonitor
+    class DeviceManager : public backend::raw::DeviceMonitor
     {
     public:
-        DeviceMonitor() = default;
+        DeviceManager() = default;
     protected:
         void addDevice(std::string path) override;
         void removeDevice(std::string path) override;
@@ -26,7 +26,7 @@ namespace logid
         std::map<std::string, std::shared_ptr<Receiver>> _receivers;
     };
 
-    extern DeviceMonitor* finder;
+    extern DeviceManager* finder;
 }
 
 #endif //LOGID_DEVICEFINDER_H
