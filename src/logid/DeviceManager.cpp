@@ -14,6 +14,8 @@ using namespace logid::backend;
 
 void DeviceManager::addDevice(std::string path)
 {
+    log_printf(DEBUG, "Scanning %s for devices.", path.c_str());
+
     bool defaultExists = true;
     bool isReceiver = false;
     try {
