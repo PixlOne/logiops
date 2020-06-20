@@ -84,9 +84,6 @@ void Device::_init()
 Device::~Device()
 {
     raw_device->removeEventHandler("DEV_" + std::to_string(_index));
-    ///TODO: tmp
-    raw_device->stopListener();
-    raw_device.reset();
 }
 
 void Device::addEventHandler(const std::string& nickname, const std::shared_ptr<EventHandler>& handler)

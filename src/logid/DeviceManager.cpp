@@ -14,8 +14,6 @@ using namespace logid::backend;
 
 void DeviceManager::addDevice(std::string path)
 {
-    log_printf(DEBUG, "Scanning %s for devices.", path.c_str());
-
     bool defaultExists = true;
     bool isReceiver = false;
     try {
@@ -36,7 +34,6 @@ void DeviceManager::addDevice(std::string path)
         log_printf(INFO, "Detected receiver at %s", path.c_str());
         auto receiver = std::make_shared<Receiver>(path);
         _receivers.emplace(path, receiver);
-        // receiver->listen();
     } else {
         /* TODO: Error check?
          * TODO: Can non-receivers only contain 1 device?
