@@ -12,6 +12,8 @@ add_executable(logid
         logid.cpp
         util.cpp
         DeviceMonitor.cpp
+        Device.cpp
+        Receiver.cpp
         backend/Error.cpp
         backend/raw/DeviceMonitor.cpp
         backend/raw/RawDevice.cpp

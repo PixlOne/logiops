@@ -7,38 +7,23 @@
 
 #include "backend/raw/DeviceMonitor.h"
 #include "backend/hidpp/Device.h"
-
-#define MAX_CONNECTION_TRIES 10
-#define TIME_BETWEEN_CONNECTION_TRIES 500ms
+#include "Device.h"
+#include "Receiver.h"
 
 namespace logid
 {
 
-    class Device;
-
-    struct ConnectedDevice {
-    	Device *device;
-    	std::thread associatedThread;
-    };
-
     class DeviceMonitor : public backend::raw::DeviceMonitor
     {
     public:
-    	~DeviceMonitor();
-
-    	/*
-    	Device* insertNewDevice (const std::string &path, HIDPP::DeviceIndex index);
-    	Device* insertNewReceiverDevice (const std::string &path, HIDPP::DeviceIndex index);
-    	void stopAndDeleteAllDevicesIn (const std::string &path);
-    	void stopAndDeleteDevice (const std::string &path, HIDPP::DeviceIndex index);
-    	 */
+        DeviceMonitor() = default;
     protected:
         void addDevice(std::string path) override;
         void removeDevice(std::string path) override;
     private:
-    	std::mutex devices_mutex;
-    	std::vector<std::shared_ptr<backend::hidpp::Device>> devices; //tmp
-        //std::map<std::string, std::map<backend::hidpp::DeviceIndex, ConnectedDevice>> devices;
+
+        std::map<std::string, std::shared_ptr<Device>> _devices;
+        std::map<std::string, std::shared_ptr<Receiver>> _receivers;
     };
 
     extern DeviceMonitor* finder;
