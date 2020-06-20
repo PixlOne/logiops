@@ -76,7 +76,7 @@ uint8_t hidpp::getSupportedReports(std::vector<uint8_t>&& rdesc)
     if(it != rdesc.end())
         ret |= HIDPP_REPORT_SHORT_SUPPORTED;
 
-    it = std::search(rdesc.begin(), rdesc.end(), LongReportDesc.begin(), LongReportDesc2.end());
+    it = std::search(rdesc.begin(), rdesc.end(), LongReportDesc.begin(), LongReportDesc.end());
     if(it == rdesc.end())
         it = std::search(rdesc.begin(), rdesc.end(), LongReportDesc2.begin(), LongReportDesc2.end());
     if(it != rdesc.end())
