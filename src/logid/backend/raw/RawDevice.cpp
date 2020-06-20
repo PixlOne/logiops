@@ -270,6 +270,14 @@ void RawDevice::listen()
         this->handleEvent(report);
     }
 
+    // Listener is stopped, handle I/O queue
+    while(!write_queue.empty())
+    {
+        auto task = write_queue.front();
+        (*task)();
+        write_queue.pop();
+    }
+
     continue_listen = false;
 }
 
