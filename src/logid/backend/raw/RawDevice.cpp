@@ -2,6 +2,7 @@
 #include "../Error.h"
 #include "../hidpp/defs.h"
 #include "../dj/defs.h"
+#include "../../util.h"
 
 #include <string>
 #include <system_error>
@@ -193,6 +194,13 @@ int RawDevice::_sendReport(const std::vector<uint8_t>& report)
     if(ret == -1)
         throw std::system_error(errno, std::system_category(), "_sendReport write failed");
 
+    if(logid::global_verbosity == LogLevel::RAWREPORT) {
+        printf("[RAWREPORT] %s OUT: ", path.c_str());
+        for(auto &i : report)
+            printf("%02x ", i);
+        printf("\n");
+    }
+
     return ret;
 }
 
@@ -237,6 +245,13 @@ int RawDevice::_readReport(std::vector<uint8_t>& report, std::size_t maxDataLeng
 
     if(0 == ret)
         throw backend::TimeoutError();
+
+    if(logid::global_verbosity == LogLevel::RAWREPORT) {
+        printf("[RAWREPORT] %s IN:  ", path.c_str());
+        for(auto &i : report)
+            printf("%02x ", i);
+        printf("\n");
+    }
 
     return ret;
 }

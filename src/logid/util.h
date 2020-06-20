@@ -7,10 +7,11 @@ namespace logid
 {
     enum LogLevel
     {
-       DEBUG,
-       INFO,
-       WARN,
-       ERROR
+        RAWREPORT,
+        DEBUG,
+        INFO,
+        WARN,
+        ERROR
     };
 
     extern LogLevel global_verbosity;
