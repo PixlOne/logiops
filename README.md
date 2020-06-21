@@ -46,6 +46,7 @@ I'm also looking for contributors to help in my project; feel free to submit a p
 |  MX Master   |     Yes     |
 | MX Vertical  |     Yes     |
 |   MX Ergo    |     Yes     |
+|     M720     |     Yes     |
 |     T400     |     Yes     |
 |    K400r     |  Untested   |
 |     K350     |  Untested   |
