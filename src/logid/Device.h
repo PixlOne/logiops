@@ -14,6 +14,8 @@ namespace logid
     {
     public:
         Device(std::string path, backend::hidpp::DeviceIndex index);
+        Device(const std::shared_ptr<backend::raw::RawDevice>& raw_device,
+                backend::hidpp::DeviceIndex index);
         void wakeup();
         void sleep();
     private:

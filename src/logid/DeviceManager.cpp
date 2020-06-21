@@ -33,6 +33,7 @@ void DeviceManager::addDevice(std::string path)
     if(isReceiver) {
         log_printf(INFO, "Detected receiver at %s", path.c_str());
         auto receiver = std::make_shared<Receiver>(path);
+        receiver->run();
         _receivers.emplace(path, receiver);
     } else {
         /* TODO: Error check?
@@ -48,6 +49,9 @@ void DeviceManager::addDevice(std::string path)
             } catch(hidpp10::Error &e) {
                 if(e.code() != hidpp10::Error::UnknownDevice)
                     throw;
+                else
+                    log_printf(WARN, "HID++ 1.0 error while trying to initialize"
+                                     " %s: %s", path.c_str(), e.what());
             } catch(hidpp::Device::InvalidDevice &e) { // Ignore
             } catch(std::system_error &e) {
                 // This error should have been thrown previously

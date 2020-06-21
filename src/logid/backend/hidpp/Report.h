@@ -60,6 +60,9 @@ namespace logid::backend::hidpp
         Report::Type type() const;
         void setType(Report::Type type);
 
+        logid::backend::hidpp::DeviceIndex deviceIndex();
+        void setDeviceIndex(hidpp::DeviceIndex index);
+
         uint8_t feature() const;
         void setFeature(uint8_t feature);
 
@@ -95,11 +98,6 @@ namespace logid::backend::hidpp
         };
 
         bool isError20(hidpp20_error* error);
-
-        logid::backend::hidpp::DeviceIndex deviceIndex()
-        {
-            return static_cast<DeviceIndex>(_data[Offset::DeviceIndex]);
-        }
 
         std::vector<uint8_t> rawReport () const { return _data; }
     private:

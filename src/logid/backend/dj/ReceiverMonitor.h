@@ -21,7 +21,7 @@ namespace dj
         void stop();
 
     protected:
-        virtual void addDevice(hidpp::DeviceIndex index, uint16_t pid) = 0;
+        virtual void addDevice(hidpp::DeviceConnectionEvent event) = 0;
         virtual void removeDevice(hidpp::DeviceIndex index) = 0;
 
         // Internal methods for derived class
@@ -29,8 +29,10 @@ namespace dj
         void _stopPairing();
 
         void _unpair();
+
+        std::shared_ptr<Receiver> receiver() const;
     private:
-        Receiver _reciever;
+        std::shared_ptr<Receiver> _receiver;
     };
 
 }}}
