@@ -19,12 +19,9 @@ Device::Device(std::shared_ptr<raw::RawDevice> raw_dev,
 }
 
 std::vector<uint8_t> Device::getRegister(uint8_t address,
-        const std::vector<uint8_t>& params)
+        const std::vector<uint8_t>& params, hidpp::Report::Type type)
 {
     assert(params.size() <= hidpp::LongParamLength);
-
-    hidpp::Report::Type type = params.size() <= hidpp::ShortParamLength ?
-            hidpp::Report::Type::Short : hidpp::Report::Type::Long;
 
     uint8_t sub_id = type == hidpp::Report::Type::Short ?
             GetRegisterShort : GetRegisterLong;
@@ -33,12 +30,10 @@ std::vector<uint8_t> Device::getRegister(uint8_t address,
 }
 
 std::vector<uint8_t> Device::setRegister(uint8_t address,
-                                         const std::vector<uint8_t>& params)
+                                         const std::vector<uint8_t>& params,
+                                         hidpp::Report::Type type)
 {
     assert(params.size() <= hidpp::LongParamLength);
-
-    hidpp::Report::Type type = params.size() <= hidpp::ShortParamLength ?
-                               hidpp::Report::Type::Short : hidpp::Report::Type::Long;
 
     uint8_t sub_id = type == hidpp::Report::Type::Short ?
                      SetRegisterShort : SetRegisterLong;

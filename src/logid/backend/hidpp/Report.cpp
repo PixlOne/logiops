@@ -180,6 +180,16 @@ void Report::setType(Report::Type type)
     _data[Offset::Type] = type;
 }
 
+hidpp::DeviceIndex Report::deviceIndex()
+{
+    return static_cast<hidpp::DeviceIndex>(_data[Offset::DeviceIndex]);
+}
+
+void Report::setDeviceIndex(hidpp::DeviceIndex index)
+{
+    _data[Offset::DeviceIndex] = index;
+}
+
 uint8_t Report::feature() const
 {
     return _data[Offset::Feature];

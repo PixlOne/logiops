@@ -2,6 +2,7 @@
 #define LOGID_BACKEND_HIDPP20_FEATURE_ROOT_H
 
 #include "../Feature.h"
+#include "../EssentialFeature.h"
 #include "../feature_defs.h"
 
 namespace logid {
@@ -24,13 +25,25 @@ namespace hidpp20
 
         feature_info getFeature (uint16_t feature_id);
         std::tuple<uint8_t, uint8_t> getVersion();
-    private:
+
         enum FeatureFlag : uint8_t
         {
             Obsolete = 1<<7,
             Hidden = 1<<6,
             Internal = 1<<5
         };
+    };
+
+    class EssentialRoot : public EssentialFeature
+    {
+    public:
+        static const uint16_t ID = FeatureID::ROOT;
+        virtual uint16_t getID() { return ID; }
+
+        EssentialRoot(hidpp::Device* device);
+
+        feature_info getFeature (uint16_t feature_id);
+        std::tuple<uint8_t, uint8_t> getVersion();
     };
 }}}
 

@@ -15,10 +15,10 @@ namespace hidpp10
                 hidpp::DeviceIndex index);
 
         std::vector<uint8_t> getRegister(uint8_t address,
-                const std::vector<uint8_t>& params);
+                const std::vector<uint8_t>& params, hidpp::Report::Type type);
 
         std::vector<uint8_t> setRegister(uint8_t address,
-                const std::vector<uint8_t>& params);
+                const std::vector<uint8_t>& params, hidpp::Report::Type type);
     private:
         std::vector<uint8_t> accessRegister(uint8_t sub_id,
                 uint8_t address, const std::vector<uint8_t>& params);

@@ -11,6 +11,12 @@ namespace logid {
 namespace backend {
 namespace dj
 {
+    struct EventHandler
+    {
+        std::function<bool(Report&)> condition;
+        std::function<void(Report&)> callback;
+    };
+
     class InvalidReceiver : public std::exception
     {
     public:
@@ -43,7 +49,7 @@ namespace dj
             GetPairedDevices = 0x81
         };
 
-        void enumerate();
+        void enumerateDj();
 
         /* The following functions deal with HID++ 1.0 features.
          * While these are not technically DJ functions, it is redundant
@@ -77,7 +83,7 @@ namespace dj
         notification_flags getHidppNotifications();
         void enableHidppNotifications(notification_flags flags);
 
-        ///TODO: Understand output of this function
+        void enumerateHidpp();
         uint8_t getConnectionState(hidpp::DeviceIndex index);
 
         void startPairing(uint8_t timeout = 0);
@@ -107,34 +113,56 @@ namespace dj
 
         std::string getDeviceName(hidpp::DeviceIndex index);
 
-        struct DeviceConnectionEvent
-        {
-            hidpp::DeviceIndex index;
-            uint16_t pid;
-            DeviceType::DeviceType deviceType;
-            bool unifying;
-            bool softwarePresent;
-            bool encrypted;
-            bool linkEstablished;
-            bool withPayload;
-        };
-
         static hidpp::DeviceIndex deviceDisconnectionEvent(
                 hidpp::Report& report);
-        static DeviceConnectionEvent deviceConnectionEvent(
+        static hidpp::DeviceConnectionEvent deviceConnectionEvent(
                 hidpp::Report& report);
-
-        void handleDjEvent(dj::Report& report);
-        void handleHidppEvent(hidpp::Report& report);
 
         void listen();
         void stopListening();
+
+        void addDjEventHandler(const std::string& nickname,
+                const std::shared_ptr<EventHandler>& handler);
+        void removeDjEventHandler(const std::string& nickname);
+        const std::map<std::string, std::shared_ptr<EventHandler>>&
+        djEventHandlers();
+
+        void addHidppEventHandler(const std::string& nickname,
+                const std::shared_ptr<hidpp::EventHandler>& handler);
+        void removeHidppEventHandler(const std::string& nickname);
+        const std::map<std::string, std::shared_ptr<hidpp::EventHandler>>&
+            hidppEventHandlers();
+
+        std::shared_ptr<raw::RawDevice> rawDevice() const;
     private:
         void sendDjRequest(hidpp::DeviceIndex index, uint8_t function,
                 const std::vector<uint8_t>&& params);
 
+        void handleDjEvent(dj::Report& report);
+        void handleHidppEvent(hidpp::Report& report);
+
+        std::map<std::string, std::shared_ptr<EventHandler>>
+                dj_event_handlers;
+        std::map<std::string, std::shared_ptr<hidpp::EventHandler>>
+                hidpp_event_handlers;
+
         std::shared_ptr<raw::RawDevice> raw_device;
         hidpp10::Device _hidpp10_device;
+    };
+}
+
+namespace hidpp
+{
+    struct DeviceConnectionEvent
+    {
+        hidpp::DeviceIndex index;
+        uint16_t pid;
+        dj::DeviceType::DeviceType deviceType;
+        bool unifying;
+        bool softwarePresent;
+        bool encrypted;
+        bool linkEstablished;
+        bool withPayload;
     };
 }}}
 

@@ -23,9 +23,14 @@ namespace raw
     public:
         static bool supportedReportID(uint8_t id);
 
-        RawDevice(std::string path);
+        explicit RawDevice(std::string path);
         ~RawDevice();
         std::string hidrawPath() const { return path; }
+
+        std::string name() const { return _name; }
+        uint16_t vendorId() const { return vid; }
+        uint16_t productId() const { return pid; }
+
         std::vector<uint8_t> reportDescriptor() const { return rdesc; }
 
         std::vector<uint8_t> sendReport(const std::vector<uint8_t>& report);
@@ -36,8 +41,11 @@ namespace raw
         void stopListener();
         bool isListening();
 
-        void addEventHandler(const std::string& nickname, RawEventHandler& handler);
+        void addEventHandler(const std::string& nickname,
+                const std::shared_ptr<backend::RawEventHandler>& handler);
         void removeEventHandler(const std::string& nickname);
+        const std::map<std::string, std::shared_ptr<backend::RawEventHandler>>&
+            eventHandlers();
 
     private:
         std::mutex dev_io, listening;
@@ -46,12 +54,13 @@ namespace raw
         int dev_pipe[2];
         uint16_t vid;
         uint16_t pid;
-        std::string name;
+        std::string _name;
         std::vector<uint8_t> rdesc;
 
         std::atomic<bool> continue_listen;
 
-        std::map<std::string, backend::RawEventHandler> event_handlers;
+        std::map<std::string, std::shared_ptr<backend::RawEventHandler>>
+            event_handlers;
         void handleEvent(std::vector<uint8_t>& report);
 
         /* These will only be used internally and processed with a queue */
