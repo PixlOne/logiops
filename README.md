@@ -39,17 +39,4 @@ I'm also looking for contributors to help in my project; feel free to submit a p
 
 ## Compatible Devices
 
-|    Device    | Compatible? |
-|:------------:|:-----------:|
-| MX Master 3  |     Yes     |
-| MX Master 2S |     Yes     |
-|  MX Master   |     Yes     |
-| MX Vertical  |     Yes     |
-|   MX Ergo    |     Yes     |
-|     M720     |     Yes     |
-|     T400     |     Yes     |
-|    K400r     |  Untested   |
-|     K350     |  Untested   |
-|    M325c     |  Untested   |
-
-I own the MX Master, T400, K400r, K350, and M325c. Feel free to add to this list if you can test any additional devices.
+[For a list of tested devices, check TESTED.md](TESTED.md)
