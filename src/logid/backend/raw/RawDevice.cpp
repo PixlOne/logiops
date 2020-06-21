@@ -3,6 +3,7 @@
 #include "../hidpp/defs.h"
 #include "../dj/defs.h"
 #include "../../util.h"
+#include "../hidpp/Report.h"
 
 #include <string>
 #include <system_error>
@@ -22,8 +23,24 @@ using namespace logid::backend::raw;
 using namespace logid::backend;
 using namespace std::chrono;
 
-bool RawDevice::supportedReportID(uint8_t id)
+bool RawDevice::supportedReport(uint8_t id, uint8_t length)
 {
+    switch(id)
+    {
+        case hidpp::ReportType::Short:
+            return length == (hidpp::ShortParamLength +
+                hidpp::Report::HeaderLength);
+        case hidpp::ReportType::Long:
+            return length == (hidpp::LongParamLength +
+                              hidpp::Report::HeaderLength);
+        case dj::ReportType::Short:
+            return length == (dj::ShortParamLength + dj::HeaderLength);
+        case dj::ReportType::Long:
+            return length == (dj::LongParamLength + dj::HeaderLength);
+        default:
+            return false;
+    }
+
     return (hidpp::ReportType::Short == id) || (hidpp::ReportType::Long == id)
         || (dj::ReportType::Short == id) || (dj::ReportType::Long == id);
 }
@@ -116,8 +133,6 @@ std::vector<uint8_t> RawDevice::sendReport(const std::vector<uint8_t>& report)
 // DJ commands are not systematically acknowledged, do not expect a result.
 void RawDevice::sendReportNoResponse(const std::vector<uint8_t>& report)
 {
-    assert(supportedReportID(report[0]));
-
     /* If the listener will stop, handle I/O manually.
      * Otherwise, push to queue and wait for result. */
     if(continue_listen)
@@ -200,7 +215,7 @@ int RawDevice::_sendReport(const std::vector<uint8_t>& report)
         printf("\n");
     }
 
-    assert(supportedReportID(report[0]));
+    assert(supportedReport(report[0], report.size()));
 
     std::lock_guard<std::mutex> lock(dev_io);
     int ret = ::write(fd, report.data(), report.size());
