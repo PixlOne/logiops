@@ -21,7 +21,7 @@ namespace raw
     class RawDevice
     {
     public:
-        static bool supportedReportID(uint8_t id);
+        static bool supportedReport(uint8_t id, uint8_t length);
 
         explicit RawDevice(std::string path);
         ~RawDevice();

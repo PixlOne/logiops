@@ -100,8 +100,9 @@ namespace logid::backend::hidpp
         bool isError20(hidpp20_error* error);
 
         std::vector<uint8_t> rawReport () const { return _data; }
-    private:
+
         static constexpr std::size_t HeaderLength = 4;
+    private:
         std::vector<uint8_t> _data;
     };
 }
