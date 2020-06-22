@@ -208,6 +208,7 @@ std::vector<uint8_t> RawDevice::_respondToReport
 
 int RawDevice::_sendReport(const std::vector<uint8_t>& report)
 {
+    std::lock_guard<std::mutex> lock(dev_io);
     if(logid::global_verbosity == LogLevel::RAWREPORT) {
         printf("[RAWREPORT] %s OUT: ", path.c_str());
         for(auto &i : report)
@@ -217,11 +218,15 @@ int RawDevice::_sendReport(const std::vector<uint8_t>& report)
 
     assert(supportedReport(report[0], report.size()));
 
-    std::lock_guard<std::mutex> lock(dev_io);
     int ret = ::write(fd, report.data(), report.size());
-    if(ret == -1)
-        throw std::system_error(errno, std::system_category(),
-                "_sendReport write failed");
+    if(ret == -1) {
+        ///TODO: This seems like a hacky solution
+        // Try again before failing
+        ret = ::write(fd, report.data(), report.size());
+        if(ret == -1)
+            throw std::system_error(errno, std::system_category(),
+                    "_sendReport write failed");
+    }
 
     return ret;
 }
