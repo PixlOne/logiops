@@ -16,7 +16,7 @@
  *
  */
 #include <system_error>
-#include "../util.h"
+#include "log.h"
 #include "ExceptionHandler.h"
 #include "../backend/hidpp10/Error.h"
 #include "../backend/hidpp20/Error.h"
@@ -28,16 +28,16 @@ void ExceptionHandler::Default(std::exception& error)
     try {
         throw error;
     } catch(backend::hidpp10::Error& e) {
-        log_printf(WARN, "HID++ 1.0 error ignored on detached thread: %s",
+        logPrintf(WARN, "HID++ 1.0 error ignored on detached thread: %s",
                 error.what());
     } catch(backend::hidpp20::Error& e) {
-        log_printf(WARN, "HID++ 2.0 error ignored on detached thread: %s",
+        logPrintf(WARN, "HID++ 2.0 error ignored on detached thread: %s",
                    error.what());
     } catch(std::system_error& e) {
-        log_printf(WARN, "System error ignored on detached thread: %s",
+        logPrintf(WARN, "System error ignored on detached thread: %s",
                    error.what());
     } catch(std::exception& e) {
-        log_printf(WARN, "Error ignored on detached thread: %s",
+        logPrintf(WARN, "Error ignored on detached thread: %s",
                    error.what());
     }
 }

@@ -21,7 +21,7 @@
 #include <cstdlib>
 #include <mutex>
 
-#include "util.h"
+#include "util/log.h"
 #include "DeviceManager.h"
 #include "logid.h"
 
@@ -37,7 +37,7 @@ using namespace logid;
 
 std::string config_file = DEFAULT_CONFIG_FILE;
 
-LogLevel logid::global_verbosity = INFO;
+LogLevel logid::global_loglevel = INFO;
 // Configuration* logid::global_config;
 DeviceManager* logid::finder;
 
@@ -97,25 +97,25 @@ void readCliOptions(int argc, char** argv)
                 option = Option::Help;
                 break;
             default:
-                log_printf(WARN, "%s is not a valid option, ignoring.",
+                logPrintf(WARN, "%s is not a valid option, ignoring.",
                         argv[i]);
             }
 
             switch(option) {
             case Option::Verbose: {
                 if (++i >= argc) {
-                    global_verbosity = DEBUG; // Assume debug verbosity
+                    global_loglevel = DEBUG; // Assume debug verbosity
                     break;
                 }
                 std::string loglevel = argv[i];
                 try {
-                    global_verbosity = stringToLogLevel(argv[i]);
+                    global_loglevel = toLogLevel(argv[i]);
                 } catch (std::invalid_argument &e) {
                     if (argv[i][0] == '-') {
-                        global_verbosity = DEBUG; // Assume debug verbosity
+                        global_loglevel = DEBUG; // Assume debug verbosity
                         i--; // Go back to last argument to continue loop.
                     } else {
-                        log_printf(WARN, e.what());
+                        logPrintf(WARN, e.what());
                         printf("Valid verbosity levels are: Debug, Info, "
                                "Warn/Warning, or Error.\n");
                         exit(EXIT_FAILURE);
@@ -125,7 +125,7 @@ void readCliOptions(int argc, char** argv)
             }
             case Option::Config: {
                 if (++i >= argc) {
-                    log_printf(ERROR, "Config file is not specified.");
+                    logPrintf(ERROR, "Config file is not specified.");
                     exit(EXIT_FAILURE);
                 }
                 config_file = argv[i];
