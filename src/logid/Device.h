@@ -21,6 +21,7 @@
 
 #include "backend/hidpp/defs.h"
 #include "backend/hidpp20/Device.h"
+#include "features/DeviceFeature.h"
 
 namespace logid
 {
@@ -40,6 +41,7 @@ namespace logid
         backend::hidpp20::Device _hidpp20;
         std::string _path;
         backend::hidpp::DeviceIndex _index;
+        std::vector<std::shared_ptr<features::DeviceFeature>> _features;
     };
 }
 
