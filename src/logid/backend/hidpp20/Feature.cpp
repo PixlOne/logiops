@@ -44,8 +44,8 @@ Feature::Feature(Device* dev, uint16_t _id) : _device (dev)
     if(_id)
     {
         std::vector<uint8_t> getFunc_req(2);
-        getFunc_req[0] = _id & 0xff;
-        getFunc_req[1] = (_id >> 8) & 0xff;
+        getFunc_req[0] = (_id >> 8) & 0xff;
+        getFunc_req[1] = _id & 0xff;
         auto getFunc_resp = this->callFunction(Root::GetFeature, getFunc_req);
         _index = getFunc_resp[0];
 
