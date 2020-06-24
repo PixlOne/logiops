@@ -1,5 +1,5 @@
-#ifndef LOGID_HIDPP_BACKEND_DJ_ERROR_H
-#define LOGID_HIDPP_BACKEND_DJ_ERROR_H
+#ifndef LOGID_BACKEND_DJ_ERROR_H
+#define LOGID_BACKEND_DJ_ERROR_H
 
 #include <cstdint>
 #include <stdexcept>
@@ -17,9 +17,9 @@ namespace dj
             KeepAliveTimeout = 0x01
         };
 
-        Error(uint8_t code);
+        explicit Error(uint8_t code);
 
-        virtual const char* what() const noexcept;
+        const char* what() const noexcept override;
         uint8_t code() const noexcept;
 
     private:
@@ -27,4 +27,4 @@ namespace dj
     };
 }}}
 
-#endif //LOGID_HIDPP_BACKEND_DJ_ERROR_H
+#endif //LOGID_BACKEND_DJ_ERROR_H

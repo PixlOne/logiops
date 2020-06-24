@@ -44,14 +44,16 @@ void DeviceManager::addDevice(std::string path)
             _devices.emplace(path,  device);
         } else {
             try {
-                auto device = std::make_shared<Device>(path, hidpp::CordedDevice);
+                auto device = std::make_shared<Device>(path,
+                        hidpp::CordedDevice);
                 _devices.emplace(path, device);
             } catch(hidpp10::Error &e) {
                 if(e.code() != hidpp10::Error::UnknownDevice)
                     throw;
                 else
-                    log_printf(WARN, "HID++ 1.0 error while trying to initialize"
-                                     " %s: %s", path.c_str(), e.what());
+                    log_printf(WARN,
+                            "HID++ 1.0 error while trying to initialize %s:"
+                            "%s", path.c_str(), e.what());
             } catch(hidpp::Device::InvalidDevice &e) { // Ignore
             } catch(std::system_error &e) {
                 // This error should have been thrown previously

@@ -13,16 +13,15 @@ using namespace logid::backend::hidpp;
 
 const char* Device::InvalidDevice::what() const noexcept
 {
-    switch(_reason)
-    {
-        case NoHIDPPReport:
-            return "Invalid HID++ device";
-        case InvalidRawDevice:
-            return "Invalid raw device";
-        case Asleep:
-            return "Device asleep";
-        default:
-            return "Invalid device";
+    switch(_reason) {
+    case NoHIDPPReport:
+        return "Invalid HID++ device";
+    case InvalidRawDevice:
+        return "Invalid raw device";
+    case Asleep:
+        return "Device asleep";
+    default:
+        return "Invalid device";
     }
 }
 
@@ -58,10 +57,25 @@ Device::Device(std::shared_ptr<dj::Receiver> receiver,
     _init();
 }
 
+std::string Device::devicePath() const
+{
+    return _path;
+}
+
+DeviceIndex Device::deviceIndex() const
+{
+    return _index;
+}
+
+std::tuple<uint8_t, uint8_t> Device::version() const
+{
+    return _version;
+}
+
 void Device::_init()
 {
-    supported_reports = getSupportedReports(_raw_device->reportDescriptor());
-    if(!supported_reports)
+    _supported_reports = getSupportedReports(_raw_device->reportDescriptor());
+    if(!_supported_reports)
         throw InvalidDevice(InvalidDevice::NoHIDPPReport);
 
     try {
@@ -101,20 +115,20 @@ Device::~Device()
 void Device::addEventHandler(const std::string& nickname,
         const std::shared_ptr<EventHandler>& handler)
 {
-    auto it = event_handlers.find(nickname);
-    assert(it == event_handlers.end());
+    auto it = _event_handlers.find(nickname);
+    assert(it == _event_handlers.end());
 
-    event_handlers.emplace(nickname, handler);
+    _event_handlers.emplace(nickname, handler);
 }
 
 void Device::removeEventHandler(const std::string& nickname)
 {
-    event_handlers.erase(nickname);
+    _event_handlers.erase(nickname);
 }
 
 void Device::handleEvent(Report& report)
 {
-    for(auto& handler : event_handlers)
+    for(auto& handler : _event_handlers)
         if(handler.second->condition(report))
             handler.second->callback(report);
 }
@@ -123,26 +137,26 @@ Report Device::sendReport(Report& report)
 {
     switch(report.type())
     {
-        case Report::Type::Short:
-            if(!(supported_reports & HIDPP_REPORT_SHORT_SUPPORTED))
-                report.setType(Report::Type::Long);
-            break;
-        case Report::Type::Long:
-            /* Report can be truncated, but that isn't a good idea. */
-            assert(supported_reports & HIDPP_REPORT_LONG_SUPPORTED);
+    case Report::Type::Short:
+        if(!(_supported_reports & HIDPP_REPORT_SHORT_SUPPORTED))
+            report.setType(Report::Type::Long);
+        break;
+    case Report::Type::Long:
+        /* Report can be truncated, but that isn't a good idea. */
+        assert(_supported_reports & HIDPP_REPORT_LONG_SUPPORTED);
     }
 
     auto raw_response = _raw_device->sendReport(report.rawReport());
 
     Report response(raw_response);
 
-    Report::hidpp10_error hidpp10Error{};
-    if(response.isError10(&hidpp10Error))
-        throw hidpp10::Error(hidpp10Error.error_code);
+    Report::Hidpp10Error hidpp10_error{};
+    if(response.isError10(&hidpp10_error))
+        throw hidpp10::Error(hidpp10_error.error_code);
 
-    Report::hidpp20_error hidpp20Error{};
-    if(response.isError20(&hidpp20Error))
-        throw hidpp10::Error(hidpp20Error.error_code);
+    Report::Hidpp20Error hidpp20_error{};
+    if(response.isError20(&hidpp20_error))
+        throw hidpp10::Error(hidpp20_error.error_code);
 
     return response;
 }
@@ -153,20 +167,20 @@ void Device::listen()
         std::thread{[=]() { _raw_device->listen(); }}.detach();
 
     // Pass all HID++ events with device index to this device.
-    std::shared_ptr<RawEventHandler> rawEventHandler;
-    rawEventHandler->condition = [this](std::vector<uint8_t>& report)->bool
+    std::shared_ptr<raw::RawEventHandler> handler;
+    handler->condition = [this](std::vector<uint8_t>& report)->bool
     {
         return (report[Offset::Type] == Report::Type::Short ||
                 report[Offset::Type] == Report::Type::Long) &&
                (report[Offset::DeviceIndex] == this->_index);
     };
-    rawEventHandler->callback = [this](std::vector<uint8_t>& report)->void
+    handler->callback = [this](std::vector<uint8_t>& report)->void
     {
         Report _report(report);
         this->handleEvent(_report);
     };
 
-    _raw_device->addEventHandler("DEV_" + std::to_string(_index), rawEventHandler);
+    _raw_device->addEventHandler("DEV_" + std::to_string(_index), handler);
 }
 
 void Device::stopListening()

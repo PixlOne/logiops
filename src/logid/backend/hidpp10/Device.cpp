@@ -41,10 +41,11 @@ std::vector<uint8_t> Device::setRegister(uint8_t address,
     return accessRegister(sub_id, address, params);
 }
 
-std::vector<uint8_t> Device::accessRegister(uint8_t sub_id, uint8_t address, const std::vector<uint8_t> &params)
+std::vector<uint8_t> Device::accessRegister(uint8_t sub_id, uint8_t address,
+        const std::vector<uint8_t> &params)
 {
     hidpp::Report::Type type = params.size() <= hidpp::ShortParamLength ?
-                               hidpp::Report::Type::Short : hidpp::Report::Type::Long;
+            hidpp::Report::Type::Short : hidpp::Report::Type::Long;
 
     hidpp::Report request(type, deviceIndex(), sub_id, address);
     std::copy(params.begin(), params.end(), request.paramBegin());

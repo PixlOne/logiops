@@ -1,5 +1,5 @@
-#ifndef LOGID_DEVICEMONITOR_H
-#define LOGID_DEVICEMONITOR_H
+#ifndef LOGID_DEVICEMANAGER_H
+#define LOGID_DEVICEMANAGER_H
 
 #include <map>
 #include <thread>
@@ -29,4 +29,4 @@ namespace logid
     extern DeviceManager* finder;
 }
 
-#endif //LOGID_DEVICEFINDER_H
+#endif //LOGID_DEVICEMANAGER_H

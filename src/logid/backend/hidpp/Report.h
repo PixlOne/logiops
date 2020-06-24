@@ -10,7 +10,9 @@
 #define HIDPP_REPORT_LONG_SUPPORTED	      1U<<1U
 /* Very long reports exist, however they have not been encountered so far */
 
-namespace logid::backend::hidpp
+namespace logid {
+namespace backend {
+namespace hidpp
 {
     uint8_t getSupportedReports(std::vector<uint8_t>&& rdesc);
 
@@ -34,19 +36,17 @@ namespace logid::backend::hidpp
         {
         public:
             InvalidReportID() = default;
-            virtual const char* what() const noexcept;
+            const char* what() const noexcept override;
         };
 
         class InvalidReportLength: public std::exception
         {
         public:
             InvalidReportLength() = default;;
-            virtual const char* what() const noexcept;
+            const char* what() const noexcept override;
         };
 
         static constexpr std::size_t MaxDataLength = 20;
-        static constexpr uint8_t swIdMask = 0x0f;
-        static constexpr uint8_t functionMask = 0x0f;
 
         Report(Report::Type type, DeviceIndex device_index,
                uint8_t sub_id,
@@ -85,19 +85,17 @@ namespace logid::backend::hidpp
         std::vector<uint8_t>::iterator paramEnd() { return _data.end(); }
         void setParams(const std::vector<uint8_t>& _params);
 
-        struct hidpp10_error
+        struct Hidpp10Error
         {
             uint8_t sub_id, address, error_code;
         };
+        bool isError10(Hidpp10Error* error);
 
-        bool isError10(hidpp10_error* error);
-
-        struct hidpp20_error
+        struct Hidpp20Error
         {
             uint8_t feature_index, function, software_id, error_code;
         };
-
-        bool isError20(hidpp20_error* error);
+        bool isError20(Hidpp20Error* error);
 
         std::vector<uint8_t> rawReport () const { return _data; }
 
@@ -105,6 +103,6 @@ namespace logid::backend::hidpp
     private:
         std::vector<uint8_t> _data;
     };
-}
+}}}
 
 #endif //LOGID_BACKEND_HIDPP_REPORT_H

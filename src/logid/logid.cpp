@@ -50,79 +50,71 @@ void logid::reload()
 }
  */
 
-void read_cli_options(int argc, char** argv)
+void readCliOptions(int argc, char** argv)
 {
-    for(int i = 1; i < argc; i++)
-    {
+    for(int i = 1; i < argc; i++) {
         Option option = Option::None;
-        if(argv[i][0] == '-') // This argument is an option
-        {
-            switch(argv[i][1]) // Set option
-            {
-                case '-': // Full option name
-                {
-                    std::string op_str = argv[i];
-                    if (op_str == "--verbose") option = Option::Verbose;
-                    if (op_str == "--config") option = Option::Config;
-                    if (op_str == "--help") option = Option::Help;
-                    if (op_str == "--version") option = Option::Version;
-                    break;
-                }
-                case 'v': // Verbosity
-                    option = Option::Verbose;
-                    break;
-                case 'V': //Version
+        if(argv[i][0] == '-') {
+            // This argument is an option
+            switch(argv[i][1]) {
+            case '-': {
+                // Full option name
+                std::string op_str = argv[i];
+                if (op_str == "--verbose") option = Option::Verbose;
+                if (op_str == "--config") option = Option::Config;
+                if (op_str == "--help") option = Option::Help;
+                if (op_str == "--version") option = Option::Version;
+                break;
+            }
+            case 'v': // Verbosity
+                option = Option::Verbose;
+                break;
+            case 'V': //Version
                     option = Option::Version;
                     break;
-                case 'c': // Config file path
-                    option = Option::Config;
-                    break;
-                case 'h': // Help
-                    option = Option::Help;
-                    break;
-                default:
-                    log_printf(WARN, "%s is not a valid option, ignoring.", argv[1]);
+            case 'c': // Config file path
+                option = Option::Config;
+                break;
+            case 'h': // Help
+                option = Option::Help;
+                break;
+            default:
+                log_printf(WARN, "%s is not a valid option, ignoring.",
+                        argv[i]);
             }
-            switch(option)
-            {
-                case Option::Verbose:
-                {
-                    if (++i >= argc)
-                    {
-                        global_verbosity = DEBUG; // Assume debug verbosity
-                        break;
-                    }
-                    std::string loglevel = argv[i];
-                    try { global_verbosity = stringToLogLevel(argv[i]); }
-                    catch (std::invalid_argument &e)
-                    {
-                        if (argv[i][0] == '-')
-                        {
-                            global_verbosity = DEBUG; // Assume debug verbosity
-                            i--; // Go back to last argument to continue loop.
-                        }
-                        else
-                        {
-                            log_printf(WARN, e.what());
-                            printf("Valid verbosity levels are: Debug, Info, Warn/Warning, or Error.\n");
-                            exit(EXIT_FAILURE);
-                        }
-                    }
+
+            switch(option) {
+            case Option::Verbose: {
+                if (++i >= argc) {
+                    global_verbosity = DEBUG; // Assume debug verbosity
                     break;
                 }
-                case Option::Config:
-                {
-                    if (++i >= argc)
-                    {
-                        log_printf(ERROR, "Config file is not specified.");
+                std::string loglevel = argv[i];
+                try {
+                    global_verbosity = stringToLogLevel(argv[i]);
+                } catch (std::invalid_argument &e) {
+                    if (argv[i][0] == '-') {
+                        global_verbosity = DEBUG; // Assume debug verbosity
+                        i--; // Go back to last argument to continue loop.
+                    } else {
+                        log_printf(WARN, e.what());
+                        printf("Valid verbosity levels are: Debug, Info, "
+                               "Warn/Warning, or Error.\n");
                         exit(EXIT_FAILURE);
                     }
-                    config_file = argv[i];
-                    break;
                 }
-                case Option::Help:
-                {
-                    printf(R"(logid version %s
+                    break;
+            }
+            case Option::Config: {
+                if (++i >= argc) {
+                    log_printf(ERROR, "Config file is not specified.");
+                    exit(EXIT_FAILURE);
+                }
+                config_file = argv[i];
+                break;
+            }
+            case Option::Help:
+                printf(R"(logid version %s
 Usage: %s [options]
 Possible options are:
     -v,--verbose [level]       Set log level to debug/info/warn/error (leave blank for debug)
@@ -130,16 +122,12 @@ Possible options are:
     -c,--config [file path]    Change config file from default at %s
     -h,--help                  Print this message.
 )", LOGIOPS_VERSION, argv[0], DEFAULT_CONFIG_FILE);
-
-                    exit(EXIT_SUCCESS);
-                }
-                case Option::Version:
-                {
-                    printf("%s\n", LOGIOPS_VERSION);
-                    exit(EXIT_SUCCESS);
-                }
-                case Option::None:
-                    break;
+                exit(EXIT_SUCCESS);
+            case Option::Version:
+                printf("%s\n", LOGIOPS_VERSION);
+                exit(EXIT_SUCCESS);
+            case Option::None:
+                break;
             }
         }
     }
@@ -147,7 +135,7 @@ Possible options are:
 
 int main(int argc, char** argv)
 {
-    read_cli_options(argc, argv);
+    readCliOptions(argc, argv);
 
     /*
     // Read config
@@ -171,8 +159,7 @@ int main(int argc, char** argv)
     // Scan devices, create listeners, handlers, etc.
     finder = new DeviceManager();
 
-    while(!kill_logid)
-    {
+    while(!kill_logid) {
         finder_reloading.lock();
         finder_reloading.unlock();
         finder->run();

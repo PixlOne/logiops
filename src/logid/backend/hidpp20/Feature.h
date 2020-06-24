@@ -11,7 +11,7 @@ namespace hidpp20 {
     {
     public:
         explicit UnsupportedFeature(uint16_t ID) : _f_id (ID) {}
-        virtual const char* what() const noexcept;
+        const char* what() const noexcept override;
         uint16_t code() const noexcept;
     private:
         uint16_t _f_id;

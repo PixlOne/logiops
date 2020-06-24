@@ -28,9 +28,9 @@ namespace hidpp10 {
             WrongPINCode = 0x0C
         };
 
-        Error(uint8_t code);
+        explicit Error(uint8_t code);
 
-        virtual const char* what() const noexcept;
+        const char* what() const noexcept override;
         uint8_t code() const noexcept;
 
     private:

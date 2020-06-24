@@ -9,7 +9,7 @@ class TimeoutError: public std::exception
 {
 public:
     TimeoutError() = default;
-    virtual const char* what() noexcept;
+    const char* what() const noexcept override;
 };
 }}
 

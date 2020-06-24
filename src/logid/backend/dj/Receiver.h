@@ -25,7 +25,7 @@ namespace dj
             NoDJReports
         };
         explicit InvalidReceiver(Reason reason);
-        virtual const char* what() const noexcept;
+        const char* what() const noexcept override;
         Reason code() const noexcept;
     private:
         Reason _reason;
@@ -73,15 +73,15 @@ namespace dj
             PairingInfo = 0xb5
         };
 
-        struct notification_flags
+        struct NotificationFlags
         {
-            bool device_battery_status;
-            bool receiver_wireless_notifications;
-            bool receiver_software_present;
+            bool deviceBatteryStatus;
+            bool receiverWirelessNotifications;
+            bool receiverSoftwarePresent;
         };
 
-        notification_flags getHidppNotifications();
-        void enableHidppNotifications(notification_flags flags);
+        NotificationFlags getHidppNotifications();
+        void enableHidppNotifications(NotificationFlags flags);
 
         void enumerateHidpp();
         uint8_t getConnectionState(hidpp::DeviceIndex index);
@@ -142,11 +142,11 @@ namespace dj
         void handleHidppEvent(hidpp::Report& report);
 
         std::map<std::string, std::shared_ptr<EventHandler>>
-                dj_event_handlers;
+                _dj_event_handlers;
         std::map<std::string, std::shared_ptr<hidpp::EventHandler>>
-                hidpp_event_handlers;
+                _hidpp_event_handlers;
 
-        std::shared_ptr<raw::RawDevice> raw_device;
+        std::shared_ptr<raw::RawDevice> _raw_device;
         hidpp10::Device _hidpp10_device;
     };
 }
