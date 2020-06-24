@@ -18,7 +18,7 @@
 
 #include <cassert>
 #include "Receiver.h"
-#include "util.h"
+#include "util/log.h"
 #include "backend/hidpp10/Error.h"
 #include "backend/hidpp20/Error.h"
 
@@ -27,7 +27,7 @@ using namespace logid::backend;
 
 Receiver::Receiver(std::string path) : dj::ReceiverMonitor(path), _path (path)
 {
-    log_printf(DEBUG, "logid::Receiver created on %s", path.c_str());
+    logPrintf(DEBUG, "logid::Receiver created on %s", path.c_str());
 }
 
 void Receiver::addDevice(hidpp::DeviceConnectionEvent event)
@@ -50,7 +50,7 @@ void Receiver::addDevice(hidpp::DeviceConnectionEvent event)
         auto version = hidpp_device.version();
 
         if(std::get<0>(version) < 2) {
-            log_printf(INFO, "Unsupported HID++ 1.0 device on %s:%d connected.",
+            logPrintf(INFO, "Unsupported HID++ 1.0 device on %s:%d connected.",
                     _path.c_str(), event.index);
             return;
         }
@@ -61,11 +61,11 @@ void Receiver::addDevice(hidpp::DeviceConnectionEvent event)
         _devices.emplace(event.index, device);
 
     } catch(hidpp10::Error &e) {
-        log_printf(ERROR,
+        logPrintf(ERROR,
                        "Caught HID++ 1.0 error while trying to initialize "
                        "%s:%d: %s", _path.c_str(), event.index, e.what());
     } catch(hidpp20::Error &e) {
-        log_printf(ERROR, "Caught HID++ 2.0 error while trying to initialize "
+        logPrintf(ERROR, "Caught HID++ 2.0 error while trying to initialize "
                           "%s:%d: %s", _path.c_str(), event.index, e.what());
     }
 }

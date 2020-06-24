@@ -21,7 +21,7 @@
 
 #include "DeviceManager.h"
 #include "Receiver.h"
-#include "util.h"
+#include "util/log.h"
 #include "backend/hidpp10/Error.h"
 #include "backend/dj/Receiver.h"
 
@@ -43,13 +43,13 @@ void DeviceManager::addDevice(std::string path)
     } catch(hidpp::Device::InvalidDevice &e) { // Ignore
         defaultExists = false;
     } catch(std::system_error &e) {
-        log_printf(WARN, "I/O error on %s: %s, skipping device.",
+        logPrintf(WARN, "I/O error on %s: %s, skipping device.",
                 path.c_str(), e.what());
         return;
     }
 
     if(isReceiver) {
-        log_printf(INFO, "Detected receiver at %s", path.c_str());
+        logPrintf(INFO, "Detected receiver at %s", path.c_str());
         auto receiver = std::make_shared<Receiver>(path);
         receiver->run();
         _receivers.emplace(path, receiver);
@@ -69,13 +69,13 @@ void DeviceManager::addDevice(std::string path)
                 if(e.code() != hidpp10::Error::UnknownDevice)
                     throw;
                 else
-                    log_printf(WARN,
+                    logPrintf(WARN,
                             "HID++ 1.0 error while trying to initialize %s:"
                             "%s", path.c_str(), e.what());
             } catch(hidpp::Device::InvalidDevice &e) { // Ignore
             } catch(std::system_error &e) {
                 // This error should have been thrown previously
-                log_printf(WARN, "I/O error on %s: %s", path.c_str(),
+                logPrintf(WARN, "I/O error on %s: %s", path.c_str(),
                         e.what());
             }
         }
@@ -88,12 +88,12 @@ void DeviceManager::removeDevice(std::string path)
 
     if(receiver != _receivers.end()) {
         _receivers.erase(receiver);
-        log_printf(INFO, "Receiver on %s disconnected", path.c_str());
+        logPrintf(INFO, "Receiver on %s disconnected", path.c_str());
     } else {
         auto device = _devices.find(path);
         if(device != _devices.find(path)) {
             _devices.erase(device);
-            log_printf(INFO, "Device on %s disconnected", path.c_str());
+            logPrintf(INFO, "Device on %s disconnected", path.c_str());
         }
     }
 }

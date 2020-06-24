@@ -20,7 +20,7 @@
 #include "../Error.h"
 #include "../hidpp/defs.h"
 #include "../dj/defs.h"
-#include "../../util.h"
+#include "../../util/log.h"
 #include "../hidpp/Report.h"
 
 #include <string>
@@ -230,7 +230,7 @@ std::vector<uint8_t> RawDevice::_respondToReport
 int RawDevice::_sendReport(const std::vector<uint8_t>& report)
 {
     std::lock_guard<std::mutex> lock(_dev_io);
-    if(logid::global_verbosity == LogLevel::RAWREPORT) {
+    if(logid::global_loglevel == LogLevel::RAWREPORT) {
         printf("[RAWREPORT] %s OUT: ", _path.c_str());
         for(auto &i : report)
             printf("%02x ", i);
@@ -295,7 +295,7 @@ int RawDevice::_readReport(std::vector<uint8_t>& report, std::size_t maxDataLeng
     if(0 == ret)
         throw backend::TimeoutError();
 
-    if(logid::global_verbosity == LogLevel::RAWREPORT) {
+    if(logid::global_loglevel == LogLevel::RAWREPORT) {
         printf("[RAWREPORT] %s IN:  ", _path.c_str());
         for(auto &i : report)
             printf("%02x ", i);

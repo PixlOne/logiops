@@ -15,20 +15,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-#ifndef LOGID_UTIL_H
-#define LOGID_UTIL_H
+#ifndef LOGID_LOG_H
+#define LOGID_LOG_H
 
 #include <string>
 
 namespace logid
 {
-    /*
-    Direction getDirection(int x, int y);
-    Direction stringToDirection(std::string s);
-    GestureMode stringToGestureMode(std::string s);
-    Action stringToAction(std::string s);
-     */
+    enum LogLevel
+    {
+        RAWREPORT,
+        DEBUG,
+        INFO,
+        WARN,
+        ERROR
+    };
+
+    extern LogLevel global_loglevel;
+
+    void logPrintf(LogLevel level, const char *format, ...);
+    const char *levelPrefix(LogLevel level);
+    LogLevel toLogLevel(std::string s);
 }
 
-#endif //LOGID_UTIL_H
+#endif //LOGID_LOG_H

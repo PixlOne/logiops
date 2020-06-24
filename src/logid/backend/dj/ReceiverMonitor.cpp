@@ -18,7 +18,7 @@
 
 #include "ReceiverMonitor.h"
 #include "../../util/thread.h"
-#include "../../util.h"
+#include "../../util/log.h"
 
 #include <utility>
 #include <cassert>
@@ -67,11 +67,11 @@ void ReceiverMonitor::run()
             }}, {[report, path=this->_receiver->rawDevice()->hidrawPath()]
             (std::exception& e) {
                 if(report.subId() == Receiver::DeviceConnection)
-                    log_printf(ERROR, "Failed to add device %d to receiver "
+                    logPrintf(ERROR, "Failed to add device %d to receiver "
                                       "on %s: %s", report.deviceIndex(),
                                       path.c_str(), e.what());
                 else if(report.subId() == Receiver::DeviceDisconnection)
-                    log_printf(ERROR, "Failed to remove device %d from "
+                    logPrintf(ERROR, "Failed to remove device %d from "
                                       "receiver on %s: %s", report.deviceIndex()
                                       ,path.c_str(), e.what());
             }});

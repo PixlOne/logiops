@@ -11,7 +11,7 @@ find_package(DBusCXX REQUIRED)
 
 add_executable(logid
         logid.cpp
-        util.cpp
+        util/log.cpp
         DeviceManager.cpp
         Device.cpp
         Receiver.cpp
