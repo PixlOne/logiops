@@ -53,7 +53,7 @@ Receiver::Receiver(std::string path) :
 
 void Receiver::enumerateDj()
 {
-    sendDjRequest(hidpp::DefaultDevice, GetPairedDevices,{});
+    _sendDjRequest(hidpp::DefaultDevice, GetPairedDevices,{});
 }
 
 Receiver::NotificationFlags Receiver::getHidppNotifications()
@@ -228,29 +228,29 @@ hidpp::DeviceConnectionEvent Receiver::deviceConnectionEvent(
     hidpp::DeviceConnectionEvent event{};
 
     event.index = report.deviceIndex();
-    event.unifying = ((report.paramBegin()[0] & 0b111) == 0x04);
+    event.unifying = ((report.address() & 0b111) == 0x04);
 
     event.deviceType = static_cast<DeviceType::DeviceType>(
-            report.paramBegin()[1] & 0x0f);
-    event.softwarePresent = report.paramBegin()[1] & (1<<4);
-    event.encrypted = report.paramBegin()[1] & (1<<5);
-    event.linkEstablished = report.paramBegin()[1] & (1<<6);
-    event.withPayload = report.paramBegin()[1] & (1<<7);
+            report.paramBegin()[0] & 0x0f);
+    event.softwarePresent = report.paramBegin()[0] & (1<<4);
+    event.encrypted = report.paramBegin()[0] & (1<<5);
+    event.linkEstablished = !(report.paramBegin()[0] & (1<<6));
+    event.withPayload = report.paramBegin()[0] & (1<<7);
 
-    event.pid = report.paramBegin()[3];
-    event.pid |= (report.paramBegin()[2] << 8);
+    event.pid =(report.paramBegin()[2] << 8);
+    event.pid |= report.paramBegin()[1];
 
     return event;
 }
 
-void Receiver::handleDjEvent(Report& report)
+void Receiver::_handleDjEvent(Report& report)
 {
     for(auto& handler : _dj_event_handlers)
         if(handler.second->condition(report))
             handler.second->callback(report);
 }
 
-void Receiver::handleHidppEvent(hidpp::Report &report)
+void Receiver::_handleHidppEvent(hidpp::Report &report)
 {
     for(auto& handler : _hidpp_event_handlers)
         if(handler.second->condition(report))
@@ -295,7 +295,7 @@ Receiver::hidppEventHandlers()
     return _hidpp_event_handlers;
 }
 
-void Receiver::sendDjRequest(hidpp::DeviceIndex index, uint8_t function,
+void Receiver::_sendDjRequest(hidpp::DeviceIndex index, uint8_t function,
         const std::vector<uint8_t>&& params)
 {
     assert(params.size() <= LongParamLength);
@@ -310,10 +310,19 @@ void Receiver::sendDjRequest(hidpp::DeviceIndex index, uint8_t function,
     _raw_device->sendReportNoResponse(request.rawData());
 }
 
+Receiver::ConnectionStatusEvent Receiver::connectionStatusEvent(Report& report)
+{
+    assert(report.feature() == ConnectionStatus);
+    ConnectionStatusEvent event{};
+    event.index = report.index();
+    event.linkLost = report.paramBegin()[0];
+    return event;
+}
+
 void Receiver::listen()
 {
     if(!_raw_device->isListening())
-        std::thread{[=]() { _raw_device->listen(); }}.detach();
+        std::thread{[this]() { this->_raw_device->listen(); }}.detach();
 
     if(_raw_device->eventHandlers().find("RECV_HIDPP") ==
         _raw_device->eventHandlers().end()) {
@@ -328,7 +337,7 @@ void Receiver::listen()
         hidpp_handler->callback = [this](std::vector<uint8_t>& report)
                 ->void {
             hidpp::Report _report(report);
-            this->handleHidppEvent(_report);
+            this->_handleHidppEvent(_report);
         };
         _raw_device->addEventHandler("RECV_HIDPP", hidpp_handler);
     }
@@ -346,7 +355,7 @@ void Receiver::listen()
         dj_handler->callback = [this](std::vector<uint8_t>& report)->void
         {
             Report _report(report);
-            this->handleDjEvent(_report);
+            this->_handleDjEvent(_report);
         };
         _raw_device->addEventHandler("RECV_DJ", dj_handler);
     }

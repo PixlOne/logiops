@@ -31,8 +31,8 @@ namespace logid
         Receiver(std::string path);
 
     protected:
-        virtual void addDevice(backend::hidpp::DeviceConnectionEvent event);
-        virtual void removeDevice(backend::hidpp::DeviceIndex index);
+        void addDevice(backend::hidpp::DeviceConnectionEvent event) override;
+        void removeDevice(backend::hidpp::DeviceIndex index) override;
     private:
         std::map<backend::hidpp::DeviceIndex, std::shared_ptr<Device>> _devices;
         std::string _path;

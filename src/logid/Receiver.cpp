@@ -25,7 +25,7 @@
 using namespace logid;
 using namespace logid::backend;
 
-Receiver::Receiver(std::string path) : dj::ReceiverMonitor(path)
+Receiver::Receiver(std::string path) : dj::ReceiverMonitor(path), _path (path)
 {
     log_printf(DEBUG, "logid::Receiver created on %s", path.c_str());
 }
@@ -33,8 +33,17 @@ Receiver::Receiver(std::string path) : dj::ReceiverMonitor(path)
 void Receiver::addDevice(hidpp::DeviceConnectionEvent event)
 {
     try {
+        auto dev = _devices.find(event.index);
+        if(dev != _devices.end()) {
+            if(event.linkEstablished)
+                dev->second->wakeup();
+            else
+                dev->second->sleep();
+            return;
+        }
+
         if(!event.linkEstablished)
-            return; // Device is probably asleep, wait until it wakes up
+            return;
 
         hidpp::Device hidpp_device(receiver(), event);
 
@@ -49,13 +58,12 @@ void Receiver::addDevice(hidpp::DeviceConnectionEvent event)
         std::shared_ptr<Device> device = std::make_shared<Device>(
                 receiver()->rawDevice(), event.index);
 
-        assert(_devices.find(event.index) == _devices.end());
-
         _devices.emplace(event.index, device);
 
     } catch(hidpp10::Error &e) {
-        log_printf(ERROR, "Caught HID++ 1.0 error while trying to initialize "
-                          "%s:%d: %s", _path.c_str(), event.index, e.what());
+        log_printf(ERROR,
+                       "Caught HID++ 1.0 error while trying to initialize "
+                       "%s:%d: %s", _path.c_str(), event.index, e.what());
     } catch(hidpp20::Error &e) {
         log_printf(ERROR, "Caught HID++ 2.0 error while trying to initialize "
                           "%s:%d: %s", _path.c_str(), event.index, e.what());
