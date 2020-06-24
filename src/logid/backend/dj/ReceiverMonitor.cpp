@@ -17,6 +17,8 @@
  */
 
 #include "ReceiverMonitor.h"
+#include "../../util/thread.h"
+#include "../../util.h"
 
 #include <utility>
 #include <cassert>
@@ -55,14 +57,24 @@ void ReceiverMonitor::run()
             /* Running in a new thread prevents deadlocks since the
              * receiver may be enumerating.
              */
-            std::thread{[this](hidpp::Report report) {
+            thread::spawn({[this, report]() {
                 if (report.subId() == Receiver::DeviceConnection)
-                    this->addDevice(this->_receiver->deviceConnectionEvent(
-                            report));
+                    this->addDevice(this->_receiver->deviceConnectionEvent
+                    (report));
                 else if (report.subId() == Receiver::DeviceDisconnection)
                     this->removeDevice(this->_receiver->
                             deviceDisconnectionEvent(report));
-            }, report}.detach();
+            }}, {[report, path=this->_receiver->rawDevice()->hidrawPath()]
+            (std::exception& e) {
+                if(report.subId() == Receiver::DeviceConnection)
+                    log_printf(ERROR, "Failed to add device %d to receiver "
+                                      "on %s: %s", report.deviceIndex(),
+                                      path.c_str(), e.what());
+                else if(report.subId() == Receiver::DeviceDisconnection)
+                    log_printf(ERROR, "Failed to remove device %d from "
+                                      "receiver on %s: %s", report.deviceIndex()
+                                      ,path.c_str(), e.what());
+            }});
         };
 
         _receiver->addHidppEventHandler("RECVMON", event_handler);

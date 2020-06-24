@@ -199,7 +199,7 @@ void Report::setType(Report::Type type)
     _data[Offset::Type] = type;
 }
 
-hidpp::DeviceIndex Report::deviceIndex()
+hidpp::DeviceIndex Report::deviceIndex() const
 {
     return static_cast<hidpp::DeviceIndex>(_data[Offset::DeviceIndex]);
 }
@@ -259,6 +259,26 @@ uint8_t Report::address() const
 void Report::setAddress(uint8_t address)
 {
     _data[Offset::Address] = address;
+}
+
+std::vector<uint8_t>::iterator Report::paramBegin()
+{
+    return _data.begin() + Offset::Parameters;
+}
+
+std::vector<uint8_t>::iterator Report::paramEnd()
+{
+    return _data.end();
+}
+
+std::vector<uint8_t>::const_iterator Report::paramBegin() const
+{
+    return _data.begin() + Offset::Parameters;
+}
+
+std::vector<uint8_t>::const_iterator Report::paramEnd() const
+{
+    return _data.end();
 }
 
 void Report::setParams(const std::vector<uint8_t>& _params)
