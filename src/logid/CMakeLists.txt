@@ -31,6 +31,7 @@ add_executable(logid
         backend/hidpp20/features/Root.cpp
         backend/hidpp20/features/FeatureSet.cpp
         backend/hidpp20/features/DeviceName.cpp
+        backend/hidpp20/features/Reset.cpp
         backend/dj/Report.cpp
         util/mutex_queue.h)
 
