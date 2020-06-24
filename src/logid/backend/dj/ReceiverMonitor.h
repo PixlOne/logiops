@@ -32,7 +32,7 @@ namespace dj
     class ReceiverMonitor
     {
     public:
-        ReceiverMonitor(std::string path);
+        explicit ReceiverMonitor(std::string path);
 
         void enumerate();
         void run();

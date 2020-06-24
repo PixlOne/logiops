@@ -73,6 +73,8 @@ void ReceiverMonitor::run()
 
 void ReceiverMonitor::stop()
 {
+    _receiver->removeHidppEventHandler("RECVMON");
+
     _receiver->stopListening();
 }
 

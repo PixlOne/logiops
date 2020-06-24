@@ -69,6 +69,14 @@ namespace dj
 
         void enumerateDj();
 
+        struct ConnectionStatusEvent
+        {
+            hidpp::DeviceIndex index;
+            bool linkLost;
+        };
+
+        ConnectionStatusEvent connectionStatusEvent(dj::Report& report);
+
         /* The following functions deal with HID++ 1.0 features.
          * While these are not technically DJ functions, it is redundant
          * to have a separate hidpp10::Receiver class for these functions.
@@ -153,11 +161,11 @@ namespace dj
 
         std::shared_ptr<raw::RawDevice> rawDevice() const;
     private:
-        void sendDjRequest(hidpp::DeviceIndex index, uint8_t function,
+        void _sendDjRequest(hidpp::DeviceIndex index, uint8_t function,
                 const std::vector<uint8_t>&& params);
 
-        void handleDjEvent(dj::Report& report);
-        void handleHidppEvent(hidpp::Report& report);
+        void _handleDjEvent(dj::Report& report);
+        void _handleHidppEvent(hidpp::Report& report);
 
         std::map<std::string, std::shared_ptr<EventHandler>>
                 _dj_event_handlers;

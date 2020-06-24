@@ -149,7 +149,7 @@ void DeviceMonitor::enumerate()
         std::string devnode = udev_device_get_devnode(device);
         udev_device_unref(device);
 
-        std::thread([this](const std::string name) {
+        std::thread([this](const std::string& name) {
             this->addDevice(name);
         }, devnode).detach();
     }
