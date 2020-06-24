@@ -34,7 +34,9 @@ add_executable(logid
         backend/hidpp20/features/DeviceName.cpp
         backend/hidpp20/features/Reset.cpp
         backend/dj/Report.cpp
-        util/mutex_queue.h)
+        util/mutex_queue.h
+        util/thread.cpp
+        util/ExceptionHandler.cpp)
 
 set_target_properties(logid PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
