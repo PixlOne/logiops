@@ -5,7 +5,7 @@ using namespace logid;
 using namespace logid::backend;
 
 Device::Device(std::string path, backend::hidpp::DeviceIndex index) :
-    _hidpp20 (path, index), _path (path), _index (index)
+    _hidpp20 (path, index), _path (std::move(path)), _index (index)
 {
     log_printf(DEBUG, "logid::Device created on %s:%d", _path.c_str(), _index);
 }

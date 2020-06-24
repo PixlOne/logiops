@@ -3,13 +3,16 @@
 
 #include <string>
 #include <mutex>
+#include <atomic>
 
 extern "C"
 {
 #include <libudev.h>
 }
 
-namespace logid::backend::raw
+namespace logid {
+namespace backend {
+namespace raw
 {
     class DeviceMonitor
     {
@@ -23,10 +26,11 @@ namespace logid::backend::raw
         virtual void addDevice(std::string device) = 0;
         virtual void removeDevice(std::string device) = 0;
     private:
-        struct udev* udev_context;
-        int monitor_pipe[2];
-        std::mutex running;
+        struct udev* _udev_context;
+        int _pipe[2];
+        std::atomic<bool> _run_monitor;
+        std::mutex _running;
     };
-}
+}}}
 
 #endif //LOGID_BACKEND_RAW_DEVICEMONITOR_H

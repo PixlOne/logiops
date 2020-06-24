@@ -6,7 +6,9 @@
 #include "defs.h"
 #include "../hidpp/defs.h"
 
-namespace logid::backend::dj
+namespace logid {
+namespace backend {
+namespace dj
 {
     namespace Offset
     {
@@ -33,6 +35,6 @@ namespace logid::backend::dj
     private:
         std::vector<uint8_t> _data;
     };
-}
+}}}
 
 #endif //LOGID_BACKEND_DJ_REPORT_H

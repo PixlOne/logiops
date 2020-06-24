@@ -3,7 +3,9 @@
 
 #define LOGID_HIDPP_SOFTWARE_ID 0
 
-namespace logid::backend::hidpp
+namespace logid {
+namespace backend {
+namespace hidpp
 {
     namespace ReportType
     {
@@ -28,6 +30,6 @@ namespace logid::backend::hidpp
 
     static constexpr std::size_t ShortParamLength = 3;
     static constexpr std::size_t LongParamLength = 16;
-}
+} } }
 
 #endif //LOGID_HIDPP_DEFS_H

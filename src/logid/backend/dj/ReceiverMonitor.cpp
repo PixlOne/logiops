@@ -13,7 +13,7 @@ ReceiverMonitor::ReceiverMonitor(std::string path) : _receiver (
     assert(_receiver->djEventHandlers().find("RECVMON") ==
            _receiver->djEventHandlers().end());
 
-    Receiver::notification_flags notification_flags{
+    Receiver::NotificationFlags notification_flags{
         true,
         true,
         true};
@@ -25,16 +25,15 @@ void ReceiverMonitor::run()
     _receiver->listen();
 
     if(_receiver->hidppEventHandlers().find("RECVMON") ==
-           _receiver->hidppEventHandlers().end())
-    {
-        std::shared_ptr<hidpp::EventHandler> eventHandler =
+           _receiver->hidppEventHandlers().end()) {
+        std::shared_ptr<hidpp::EventHandler> event_handler =
                 std::make_shared<hidpp::EventHandler>();
-        eventHandler->condition = [](hidpp::Report &report) -> bool {
+        event_handler->condition = [](hidpp::Report &report) -> bool {
             return (report.subId() == Receiver::DeviceConnection ||
                     report.subId() == Receiver::DeviceDisconnection);
         };
 
-        eventHandler->callback = [this](hidpp::Report &report) -> void {
+        event_handler->callback = [this](hidpp::Report &report) -> void {
             /* Running in a new thread prevents deadlocks since the
              * receiver may be enumerating.
              */
@@ -48,7 +47,7 @@ void ReceiverMonitor::run()
             }, report}.detach();
         };
 
-        _receiver->addHidppEventHandler("RECVMON", eventHandler);
+        _receiver->addHidppEventHandler("RECVMON", event_handler);
     }
 
     enumerate();

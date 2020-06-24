@@ -21,7 +21,7 @@ namespace hidpp20
             Ping = 1
         };
 
-        Root(Device* device);
+        explicit Root(Device* device);
 
         feature_info getFeature (uint16_t feature_id);
         std::tuple<uint8_t, uint8_t> getVersion();
@@ -40,9 +40,9 @@ namespace hidpp20
         static const uint16_t ID = FeatureID::ROOT;
         virtual uint16_t getID() { return ID; }
 
-        EssentialRoot(hidpp::Device* device);
+        explicit EssentialRoot(hidpp::Device* device);
 
-        feature_info getFeature (uint16_t feature_id);
+        feature_info getFeature(uint16_t feature_id);
         std::tuple<uint8_t, uint8_t> getVersion();
     };
 }}}

@@ -1,5 +1,5 @@
-#ifndef LOGID_HIDPP_DEVICE_H
-#define LOGID_HIDPP_DEVICE_H
+#ifndef LOGID_BACKEND_HIDPP_DEVICE_H
+#define LOGID_BACKEND_HIDPP_DEVICE_H
 
 #include <string>
 #include <memory>
@@ -44,14 +44,15 @@ namespace hidpp
         };
 
         explicit Device(const std::string& path, DeviceIndex index);
-        explicit Device(std::shared_ptr<raw::RawDevice> raw_device, DeviceIndex index);
+        explicit Device(std::shared_ptr<raw::RawDevice> raw_device,
+                DeviceIndex index);
         explicit Device(std::shared_ptr<dj::Receiver> receiver,
                 hidpp::DeviceConnectionEvent event);
         ~Device();
 
-        std::string devicePath() const { return _path; }
-        DeviceIndex deviceIndex() const { return _index; }
-        std::tuple<uint8_t, uint8_t> version() const { return _version; }
+        std::string devicePath() const;
+        DeviceIndex deviceIndex() const;
+        std::tuple<uint8_t, uint8_t> version() const;
 
         void listen(); // Runs asynchronously
         void stopListening();
@@ -70,14 +71,14 @@ namespace hidpp
         std::shared_ptr<dj::Receiver> _receiver;
         std::string _path;
         DeviceIndex _index;
-        uint8_t supported_reports;
+        uint8_t _supported_reports;
 
         std::tuple<uint8_t, uint8_t> _version;
         uint16_t _pid;
         std::string _name;
 
-        std::map<std::string, std::shared_ptr<EventHandler>> event_handlers;
+        std::map<std::string, std::shared_ptr<EventHandler>> _event_handlers;
     };
 } } }
 
-#endif //LOGID_HIDPP_DEVICE_H
+#endif //LOGID_BACKEND_HIDPP_DEVICE_H

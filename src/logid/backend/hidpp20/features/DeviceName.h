@@ -21,7 +21,7 @@ namespace hidpp20
             GetDeviceName = 1
         };
 
-        DeviceName(Device* device);
+        explicit DeviceName(Device* device);
 
         uint8_t getNameLength();
         std::string getName();
@@ -33,7 +33,7 @@ namespace hidpp20
         static const uint16_t ID = FeatureID::DEVICE_NAME;
         virtual uint16_t getID() { return ID; }
 
-        EssentialDeviceName(hidpp::Device* device);
+        explicit EssentialDeviceName(hidpp::Device* device);
 
         uint8_t getNameLength();
         std::string getName();

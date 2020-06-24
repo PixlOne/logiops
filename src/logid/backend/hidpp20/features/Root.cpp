@@ -14,7 +14,8 @@ std::vector<uint8_t> _genGetFeatureParams(uint16_t feature_id)
     return params;
 }
 
-feature_info _genGetFeatureInfo(uint16_t feature_id, std::vector<uint8_t> response)
+feature_info _genGetFeatureInfo(uint16_t feature_id,
+        std::vector<uint8_t> response)
 {
     feature_info info{};
     info.feature_id = response[0];
