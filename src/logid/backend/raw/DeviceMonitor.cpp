@@ -17,6 +17,8 @@
  */
 
 #include "DeviceMonitor.h"
+#include "../../util/thread.h"
+#include "../../util.h"
 
 #include <thread>
 #include <system_error>
@@ -96,13 +98,19 @@ void DeviceMonitor::run()
             std::string devnode = udev_device_get_devnode(device);
 
             if (action == "add")
-                std::thread([this](const std::string name) {
+                thread::spawn([this, name=devnode]() {
                     this->addDevice(name);
-                }, devnode).detach();
+                }, [name=devnode](std::exception& e){
+                    log_printf(WARN, "Error adding device %s: %s",
+                            name.c_str(), e.what());
+                });
             else if (action == "remove")
-                std::thread([this](const std::string name) {
+                thread::spawn([this, name=devnode]() {
                     this->removeDevice(name);
-                }, devnode).detach();
+                }, [name=devnode](std::exception& e){
+                    log_printf(WARN, "Error removing device %s: %s",
+                               name.c_str(), e.what());
+                });
 
             udev_device_unref (device);
         }
@@ -149,9 +157,12 @@ void DeviceMonitor::enumerate()
         std::string devnode = udev_device_get_devnode(device);
         udev_device_unref(device);
 
-        std::thread([this](const std::string& name) {
+        thread::spawn([this, name=devnode]() {
             this->addDevice(name);
-        }, devnode).detach();
+        }, [name=devnode](std::exception& e){
+            log_printf(ERROR, "Error adding device %s: %s",
+                       name.c_str(), e.what());
+        });
     }
 
     udev_enumerate_unref(udev_enum);

@@ -78,7 +78,7 @@ namespace hidpp
         Report::Type type() const;
         void setType(Report::Type type);
 
-        logid::backend::hidpp::DeviceIndex deviceIndex();
+        logid::backend::hidpp::DeviceIndex deviceIndex() const;
         void setDeviceIndex(hidpp::DeviceIndex index);
 
         uint8_t feature() const;
@@ -96,11 +96,10 @@ namespace hidpp
         uint8_t address() const;
         void setAddress(uint8_t address);
 
-        std::vector<uint8_t>::iterator paramBegin()
-        {
-            return _data.begin() + Offset::Parameters;
-        }
-        std::vector<uint8_t>::iterator paramEnd() { return _data.end(); }
+        std::vector<uint8_t>::iterator paramBegin();
+        std::vector<uint8_t>::iterator paramEnd();
+        std::vector<uint8_t>::const_iterator paramBegin() const;
+        std::vector<uint8_t>::const_iterator paramEnd() const;
         void setParams(const std::vector<uint8_t>& _params);
 
         struct Hidpp10Error

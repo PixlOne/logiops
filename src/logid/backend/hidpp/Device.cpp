@@ -18,6 +18,7 @@
 
 #include <cassert>
 #include <utility>
+#include "../../util/thread.h"
 #include "Device.h"
 #include "Report.h"
 #include "../hidpp20/features/Root.h"
@@ -182,7 +183,10 @@ Report Device::sendReport(Report& report)
 void Device::listen()
 {
     if(!_raw_device->isListening())
-        std::thread{[=]() { _raw_device->listen(); }}.detach();
+        ///TODO: Kill RawDevice?
+        thread::spawn({[raw=this->_raw_device]() {
+            raw->listen();
+        }});
 
     // Pass all HID++ events with device index to this device.
     std::shared_ptr<raw::RawEventHandler> handler;

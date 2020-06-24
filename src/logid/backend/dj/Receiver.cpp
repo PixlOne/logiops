@@ -20,6 +20,7 @@
 #include "Report.h"
 #include "Receiver.h"
 #include "Error.h"
+#include "../../util/thread.h"
 
 using namespace logid::backend::dj;
 using namespace logid::backend;
@@ -214,13 +215,14 @@ std::string Receiver::getDeviceName(hidpp::DeviceIndex index)
     return name;
 }
 
-hidpp::DeviceIndex Receiver::deviceDisconnectionEvent(hidpp::Report& report)
+hidpp::DeviceIndex Receiver::deviceDisconnectionEvent(const hidpp::Report&
+report)
 {
     assert(report.subId() == DeviceDisconnection);
     return report.deviceIndex();
 }
 
-hidpp::DeviceConnectionEvent Receiver::deviceConnectionEvent(
+hidpp::DeviceConnectionEvent Receiver::deviceConnectionEvent(const
         hidpp::Report &report)
 {
     assert(report.subId() == DeviceConnection);
@@ -322,7 +324,10 @@ Receiver::ConnectionStatusEvent Receiver::connectionStatusEvent(Report& report)
 void Receiver::listen()
 {
     if(!_raw_device->isListening())
-        std::thread{[this]() { this->_raw_device->listen(); }}.detach();
+        ///TODO: Kill RawDevice?
+        thread::spawn({[raw=this->_raw_device]() {
+            raw->listen();
+        }});
 
     if(_raw_device->eventHandlers().find("RECV_HIDPP") ==
         _raw_device->eventHandlers().end()) {

@@ -140,9 +140,9 @@ namespace dj
         std::string getDeviceName(hidpp::DeviceIndex index);
 
         static hidpp::DeviceIndex deviceDisconnectionEvent(
-                hidpp::Report& report);
+                const hidpp::Report& report);
         static hidpp::DeviceConnectionEvent deviceConnectionEvent(
-                hidpp::Report& report);
+                const hidpp::Report& report);
 
         void listen();
         void stopListening();
