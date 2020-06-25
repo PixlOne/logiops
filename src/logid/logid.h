@@ -26,7 +26,7 @@ namespace logid
     // void reload();
 
     extern bool kill_logid;
-    extern std::mutex finder_reloading;
+    extern std::mutex device_manager_reload;
 }
 
 #endif //LOGID_LOGID_H
