@@ -39,10 +39,10 @@ std::string config_file = DEFAULT_CONFIG_FILE;
 
 LogLevel logid::global_loglevel = INFO;
 // Configuration* logid::global_config;
-DeviceManager* logid::finder;
+std::unique_ptr<DeviceManager> logid::device_manager;
 
 bool logid::kill_logid = false;
-std::mutex logid::finder_reloading;
+std::mutex logid::device_manager_reload;
 
 enum class Option
 {
@@ -172,12 +172,12 @@ int main(int argc, char** argv)
     */
     
     // Scan devices, create listeners, handlers, etc.
-    finder = new DeviceManager();
+    device_manager = std::make_unique<DeviceManager>();
 
     while(!kill_logid) {
-        finder_reloading.lock();
-        finder_reloading.unlock();
-        finder->run();
+        device_manager_reload.lock();
+        device_manager_reload.unlock();
+        device_manager->run();
     }
 
     return EXIT_SUCCESS;

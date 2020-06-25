@@ -44,7 +44,7 @@ namespace logid
         std::map<std::string, std::shared_ptr<Receiver>> _receivers;
     };
 
-    extern DeviceManager* finder;
+    extern std::unique_ptr<DeviceManager> device_manager;
 }
 
 #endif //LOGID_DEVICEMANAGER_H
