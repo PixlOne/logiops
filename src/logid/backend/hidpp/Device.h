@@ -72,6 +72,9 @@ namespace hidpp
         DeviceIndex deviceIndex() const;
         std::tuple<uint8_t, uint8_t> version() const;
 
+        std::string name() const;
+        uint16_t pid() const;
+
         void listen(); // Runs asynchronously
         void stopListening();
 

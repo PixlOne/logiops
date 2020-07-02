@@ -38,7 +38,7 @@ using namespace logid;
 std::string config_file = DEFAULT_CONFIG_FILE;
 
 LogLevel logid::global_loglevel = INFO;
-// Configuration* logid::global_config;
+std::shared_ptr<Configuration> logid::global_config;
 std::unique_ptr<DeviceManager> logid::device_manager;
 
 bool logid::kill_logid = false;
@@ -155,12 +155,15 @@ int main(int argc, char** argv)
 {
     readCliOptions(argc, argv);
 
-    /*
     // Read config
-    try { global_config = new Configuration(config_file.c_str()); }
-    catch (std::exception &e) { global_config = new Configuration(); }
+    try {
+        global_config = std::make_shared<Configuration>(config_file);
+    }
+    catch (std::exception &e) {
+        global_config = std::make_shared<Configuration>();
+    }
 
-
+    /*
     //Create an evdev device called 'logid'
     try { global_evdev = new EvdevDevice(evdev_name); }
     catch(std::system_error& e)
