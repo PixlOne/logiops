@@ -15,40 +15,34 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#ifndef LOGID_BACKEND_HIDPP20_FEATURE_SMARTSHIFT_H
-#define LOGID_BACKEND_HIDPP20_FEATURE_SMARTSHIFT_H
+#ifndef LOGID_FEATURE_SMARTSHIFT_H
+#define LOGID_FEATURE_SMARTSHIFT_H
 
-#include "../feature_defs.h"
-#include "../Feature.h"
+#include "../backend/hidpp20/features/SmartShift.h"
+#include "DeviceFeature.h"
 
 namespace logid {
-namespace backend {
-namespace hidpp20
+namespace features
 {
-    class SmartShift : public Feature
+    class SmartShift : public DeviceFeature
     {
     public:
-        static const uint16_t ID = FeatureID::SMART_SHIFT;
-        virtual uint16_t getID() { return ID; }
-
-        enum Function {
-            GetStatus = 0,
-            SetStatus = 1
-        };
-
         explicit SmartShift(Device* dev);
+        virtual void configure();
+        virtual void listen();
 
-        struct SmartshiftStatus
+        class Config : public DeviceFeature::Config
         {
-            bool active;
-            uint8_t autoDisengage;
-            uint8_t defaultAutoDisengage;
-            bool setActive, setAutoDisengage, setDefaultAutoDisengage;
+        public:
+            explicit Config(Device* dev);
+            backend::hidpp20::SmartShift::SmartshiftStatus getSettings();
+        protected:
+            backend::hidpp20::SmartShift::SmartshiftStatus _status;
         };
-
-        SmartshiftStatus getStatus();
-        void setStatus(SmartshiftStatus status);
+    private:
+        Config _config;
+        backend::hidpp20::SmartShift _smartshift;
     };
-}}}
+}}
 
-#endif //LOGID_BACKEND_HIDPP20_FEATURE_SMARTSHIFT_H
+#endif //LOGID_FEATURE_SMARTSHIFT_H

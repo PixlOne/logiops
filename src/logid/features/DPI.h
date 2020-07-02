@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#ifndef LOGID_FEATURES_DPI_H
-#define LOGID_FEATURES_DPI_H
+#ifndef LOGID_FEATURE_DPI_H
+#define LOGID_FEATURE_DPI_H
 
 #include "../backend/hidpp20/features/AdjustableDPI.h"
 #include "DeviceFeature.h"
