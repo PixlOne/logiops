@@ -44,11 +44,11 @@ void Device::_init()
     logPrintf(INFO, "Device found: %s on %s:%d", name().c_str(),
             hidpp20().devicePath().c_str(), _index);
 
-    _addFeature<features::DPI>();
-    _addFeature<features::SmartShift>();
+    _addFeature<features::DPI>("dpi");
+    _addFeature<features::SmartShift>("smartshift");
 
     for(auto& feature: _features)
-        feature->configure();
+        feature.second->configure();
 }
 
 std::string Device::name()
