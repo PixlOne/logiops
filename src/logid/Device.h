@@ -24,6 +24,7 @@
 #include "backend/hidpp20/Feature.h"
 #include "features/DeviceFeature.h"
 #include "Configuration.h"
+#include "util/log.h"
 
 namespace logid
 {
@@ -60,15 +61,31 @@ namespace logid
 
         void wakeup();
         void sleep();
+
+        template<typename T>
+        std::shared_ptr<T> getFeature(std::string name) {
+            auto it = _features.find(name);
+            if(it == _features.end())
+                return nullptr;
+            try {
+                return std::dynamic_pointer_cast<std::shared_ptr<T>>
+                    (it->second);
+            } catch(std::bad_cast& e) {
+                logPrintf(ERROR, "bad_cast while getting device feature %s: "
+                                 "%s", name.c_str(), e.what());
+                return nullptr;
+            }
+        }
+
     private:
         void _init();
 
         /* Adds a feature without calling an error if unsupported */
         template<typename T>
-        void _addFeature()
+        void _addFeature(std::string name)
         {
             try {
-                _features.push_back(std::make_shared<T>(this));
+                _features.emplace(name, std::make_shared<T>(this));
             } catch (backend::hidpp20::UnsupportedFeature& e) {
             }
         }
@@ -76,7 +93,8 @@ namespace logid
         backend::hidpp20::Device _hidpp20;
         std::string _path;
         backend::hidpp::DeviceIndex _index;
-        std::vector<std::shared_ptr<features::DeviceFeature>> _features;
+        std::map<std::string, std::shared_ptr<features::DeviceFeature>>
+            _features;
         DeviceConfig _config;
     };
 }
