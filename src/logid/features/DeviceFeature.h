@@ -20,13 +20,30 @@
 #define LOGID_FEATURES_DEVICEFEATURE_H
 
 namespace logid {
+    class Device;
 namespace features
 {
     class DeviceFeature
     {
     public:
+        explicit DeviceFeature(Device* dev) : _device (dev)
+        {
+        }
         virtual void configure() = 0;
         virtual void listen() = 0;
+        class Config
+        {
+        public:
+            explicit Config(Device* dev) : _device (dev)
+            {
+            }
+        protected:
+            virtual const std::string configPath() = 0;
+            Device* _device;
+            std::string root_setting;
+        };
+    private:
+        Device* _device;
     };
 }}
 

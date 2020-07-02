@@ -180,6 +180,16 @@ Report Device::sendReport(Report& report)
     return response;
 }
 
+std::string Device::name() const
+{
+    return _name;
+}
+
+uint16_t Device::pid() const
+{
+    return _pid;
+}
+
 void Device::listen()
 {
     if(!_raw_device->isListening())

@@ -21,43 +21,32 @@
 
 #include <map>
 #include <libconfig.h++>
-#include <hidpp20/ISmartShift.h>
-#include "Actions.h"
+#include <memory>
 
 namespace logid
 {
-    class DeviceConfig;
-    class ButtonAction;
-    enum class Action;
-
-    class DeviceConfig
-    {
-    public:
-        DeviceConfig();
-        ~DeviceConfig();
-        DeviceConfig(DeviceConfig* dc, Device* dev);
-        DeviceConfig(const libconfig::Setting& root);
-        const int* dpi = nullptr;
-        HIDPP20::ISmartShift::SmartshiftStatus* smartshift = nullptr;
-        const uint8_t* hiresscroll = nullptr;
-        std::map<uint16_t, ButtonAction*> actions;
-        const bool baseConfig = true;
-    };
-
     class Configuration
     {
     public:
-        Configuration(const char* config_file);
-        Configuration() {}
-        std::map<std::string, DeviceConfig*> devices;
-        std::vector<uint16_t> blacklist;
+        explicit Configuration(const std::string& config_file);
+        Configuration() = default;
+        libconfig::Setting& getSetting(std::string path);
+        std::string getDevice(std::string name);
+
+        class DeviceNotFound : public std::exception
+        {
+        public:
+            explicit DeviceNotFound(std::string name);
+            virtual const char* what();
+        private:
+            std::string _name;
+        };
     private:
-        libconfig::Config cfg;
+        std::map<std::string, std::string> _device_paths;
+        libconfig::Config _config;
     };
 
-    ButtonAction* parse_action(Action action, const libconfig::Setting* action_config, bool is_gesture=false);
-
-    extern Configuration* global_config;
+    extern std::shared_ptr<Configuration> global_config;
 }
 
 #endif //LOGID_CONFIGURATION_H

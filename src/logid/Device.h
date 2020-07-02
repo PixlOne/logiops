@@ -22,9 +22,23 @@
 #include "backend/hidpp/defs.h"
 #include "backend/hidpp20/Device.h"
 #include "features/DeviceFeature.h"
+#include "Configuration.h"
 
 namespace logid
 {
+    class Device;
+
+    class DeviceConfig
+    {
+    public:
+        DeviceConfig(std::shared_ptr<Configuration> config, Device* device);
+        std::string getSetting(std::string path);
+    private:
+        Device* _device;
+        std::string _root_setting;
+        std::shared_ptr<Configuration> _config;
+    };
+
     /* TODO: Implement HID++ 1.0 support
      * Currently, the logid::Device class has a hardcoded requirement
      * for an HID++ 2.0 device.
@@ -35,6 +49,12 @@ namespace logid
         Device(std::string path, backend::hidpp::DeviceIndex index);
         Device(const std::shared_ptr<backend::raw::RawDevice>& raw_device,
                 backend::hidpp::DeviceIndex index);
+
+        std::string name();
+        uint16_t pid();
+
+        DeviceConfig& config();
+
         void wakeup();
         void sleep();
     private:
@@ -42,6 +62,7 @@ namespace logid
         std::string _path;
         backend::hidpp::DeviceIndex _index;
         std::vector<std::shared_ptr<features::DeviceFeature>> _features;
+        DeviceConfig _config;
     };
 }
 

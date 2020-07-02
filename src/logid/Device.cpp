@@ -23,16 +23,28 @@ using namespace logid;
 using namespace logid::backend;
 
 Device::Device(std::string path, backend::hidpp::DeviceIndex index) :
-    _hidpp20 (path, index), _path (std::move(path)), _index (index)
+    _hidpp20 (path, index), _path (std::move(path)), _index (index),
+    _config (global_config, this)
 {
-    logPrintf(DEBUG, "logid::Device created on %s:%d", _path.c_str(), _index);
+    ///TODO: Initialize features
 }
 
 Device::Device(const std::shared_ptr<backend::raw::RawDevice>& raw_device,
         hidpp::DeviceIndex index) : _hidpp20(raw_device, index), _path
-        (raw_device->hidrawPath()), _index (index)
+        (raw_device->hidrawPath()), _index (index),
+        _config (global_config, this)
 {
-    logPrintf(DEBUG, "logid::Device created on %s:%d", _path.c_str(), _index);
+    ///TODO: Initialize features
+}
+
+std::string Device::name()
+{
+    return _hidpp20.name();
+}
+
+uint16_t Device::pid()
+{
+    return _hidpp20.pid();
 }
 
 void Device::sleep()
@@ -43,4 +55,25 @@ void Device::sleep()
 void Device::wakeup()
 {
     logPrintf(INFO, "%s:%d woke up.", _path.c_str(), _index);
+}
+
+DeviceConfig& Device::config()
+{
+    return _config;
+}
+
+DeviceConfig::DeviceConfig(std::shared_ptr<Configuration> config, Device*
+    device) : _device (device), _config (config)
+{
+    try {
+        _root_setting = config->getDevice(device->name());
+    } catch(Configuration::DeviceNotFound& e) {
+        logPrintf(INFO, "Device %s not configured, using default config.",
+                device->name().c_str());
+    }
+}
+
+std::string DeviceConfig::getSetting(std::string path)
+{
+    return _root_setting + '/' + path;
 }
