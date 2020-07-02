@@ -44,14 +44,12 @@ Configuration::Configuration(const std::string& config_file)
     Setting* devices;
 
     try { devices = &root["devices"]; }
-    catch(const SettingNotFoundException &e)
-    {
+    catch(const SettingNotFoundException &e) {
         logPrintf(WARN, "No devices listed in config file.");
         return;
     }
 
-    for(int i = 0; i < devices->getLength(); i++)
-    {
+    for(int i = 0; i < devices->getLength(); i++) {
         const Setting &device = (*devices)[i];
         std::string name;
         try {

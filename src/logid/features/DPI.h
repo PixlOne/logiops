@@ -15,37 +15,35 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+#ifndef LOGID_FEATURES_DPI_H
+#define LOGID_FEATURES_DPI_H
 
-#ifndef LOGID_FEATURES_DEVICEFEATURE_H
-#define LOGID_FEATURES_DEVICEFEATURE_H
-
-#include <string>
+#include "../backend/hidpp20/features/AdjustableDPI.h"
+#include "DeviceFeature.h"
 
 namespace logid {
-    class Device;
 namespace features
 {
-    class DeviceFeature
+    class DPI : public DeviceFeature
     {
     public:
-        explicit DeviceFeature(Device* dev) : _device (dev)
-        {
-        }
-        virtual void configure() = 0;
-        virtual void listen() = 0;
-        class Config
+        explicit DPI(Device* dev);
+        virtual void configure();
+        virtual void listen();
+
+        class Config : public DeviceFeature::Config
         {
         public:
-            explicit Config(Device* dev) : _device (dev)
-            {
-            }
+            explicit Config(Device* dev);
+            uint16_t getDPI(uint8_t sensor);
+            uint8_t getSensorCount();
         protected:
-            Device* _device;
+            std::vector<uint16_t> _dpis;
         };
-
-    protected:
-        Device* _device;
+    private:
+        Config _config;
+        backend::hidpp20::AdjustableDPI _adjustable_dpi;
     };
-}}
+ }}
 
-#endif //LOGID_FEATURES_DEVICEFEATURE_H
+#endif //LOGID_FEATURE_DPI_H
