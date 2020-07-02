@@ -27,7 +27,6 @@ using namespace logid::backend;
 
 Receiver::Receiver(std::string path) : dj::ReceiverMonitor(path), _path (path)
 {
-    logPrintf(DEBUG, "logid::Receiver created on %s", path.c_str());
 }
 
 void Receiver::addDevice(hidpp::DeviceConnectionEvent event)
