@@ -41,6 +41,9 @@ Device::Device(const std::shared_ptr<backend::raw::RawDevice>& raw_device,
 
 void Device::_init()
 {
+    logPrintf(INFO, "Device found: %s on %s:%d", name().c_str(),
+            hidpp20().devicePath().c_str(), _index);
+
     _addFeature<features::DPI>();
     _addFeature<features::SmartShift>();
 

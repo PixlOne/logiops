@@ -49,7 +49,6 @@ Device::InvalidDevice::Reason Device::InvalidDevice::code() const noexcept
     return _reason;
 }
 
-/// TODO: Initialize a single RawDevice for each path.
 Device::Device(const std::string& path, DeviceIndex index):
     _raw_device (std::make_shared<raw::RawDevice>(path)),  _receiver (nullptr),
     _path (path), _index (index)
