@@ -17,6 +17,7 @@ add_executable(logid
         Receiver.cpp
         Configuration.cpp
         features/DPI.cpp
+        features/SmartShift.cpp
         backend/Error.cpp
         backend/raw/DeviceMonitor.cpp
         backend/raw/RawDevice.cpp

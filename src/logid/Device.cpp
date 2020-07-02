@@ -19,6 +19,7 @@
 #include "util/log.h"
 #include "features/DPI.h"
 #include "Device.h"
+#include "features/SmartShift.h"
 
 using namespace logid;
 using namespace logid::backend;
@@ -40,11 +41,8 @@ Device::Device(const std::shared_ptr<backend::raw::RawDevice>& raw_device,
 
 void Device::_init()
 {
-    ///TODO: Surely there's a better way of doing this
-    try {
-        _features.push_back(std::make_shared<features::DPI>(this));
-    } catch (backend::hidpp20::UnsupportedFeature& e) {
-    }
+    _addFeature<features::DPI>();
+    _addFeature<features::SmartShift>();
 
     for(auto& feature: _features)
         feature->configure();

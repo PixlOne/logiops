@@ -21,6 +21,7 @@
 
 #include "backend/hidpp/defs.h"
 #include "backend/hidpp20/Device.h"
+#include "backend/hidpp20/Feature.h"
 #include "features/DeviceFeature.h"
 #include "Configuration.h"
 
@@ -61,6 +62,16 @@ namespace logid
         void sleep();
     private:
         void _init();
+
+        /* Adds a feature without calling an error if unsupported */
+        template<typename T>
+        void _addFeature()
+        {
+            try {
+                _features.push_back(std::make_shared<T>(this));
+            } catch (backend::hidpp20::UnsupportedFeature& e) {
+            }
+        }
 
         backend::hidpp20::Device _hidpp20;
         std::string _path;
