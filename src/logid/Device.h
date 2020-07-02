@@ -31,8 +31,9 @@ namespace logid
     class DeviceConfig
     {
     public:
-        DeviceConfig(std::shared_ptr<Configuration> config, Device* device);
-        std::string getSetting(std::string path);
+        DeviceConfig(const std::shared_ptr<Configuration>& config, Device*
+        device);
+        libconfig::Setting& getSetting(std::string path);
     private:
         Device* _device;
         std::string _root_setting;
@@ -54,10 +55,13 @@ namespace logid
         uint16_t pid();
 
         DeviceConfig& config();
+        backend::hidpp20::Device& hidpp20();
 
         void wakeup();
         void sleep();
     private:
+        void _init();
+
         backend::hidpp20::Device _hidpp20;
         std::string _path;
         backend::hidpp::DeviceIndex _index;

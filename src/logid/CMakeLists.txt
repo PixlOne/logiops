@@ -16,6 +16,7 @@ add_executable(logid
         Device.cpp
         Receiver.cpp
         Configuration.cpp
+        features/DPI.cpp
         backend/Error.cpp
         backend/raw/DeviceMonitor.cpp
         backend/raw/RawDevice.cpp

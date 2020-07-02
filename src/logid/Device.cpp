@@ -17,6 +17,7 @@
  */
 
 #include "util/log.h"
+#include "features/DPI.h"
 #include "Device.h"
 
 using namespace logid;
@@ -26,7 +27,7 @@ Device::Device(std::string path, backend::hidpp::DeviceIndex index) :
     _hidpp20 (path, index), _path (std::move(path)), _index (index),
     _config (global_config, this)
 {
-    ///TODO: Initialize features
+    _init();
 }
 
 Device::Device(const std::shared_ptr<backend::raw::RawDevice>& raw_device,
@@ -34,7 +35,19 @@ Device::Device(const std::shared_ptr<backend::raw::RawDevice>& raw_device,
         (raw_device->hidrawPath()), _index (index),
         _config (global_config, this)
 {
-    ///TODO: Initialize features
+    _init();
+}
+
+void Device::_init()
+{
+    ///TODO: Surely there's a better way of doing this
+    try {
+        _features.push_back(std::make_shared<features::DPI>(this));
+    } catch (backend::hidpp20::UnsupportedFeature& e) {
+    }
+
+    for(auto& feature: _features)
+        feature->configure();
 }
 
 std::string Device::name()
@@ -62,7 +75,12 @@ DeviceConfig& Device::config()
     return _config;
 }
 
-DeviceConfig::DeviceConfig(std::shared_ptr<Configuration> config, Device*
+hidpp20::Device& Device::hidpp20()
+{
+    return _hidpp20;
+}
+
+DeviceConfig::DeviceConfig(const std::shared_ptr<Configuration>& config, Device*
     device) : _device (device), _config (config)
 {
     try {
@@ -73,7 +91,7 @@ DeviceConfig::DeviceConfig(std::shared_ptr<Configuration> config, Device*
     }
 }
 
-std::string DeviceConfig::getSetting(std::string path)
+libconfig::Setting& DeviceConfig::getSetting(std::string path)
 {
-    return _root_setting + '/' + path;
+    return _config->getSetting(_root_setting + '/' + path);
 }
