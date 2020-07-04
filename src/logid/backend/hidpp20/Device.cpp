@@ -45,6 +45,8 @@ std::vector<uint8_t> Device::callFunction(uint8_t feature_index,
         type = hidpp::Report::Type::Short;
     else if(params.size() <= hidpp::LongParamLength)
         type = hidpp::Report::Type::Long;
+    else
+        throw hidpp::Report::InvalidReportID();
 
     hidpp::Report request(type, deviceIndex(), feature_index, function,
             LOGID_HIDPP_SOFTWARE_ID);

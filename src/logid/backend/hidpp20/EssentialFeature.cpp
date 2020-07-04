@@ -20,6 +20,7 @@
 #include "EssentialFeature.h"
 #include "feature_defs.h"
 #include "features/Root.h"
+#include "Error.h"
 
 using namespace logid::backend::hidpp20;
 
@@ -33,6 +34,8 @@ std::vector<uint8_t> EssentialFeature::callFunction(uint8_t function_id,
         type = hidpp::Report::Type::Short;
     else if(params.size() <= hidpp::LongParamLength)
         type = hidpp::Report::Type::Long;
+    else
+        throw hidpp::Report::InvalidReportID();
 
     hidpp::Report request(type, _device->deviceIndex(), _index, function_id,
                           LOGID_HIDPP_SOFTWARE_ID);
@@ -52,8 +55,15 @@ EssentialFeature::EssentialFeature(hidpp::Device* dev, uint16_t _id) :
         std::vector<uint8_t> getFunc_req(2);
         getFunc_req[0] = (_id >> 8) & 0xff;
         getFunc_req[1] = _id & 0xff;
-        auto getFunc_resp = this->callFunction(Root::GetFeature, getFunc_req);
-        _index = getFunc_resp[0];
+        try {
+            auto getFunc_resp = this->callFunction(Root::GetFeature,
+                                                   getFunc_req);
+            _index = getFunc_resp[0];
+        } catch(Error& e) {
+            if(e.code() == Error::InvalidFeatureIndex)
+                throw UnsupportedFeature(_id);
+            throw e;
+        }
 
         // 0 if not found
         if(!_index)

@@ -174,7 +174,7 @@ Report Device::sendReport(Report& report)
 
     Report::Hidpp20Error hidpp20_error{};
     if(response.isError20(&hidpp20_error))
-        throw hidpp10::Error(hidpp20_error.error_code);
+        throw hidpp20::Error(hidpp20_error.error_code);
 
     return response;
 }
