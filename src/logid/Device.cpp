@@ -45,6 +45,14 @@ bool Device::init()
     catch(HIDPP20::Error &e) { return false; }
 
     name = hidpp_dev->name();
+
+    if(std::find(global_config->blacklist.begin(), global_config->blacklist.end(),
+                 hidpp_dev->productID()) != global_config->blacklist.end())
+    {
+        log_printf(INFO, "Ignored blacklisted device %s", name.c_str());
+        throw BlacklistedDevice();
+    }
+
     features = getFeatures();
     // Set config, if none is found for this device then use default
     if(global_config->devices.find(name) == global_config->devices.end())
@@ -237,7 +245,11 @@ void Device::waitForReceiver()
 
         usleep(200000);
 
-        if(this->init()) break;
+        try
+        {
+            if(this->init()) break;
+        }
+        catch(BlacklistedDevice& e) { return; }
 
         log_printf(ERROR, "Failed to initialize device %d on %s, waiting for receiver");
         delete(listener);

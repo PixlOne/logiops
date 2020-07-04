@@ -31,6 +31,36 @@ Configuration::Configuration(const char *config_file)
         throw e;
     }
     const Setting &root = cfg.getRoot();
+
+    try
+    {
+        auto& _blacklist = root.lookup("blacklist");
+        if(_blacklist.isArray() || _blacklist.isList())
+        {
+            int len = _blacklist.getLength();
+            for(int i = 0; i < len; i++)
+            {
+                if(!_blacklist[i].isNumber()) {
+                    log_printf(WARN, "Line %d: blacklist must only contain "
+                                     "PIDs", _blacklist[i].getSourceLine());
+                    if(_blacklist.isArray())
+                        break;
+                    if(_blacklist.isList())
+                        continue;
+                }
+                blacklist.push_back((int)_blacklist[i]);
+            }
+        }
+        else
+        {
+            log_printf(WARN, "Line %d: blacklist must be an array or list, "
+                             "ignnoring.", _blacklist.getSourceLine());
+        }
+    }
+    catch(const SettingNotFoundException &e)
+    {
+    }
+
     Setting* _devices;
 
     try { _devices = &root["devices"]; }

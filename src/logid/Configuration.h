@@ -32,6 +32,7 @@ namespace logid
         Configuration(const char* config_file);
         Configuration() {}
         std::map<std::string, DeviceConfig*> devices;
+        std::vector<uint16_t> blacklist;
     private:
         libconfig::Config cfg;
     };

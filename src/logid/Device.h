@@ -18,6 +18,16 @@ namespace logid
     class EventListener;
     class DeviceConfig;
 
+    class BlacklistedDevice : public std::exception
+    {
+    public:
+        BlacklistedDevice() = default;
+        virtual const char* what()
+        {
+            return "Blacklisted device";
+        }
+    };
+
     class Device
     {
     public:

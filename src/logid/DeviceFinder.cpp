@@ -40,10 +40,15 @@ DeviceFinder::~DeviceFinder()
     this->devices_mutex.unlock();
 }
 
+///TODO: Unused return variable?
 Device* DeviceFinder::insertNewDevice(const std::string &path, HIDPP::DeviceIndex index)
 {
     auto device = new Device(path, index);
-    device->init();
+    try
+    {
+        device->init();
+    }
+    catch(BlacklistedDevice& e) { return nullptr; }
 
     this->devices_mutex.lock();
         log_printf(INFO, "%s detected: device %d on %s", device->name.c_str(), index, path.c_str());
