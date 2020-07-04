@@ -16,6 +16,7 @@
  *
  */
 
+#include "Error.h"
 #include "Feature.h"
 #include "feature_defs.h"
 #include "features/Root.h"
@@ -46,8 +47,16 @@ Feature::Feature(Device* dev, uint16_t _id) : _device (dev)
         std::vector<uint8_t> getFunc_req(2);
         getFunc_req[0] = (_id >> 8) & 0xff;
         getFunc_req[1] = _id & 0xff;
-        auto getFunc_resp = this->callFunction(Root::GetFeature, getFunc_req);
-        _index = getFunc_resp[0];
+
+        try {
+            auto getFunc_resp = this->callFunction(Root::GetFeature,
+                    getFunc_req);
+            _index = getFunc_resp[0];
+        } catch(Error& e) {
+            if(e.code() == Error::InvalidFeatureIndex)
+                throw UnsupportedFeature(_id);
+            throw e;
+        }
 
         // 0 if not found
         if(!_index)

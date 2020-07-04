@@ -17,6 +17,7 @@
  */
 
 #include "Root.h"
+#include "../Error.h"
 
 using namespace logid::backend::hidpp20;
 
@@ -51,8 +52,14 @@ feature_info _genGetFeatureInfo(uint16_t feature_id,
 feature_info Root::getFeature(uint16_t feature_id)
 {
     auto params = _genGetFeatureParams(feature_id);
-    auto response = this->callFunction(Function::GetFeature, params);
-    return _genGetFeatureInfo(feature_id, response);
+    try {
+        auto response = this->callFunction(Root::Function::GetFeature, params);
+        return _genGetFeatureInfo(feature_id, response);
+    } catch(Error& e) {
+        if(e.code() == Error::InvalidFeatureIndex)
+            throw UnsupportedFeature(feature_id);
+        throw e;
+    }
 }
 
 std::tuple<uint8_t, uint8_t> Root::getVersion()
@@ -70,8 +77,14 @@ EssentialRoot::EssentialRoot(hidpp::Device* dev) : EssentialFeature(dev, ID)
 feature_info EssentialRoot::getFeature(uint16_t feature_id)
 {
     auto params = _genGetFeatureParams(feature_id);
-    auto response = this->callFunction(Root::Function::GetFeature, params);
-    return _genGetFeatureInfo(feature_id, response);
+    try {
+        auto response = this->callFunction(Root::Function::GetFeature, params);
+        return _genGetFeatureInfo(feature_id, response);
+    } catch(Error& e) {
+        if(e.code() == Error::InvalidFeatureIndex)
+            throw UnsupportedFeature(feature_id);
+        throw e;
+    }
 }
 
 std::tuple<uint8_t, uint8_t> EssentialRoot::getVersion()
