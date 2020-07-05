@@ -20,6 +20,7 @@
 #include "features/DPI.h"
 #include "Device.h"
 #include "features/SmartShift.h"
+#include "features/RemapButton.h"
 
 using namespace logid;
 using namespace logid::backend;
@@ -46,9 +47,14 @@ void Device::_init()
 
     _addFeature<features::DPI>("dpi");
     _addFeature<features::SmartShift>("smartshift");
+    _addFeature<features::RemapButton>("remapbutton");
 
-    for(auto& feature: _features)
+    for(auto& feature: _features) {
         feature.second->configure();
+        feature.second->listen();
+    }
+
+    _hidpp20.listen();
 }
 
 std::string Device::name()
@@ -69,6 +75,9 @@ void Device::sleep()
 void Device::wakeup()
 {
     logPrintf(INFO, "%s:%d woke up.", _path.c_str(), _index);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    for(auto& feature: _features)
+        feature.second->configure();
 }
 
 DeviceConfig& Device::config()

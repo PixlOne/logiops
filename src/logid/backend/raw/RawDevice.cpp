@@ -354,6 +354,7 @@ void RawDevice::addEventHandler(const std::string& nickname,
 {
     auto it = _event_handlers.find(nickname);
     assert(it == _event_handlers.end());
+    assert(handler);
     _event_handlers.emplace(nickname, handler);
 }
 

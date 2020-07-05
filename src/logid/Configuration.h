@@ -37,7 +37,7 @@ namespace logid
         {
         public:
             explicit DeviceNotFound(std::string name);
-            virtual const char* what();
+            const char* what() const noexcept override;
         private:
             std::string _name;
         };

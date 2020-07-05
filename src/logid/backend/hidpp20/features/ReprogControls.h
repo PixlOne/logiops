@@ -18,6 +18,8 @@
 #ifndef LOGID_BACKEND_HIDPP20_FEATURE_REPROGCONTROLS_H
 #define LOGID_BACKEND_HIDPP20_FEATURE_REPROGCONTROLS_H
 
+#include <map>
+
 #include "../feature_defs.h"
 #include "../Feature.h"
 
@@ -28,26 +30,16 @@ namespace hidpp20
     class ReprogControls : public Feature
     {
     public:
-        static const uint16_t ID = FeatureID::REPROG_CONTROLS;
-        virtual uint16_t getID() { return ID; }
-
-        virtual bool supportsRawXY() { return false; }
-
         enum Function {
             GetControlCount = 0,
             GetControlInfo = 1,
             GetControlReporting = 2,
             SetControlReporting = 3
         };
-
         enum Event {
             DivertedButtonEvent = 0,
             DivertedRawXYEvent = 1
         };
-
-        explicit ReprogControls(Device* dev);
-
-        virtual uint8_t getControlCount();
 
         struct ControlInfo
         {
@@ -68,23 +60,40 @@ namespace hidpp20
             FnToggle = 1<<3,
             ReprogHint = 1<<4,
             TemporaryDivertable = 1<<5,
-            PerisentlyDiverable = 1<<6,
+            PersisentlyDivertable = 1<<6,
             Virtual = 1<<7
         };
         enum ControlInfoAdditionalFlags: uint8_t {
             RawXY = 1<<0
         };
 
-        virtual ControlInfo getControlInfo(uint8_t index);
-
         enum ControlReportingFlags: uint8_t {
             TemporaryDiverted = 1<<0,
             ChangeTemporaryDivert = 1<<1,
-            PersistentDiverted = 1<<2,
+            PersistentlyDiverted = 1<<2,
             ChangePersistentDivert = 1<<3,
             RawXYDiverted = 1<<4,
             ChangeRawXYDivert = 1<<5
         };
+
+        struct Move
+        {
+            int16_t x;
+            int16_t y;
+        };
+
+        static const uint16_t ID = FeatureID::REPROG_CONTROLS;
+        virtual uint16_t getID() { return ID; }
+
+        virtual bool supportsRawXY() { return false; }
+
+        explicit ReprogControls(Device* dev);
+
+        virtual uint8_t getControlCount();
+
+        virtual ControlInfo getControlInfo(uint8_t cid);
+
+        virtual ControlInfo getControlIdInfo(uint16_t cid);
 
         // Onlu controlId and flags will be set
         virtual ControlInfo getControlReporting(uint16_t cid);
@@ -95,24 +104,19 @@ namespace hidpp20
         static std::set<uint16_t> divertedButtonEvent(const hidpp::Report&
             report);
 
-        struct Move
-        {
-            int16_t x;
-            int16_t y;
-        };
-
         static Move divertedRawXYEvent(const hidpp::Report& report);
 
-        static ReprogControls autoVersion(Device *dev);
+        static std::shared_ptr<ReprogControls> autoVersion(Device *dev);
     protected:
         ReprogControls(Device* dev, uint16_t _id);
+        std::map<uint16_t, ControlInfo> _cids;
     };
 
     class ReprogControlsV2 : public ReprogControls
     {
     public:
         static const uint16_t ID = FeatureID::REPROG_CONTROLS_V2;
-        uint16_t getID() override { return ID; }
+        virtual uint16_t getID() { return ID; }
 
         explicit ReprogControlsV2(Device* dev);
     protected:
@@ -123,7 +127,7 @@ namespace hidpp20
     {
     public:
         static const uint16_t ID = FeatureID::REPROG_CONTROLS_V2_2;
-        uint16_t getID() override { return ID; }
+        virtual uint16_t getID() { return ID; }
 
         explicit ReprogControlsV2_2(Device* dev);
     protected:
@@ -134,7 +138,7 @@ namespace hidpp20
     {
     public:
         static const uint16_t ID = FeatureID::REPROG_CONTROLS_V3;
-        uint16_t getID() override { return ID; }
+        virtual uint16_t getID() { return ID; }
 
         explicit ReprogControlsV3(Device* dev);
     protected:
@@ -145,9 +149,13 @@ namespace hidpp20
     {
     public:
         static const uint16_t ID = FeatureID::REPROG_CONTROLS_V4;
-        uint16_t getID() override { return ID; }
+        virtual uint16_t getID() { return ID; }
 
         bool supportsRawXY() override { return true; }
+
+        ControlInfo getControlReporting(uint16_t cid) override;
+
+        void setControlReporting(uint8_t cid, ControlInfo info) override;
 
         explicit ReprogControlsV4(Device* dev);
     protected:

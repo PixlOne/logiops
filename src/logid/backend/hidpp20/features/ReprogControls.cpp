@@ -16,6 +16,7 @@
  *
  */
 #include <cassert>
+#include "../Error.h"
 #include "ReprogControls.h"
 
 using namespace logid::backend::hidpp20;
@@ -30,7 +31,7 @@ x::x(Device* dev, uint16_t _id) : base(dev, _id) \
 
 #define MAKE_REPROG(x, dev) \
 try { \
-    return x(dev); \
+    return std::make_shared<x>(dev); \
 } catch(UnsupportedFeature &e) {\
 }
 
@@ -41,7 +42,7 @@ DEFINE_REPROG(ReprogControlsV2_2, ReprogControlsV2);
 DEFINE_REPROG(ReprogControlsV3, ReprogControlsV2_2);
 DEFINE_REPROG(ReprogControlsV4, ReprogControlsV3);
 
-ReprogControls ReprogControls::autoVersion(Device *dev)
+std::shared_ptr<ReprogControls> ReprogControls::autoVersion(Device *dev)
 {
     MAKE_REPROG(ReprogControlsV4, dev);
     MAKE_REPROG(ReprogControlsV3, dev);
@@ -49,7 +50,7 @@ ReprogControls ReprogControls::autoVersion(Device *dev)
     MAKE_REPROG(ReprogControlsV2, dev);
 
     // If base version cannot be made, throw error
-    return ReprogControls(dev);
+    return std::make_shared<ReprogControls>(dev);
 }
 
 uint8_t ReprogControls::getControlCount()
@@ -78,29 +79,43 @@ ReprogControls::ControlInfo ReprogControls::getControlInfo(uint8_t index)
     return info;
 }
 
+ReprogControls::ControlInfo ReprogControls::getControlIdInfo(uint16_t cid)
+{
+    if(_cids.empty()) {
+        for(uint8_t i = 0; i < getControlCount(); i++) {
+            auto info = getControlInfo(i);
+            _cids.emplace(info.controlID, info);
+        }
+    }
+
+    auto it = _cids.find(cid);
+    if(it == _cids.end())
+        throw Error(Error::InvalidArgument);
+    else
+        return it->second;
+}
+
 ReprogControls::ControlInfo ReprogControls::getControlReporting(uint16_t cid)
 {
-    std::vector<uint8_t> params(2);
-    ControlInfo info{};
-    params[0] = (cid >> 8) & 0xff;
-    params[1] = cid & 0xff;
-    auto response = callFunction(GetControlReporting, params);
+    // Emulate this function, only Reprog controls v4 supports this
+    auto info = getControlIdInfo(cid);
 
-    info.controlID = response[1];
-    info.controlID |= response[0] << 8;
-    info.flags = response[2];
-    return info;
+    ControlInfo report{};
+    report.controlID = cid;
+    report.flags = 0;
+    if(info.flags & TemporaryDivertable)
+        report.flags |= TemporaryDiverted;
+    if(info.flags & PersisentlyDivertable)
+        report.flags |= PersistentlyDiverted;
+    if(info.additionalFlags & RawXY)
+        report.flags |= RawXYDiverted;
+
+    return report;
 }
 
 void ReprogControls::setControlReporting(uint8_t cid, ControlInfo info)
 {
-    std::vector<uint8_t> params(5);
-    params[0] = (cid >> 8) & 0xff;
-    params[1] = cid & 0xff;
-    params[2] = info.flags;
-    params[3] = (info.controlID >> 8) & 0xff;
-    params[4] = info.controlID & 0xff;
-    callFunction(SetControlReporting, params);
+    // This function does not exist pre-v4 and cannot be emulated, ignore.
 }
 
 std::set<uint16_t> ReprogControls::divertedButtonEvent(
@@ -130,4 +145,29 @@ ReprogControls::Move ReprogControls::divertedRawXYEvent(const hidpp::Report
     move.y = report.paramBegin()[3];
     move.y |= report.paramBegin()[2] << 8;
     return move;
+}
+
+ReprogControls::ControlInfo ReprogControlsV4::getControlReporting(uint16_t cid)
+{
+    std::vector<uint8_t> params(2);
+    ControlInfo info{};
+    params[0] = (cid >> 8) & 0xff;
+    params[1] = cid & 0xff;
+    auto response = callFunction(GetControlReporting, params);
+
+    info.controlID = response[1];
+    info.controlID |= response[0] << 8;
+    info.flags = response[2];
+    return info;
+}
+
+void ReprogControlsV4::setControlReporting(uint8_t cid, ControlInfo info)
+{
+    std::vector<uint8_t> params(5);
+    params[0] = (cid >> 8) & 0xff;
+    params[1] = cid & 0xff;
+    params[2] = info.flags;
+    params[3] = (info.controlID >> 8) & 0xff;
+    params[4] = info.controlID & 0xff;
+    callFunction(SetControlReporting, params);
 }

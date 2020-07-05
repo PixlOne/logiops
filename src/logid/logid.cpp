@@ -24,8 +24,9 @@
 #include "util/log.h"
 #include "DeviceManager.h"
 #include "logid.h"
+#include "InputDevice.h"
 
-#define evdev_name "logid"
+#define LOGID_VIRTUAL_INPUT_NAME "LogiOps Virtual Input"
 #define DEFAULT_CONFIG_FILE "/etc/logid.cfg"
 
 #ifndef LOGIOPS_VERSION
@@ -40,6 +41,7 @@ std::string config_file = DEFAULT_CONFIG_FILE;
 LogLevel logid::global_loglevel = INFO;
 std::shared_ptr<Configuration> logid::global_config;
 std::unique_ptr<DeviceManager> logid::device_manager;
+std::unique_ptr<InputDevice> logid::virtual_input;
 
 bool logid::kill_logid = false;
 std::mutex logid::device_manager_reload;
@@ -163,15 +165,15 @@ int main(int argc, char** argv)
         global_config = std::make_shared<Configuration>();
     }
 
-    /*
-    //Create an evdev device called 'logid'
-    try { global_evdev = new EvdevDevice(evdev_name); }
-    catch(std::system_error& e)
-    {
-        log_printf(ERROR, "Could not create evdev device: %s", e.what());
+    //Create a virtual input device
+    try {
+        virtual_input = std::make_unique<InputDevice>(LOGID_VIRTUAL_INPUT_NAME);
+    } catch(std::system_error& e) {
+        logPrintf(ERROR, "Could not create input device: %s", e.what());
         return EXIT_FAILURE;
     }
 
+    /*
     // Start IPC Server
     ipc_server = new IPCServer();
     ipc_server->start();

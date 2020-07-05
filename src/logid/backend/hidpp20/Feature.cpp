@@ -63,3 +63,8 @@ Feature::Feature(Device* dev, uint16_t _id) : _device (dev)
             throw UnsupportedFeature(_id);
     }
 }
+
+uint8_t Feature::featureIndex()
+{
+    return _index;
+}
