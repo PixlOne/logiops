@@ -5,6 +5,7 @@
 #include <libevdev/libevdev.h>
 #include <algorithm>
 #include <cstring>
+#include <string>
 #include <hidpp20/IHiresScroll.h>
 
 #include "Configuration.h"
