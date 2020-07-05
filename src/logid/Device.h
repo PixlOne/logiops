@@ -62,6 +62,8 @@ namespace logid
         void wakeup();
         void sleep();
 
+        void reset();
+
         template<typename T>
         std::shared_ptr<T> getFeature(std::string name) {
             auto it = _features.find(name);
@@ -96,6 +98,9 @@ namespace logid
         std::map<std::string, std::shared_ptr<features::DeviceFeature>>
             _features;
         DeviceConfig _config;
+
+        void _makeResetMechanism();
+        std::unique_ptr<std::function<void()>> _reset_mechanism;
     };
 }
 

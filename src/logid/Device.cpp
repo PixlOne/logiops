@@ -21,6 +21,7 @@
 #include "Device.h"
 #include "features/SmartShift.h"
 #include "features/RemapButton.h"
+#include "backend/hidpp20/features/Reset.h"
 
 using namespace logid;
 using namespace logid::backend;
@@ -49,6 +50,9 @@ void Device::_init()
     _addFeature<features::SmartShift>("smartshift");
     _addFeature<features::RemapButton>("remapbutton");
 
+    _makeResetMechanism();
+    reset();
+
     for(auto& feature: _features) {
         feature.second->configure();
         feature.second->listen();
@@ -76,8 +80,20 @@ void Device::wakeup()
 {
     logPrintf(INFO, "%s:%d woke up.", _path.c_str(), _index);
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+    reset();
+
     for(auto& feature: _features)
         feature.second->configure();
+}
+
+void Device::reset()
+{
+    if(_reset_mechanism)
+        (*_reset_mechanism)();
+    else
+        logPrintf(DEBUG, "%s:%d tried to reset, but no reset mechanism was "
+                         "available.", _path.c_str(), _index);
 }
 
 DeviceConfig& Device::config()
@@ -88,6 +104,17 @@ DeviceConfig& Device::config()
 hidpp20::Device& Device::hidpp20()
 {
     return _hidpp20;
+}
+
+void Device::_makeResetMechanism()
+{
+    try {
+        hidpp20::Reset reset(&_hidpp20);
+        _reset_mechanism = std::make_unique<std::function<void()>>(
+                [dev=&this->_hidpp20]{ hidpp20::Reset(dev).reset(); });
+    } catch(hidpp20::UnsupportedFeature& e) {
+        // Reset unsupported, ignore.
+    }
 }
 
 DeviceConfig::DeviceConfig(const std::shared_ptr<Configuration>& config, Device*
