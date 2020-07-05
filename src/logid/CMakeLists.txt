@@ -43,6 +43,7 @@ add_executable(logid
         backend/hidpp20/features/AdjustableDPI.cpp
         backend/hidpp20/features/SmartShift.cpp
         backend/hidpp20/features/ReprogControls.cpp
+        backend/hidpp20/features/HiresScroll.cpp
         backend/dj/Report.cpp
         util/mutex_queue.h
         util/thread.cpp
