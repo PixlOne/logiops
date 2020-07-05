@@ -21,6 +21,8 @@
 
 #define LOGID_HIDPP_SOFTWARE_ID 0
 
+#include <cstdint>
+
 namespace logid {
 namespace backend {
 namespace hidpp

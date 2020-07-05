@@ -86,7 +86,7 @@ Configuration::DeviceNotFound::DeviceNotFound(std::string name) :
 {
 }
 
-const char * Configuration::DeviceNotFound::what()
+const char * Configuration::DeviceNotFound::what() const noexcept
 {
     return _name.c_str();
 }

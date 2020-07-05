@@ -15,31 +15,36 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+#ifndef LOGID_ACTION_KEYPRESS_H
+#define LOGID_ACTION_KEYPRESS_H
 
-#ifndef LOGID_EVDEVDEVICE_H
-#define LOGID_EVDEVDEVICE_H
+#include <vector>
+#include <libconfig.h++>
+#include "Action.h"
 
-#include <libevdev/libevdev.h>
-#include <libevdev/libevdev-uinput.h>
-
-namespace logid
-{
-    class EvdevDevice
+namespace logid {
+namespace actions {
+    class KeypressAction : public Action
     {
     public:
-        EvdevDevice(const char *name);
+        KeypressAction(Device* dev, libconfig::Setting& config);
 
-        ~EvdevDevice();
+        virtual void press();
+        virtual void release();
 
-        void moveAxis(unsigned int axis, int movement);
+        virtual uint8_t reprogFlags() const;
 
-        void sendEvent(unsigned int type, unsigned int code, int value);
-
-        libevdev *device;
-        libevdev_uinput *ui_device;
+        class Config : public Action::Config
+        {
+        public:
+            explicit Config(Device* device, libconfig::Setting& root);
+            std::vector<uint>& keys();
+        protected:
+            std::vector<uint> _keys;
+        };
+    protected:
+        Config _config;
     };
+}}
 
-    extern EvdevDevice* global_evdev;
-}
-
-#endif //LOGID_EVDEVDEVICE_H
+#endif //LOGID_ACTION_KEYPRESS_H

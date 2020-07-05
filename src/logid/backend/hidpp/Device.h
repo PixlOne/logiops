@@ -55,7 +55,7 @@ namespace hidpp
                 Asleep
             };
             InvalidDevice(Reason reason) : _reason (reason) {}
-            virtual const char *what() const noexcept;
+            virtual const char* what() const noexcept;
             virtual Reason code() const noexcept;
         private:
             Reason _reason;
@@ -81,6 +81,8 @@ namespace hidpp
         void addEventHandler(const std::string& nickname,
                 const std::shared_ptr<EventHandler>& handler);
         void removeEventHandler(const std::string& nickname);
+        const std::map<std::string, std::shared_ptr<EventHandler>>&
+            eventHandlers();
 
         Report sendReport(Report& report);
 
@@ -97,6 +99,8 @@ namespace hidpp
         std::tuple<uint8_t, uint8_t> _version;
         uint16_t _pid;
         std::string _name;
+
+        std::atomic<bool> _listening;
 
         std::map<std::string, std::shared_ptr<EventHandler>> _event_handlers;
     };

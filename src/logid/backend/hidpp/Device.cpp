@@ -92,6 +92,7 @@ std::tuple<uint8_t, uint8_t> Device::version() const
 
 void Device::_init()
 {
+    _listening = false;
     _supported_reports = getSupportedReports(_raw_device->reportDescriptor());
     if(!_supported_reports)
         throw InvalidDevice(InvalidDevice::NoHIDPPReport);
@@ -127,7 +128,8 @@ void Device::_init()
 
 Device::~Device()
 {
-    _raw_device->removeEventHandler("DEV_" + std::to_string(_index));
+    if(_listening)
+        _raw_device->removeEventHandler("DEV_" + std::to_string(_index));
 }
 
 void Device::addEventHandler(const std::string& nickname,
@@ -142,6 +144,12 @@ void Device::addEventHandler(const std::string& nickname,
 void Device::removeEventHandler(const std::string& nickname)
 {
     _event_handlers.erase(nickname);
+}
+
+const std::map<std::string, std::shared_ptr<EventHandler>>&
+    Device::eventHandlers()
+{
+    return _event_handlers;
 }
 
 void Device::handleEvent(Report& report)
@@ -192,31 +200,33 @@ uint16_t Device::pid() const
 void Device::listen()
 {
     if(!_raw_device->isListening())
-        ///TODO: Kill RawDevice?
         thread::spawn({[raw=this->_raw_device]() {
             raw->listen();
         }});
 
     // Pass all HID++ events with device index to this device.
-    std::shared_ptr<raw::RawEventHandler> handler;
-    handler->condition = [this](std::vector<uint8_t>& report)->bool
-    {
+    auto handler = std::make_shared<raw::RawEventHandler>();
+    handler->condition = [index=this->_index](std::vector<uint8_t>& report)
+            ->bool {
         return (report[Offset::Type] == Report::Type::Short ||
                 report[Offset::Type] == Report::Type::Long) &&
-               (report[Offset::DeviceIndex] == this->_index);
+               (report[Offset::DeviceIndex] == index);
     };
-    handler->callback = [this](std::vector<uint8_t>& report)->void
-    {
+    handler->callback = [this](std::vector<uint8_t>& report)->void {
         Report _report(report);
         this->handleEvent(_report);
     };
 
     _raw_device->addEventHandler("DEV_" + std::to_string(_index), handler);
+    _listening = true;
 }
 
 void Device::stopListening()
 {
-    _raw_device->removeEventHandler("DEV_" + std::to_string(_index));
+    if(_listening)
+        _raw_device->removeEventHandler("DEV_" + std::to_string(_index));
+
+    _listening = false;
 
     if(!_raw_device->eventHandlers().empty())
         _raw_device->stopListener();

@@ -11,12 +11,16 @@ find_package(PkgConfig REQUIRED)
 add_executable(logid
         logid.cpp
         util/log.cpp
+        InputDevice.cpp
         DeviceManager.cpp
         Device.cpp
         Receiver.cpp
         Configuration.cpp
         features/DPI.cpp
         features/SmartShift.cpp
+        features/RemapButton.cpp
+        actions/Action.cpp
+        actions/KeypressAction.cpp
         backend/Error.cpp
         backend/raw/DeviceMonitor.cpp
         backend/raw/RawDevice.cpp
