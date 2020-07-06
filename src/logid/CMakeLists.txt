@@ -19,6 +19,7 @@ add_executable(logid
         Configuration.cpp
         features/DPI.cpp
         features/SmartShift.cpp
+        features/HiresScroll.cpp
         features/RemapButton.cpp
         actions/Action.cpp
         actions/KeypressAction.cpp

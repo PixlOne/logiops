@@ -55,7 +55,7 @@ SmartShift::Config::Config(Device *dev) : DeviceFeature::Config(dev), _status()
         if(_status.setDefaultAutoDisengage)
             _status.defaultAutoDisengage = tmp;
     } catch(libconfig::SettingNotFoundException& e) {
-        // DPI not configured, use default
+        // SmartShift not configured, use default
     }
 }
 
