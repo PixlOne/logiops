@@ -9,6 +9,8 @@ This is currently only compatible with HID++ \>2.0 devices.
 
 You may also refer to logid.example.cfg for an example.
 
+Default location for the configuration file is /etc/logid.cfg.
+
 ## Dependencies
 
 This project requires a C++14 compiler, cmake, libevdev, libudev, and libconfig. For popular distributions, I've included commands below. 
