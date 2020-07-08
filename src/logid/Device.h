@@ -70,8 +70,7 @@ namespace logid
             if(it == _features.end())
                 return nullptr;
             try {
-                return std::dynamic_pointer_cast<std::shared_ptr<T>>
-                    (it->second);
+                return std::dynamic_pointer_cast<T>(it->second);
             } catch(std::bad_cast& e) {
                 logPrintf(ERROR, "bad_cast while getting device feature %s: "
                                  "%s", name.c_str(), e.what());

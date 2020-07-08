@@ -22,6 +22,7 @@ add_executable(logid
         features/RemapButton.cpp
         actions/Action.cpp
         actions/KeypressAction.cpp
+        actions/ToggleSmartShift.cpp
         backend/Error.cpp
         backend/raw/DeviceMonitor.cpp
         backend/raw/RawDevice.cpp
