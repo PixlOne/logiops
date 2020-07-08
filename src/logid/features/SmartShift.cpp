@@ -36,6 +36,17 @@ void SmartShift::listen()
 {
 }
 
+hidpp20::SmartShift::SmartshiftStatus SmartShift::getStatus()
+{
+    return _smartshift.getStatus();
+}
+
+void SmartShift::setStatus(backend::hidpp20::SmartShift::SmartshiftStatus
+    status)
+{
+    _smartshift.setStatus(status);
+}
+
 SmartShift::Config::Config(Device *dev) : DeviceFeature::Config(dev), _status()
 {
     try {

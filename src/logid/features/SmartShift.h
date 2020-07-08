@@ -31,6 +31,9 @@ namespace features
         virtual void configure();
         virtual void listen();
 
+        backend::hidpp20::SmartShift::SmartshiftStatus getStatus();
+        void setStatus(backend::hidpp20::SmartShift::SmartshiftStatus status);
+
         class Config : public DeviceFeature::Config
         {
         public:

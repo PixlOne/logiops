@@ -30,12 +30,14 @@ KeypressAction::KeypressAction(Device *device, libconfig::Setting& config) :
 
 void KeypressAction::press()
 {
+    _pressed = true;
     for(auto& key : _config.keys())
         virtual_input->pressKey(key);
 }
 
 void KeypressAction::release()
 {
+    _pressed = false;
     for(auto& key : _config.keys())
         virtual_input->releaseKey(key);
 }

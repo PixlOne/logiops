@@ -20,6 +20,7 @@
 #include "Action.h"
 #include "../util/log.h"
 #include "KeypressAction.h"
+#include "ToggleSmartShift.h"
 
 using namespace logid;
 using namespace logid::actions;
@@ -47,6 +48,8 @@ std::shared_ptr<Action> Action::makeAction(Device *device, libconfig::Setting
 
         if(type == "keypress")
             return std::make_shared<KeypressAction>(device, setting);
+        else if(type == "togglesmartshift")
+            return std::make_shared<ToggleSmartShift>(device, setting);
         else
             throw InvalidAction(type);
 
