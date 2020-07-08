@@ -25,6 +25,7 @@
 
 using namespace logid;
 using namespace libconfig;
+using namespace std::chrono;
 
 Configuration::Configuration(const std::string& config_file)
 {
@@ -47,6 +48,23 @@ Configuration::Configuration(const std::string& config_file)
     catch(const SettingNotFoundException &e) {
         logPrintf(WARN, "No devices listed in config file.");
         return;
+    }
+
+    _io_timeout = LOGID_DEFAULT_RAWDEVICE_TIMEOUT;
+    try {
+        auto& timeout = root["io_timeout"];
+        if(timeout.isNumber()) {
+            auto t = timeout.getType();
+            if(timeout.getType() == libconfig::Setting::TypeFloat)
+                _io_timeout = duration_cast<milliseconds>(
+                        duration<double, std::milli>(timeout));
+            else
+                _io_timeout = milliseconds((int)timeout);
+        } else
+            logPrintf(WARN, "Line %d: io_timeout must be a number.",
+                    timeout.getSourceLine());
+    } catch(const SettingNotFoundException& e) {
+        // Ignore
     }
 
     for(int i = 0; i < devices->getLength(); i++) {
@@ -89,4 +107,9 @@ Configuration::DeviceNotFound::DeviceNotFound(std::string name) :
 const char * Configuration::DeviceNotFound::what() const noexcept
 {
     return _name.c_str();
+}
+
+std::chrono::milliseconds Configuration::ioTimeout() const
+{
+    return _io_timeout;
 }
