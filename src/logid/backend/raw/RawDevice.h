@@ -30,8 +30,6 @@
 #include "defs.h"
 #include "../../util/mutex_queue.h"
 
-#define HIDPP_IO_TIMEOUT std::chrono::seconds(2)
-
 namespace logid {
 namespace backend {
 namespace raw

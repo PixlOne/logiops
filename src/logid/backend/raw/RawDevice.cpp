@@ -22,6 +22,7 @@
 #include "../dj/defs.h"
 #include "../../util/log.h"
 #include "../hidpp/Report.h"
+#include "../../Configuration.h"
 
 #include <string>
 #include <system_error>
@@ -258,8 +259,15 @@ int RawDevice::_readReport(std::vector<uint8_t>& report, std::size_t maxDataLeng
     int ret;
     report.resize(maxDataLength);
 
-    timeval timeout = { duration_cast<milliseconds>(HIDPP_IO_TIMEOUT).count(),
-                       duration_cast<microseconds>(HIDPP_IO_TIMEOUT).count() };
+    timeval timeout{};
+    timeout.tv_sec = duration_cast<seconds>(global_config->ioTimeout())
+            .count();
+    timeout.tv_usec = duration_cast<microseconds>(
+            global_config->ioTimeout()).count() %
+            duration_cast<microseconds>(seconds(1)).count();
+
+    auto timeout_ms = duration_cast<milliseconds>(
+            global_config->ioTimeout()).count();
 
     fd_set fds;
     do {
@@ -269,7 +277,7 @@ int RawDevice::_readReport(std::vector<uint8_t>& report, std::size_t maxDataLeng
 
         ret = select(std::max(_fd, _pipe[0]) + 1,
                      &fds, nullptr, nullptr,
-                     (HIDPP_IO_TIMEOUT.count() > 0 ? nullptr : &timeout));
+                     (timeout_ms > 0 ? nullptr : &timeout));
     } while(ret == -1 && errno == EINTR);
 
     if(ret == -1)

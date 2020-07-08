@@ -22,6 +22,9 @@
 #include <map>
 #include <libconfig.h++>
 #include <memory>
+#include <chrono>
+
+#define LOGID_DEFAULT_RAWDEVICE_TIMEOUT std::chrono::seconds(2)
 
 namespace logid
 {
@@ -41,8 +44,11 @@ namespace logid
         private:
             std::string _name;
         };
+
+        std::chrono::milliseconds ioTimeout() const;
     private:
         std::map<std::string, std::string> _device_paths;
+        std::chrono::milliseconds _io_timeout;
         libconfig::Config _config;
     };
 
