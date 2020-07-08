@@ -15,39 +15,34 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#ifndef LOGID_FEATURE_HIRESSCROLL_H
-#define LOGID_FEATURE_HIRESSCROLL_H
+#ifndef LOGID_ACTION_TOGGLEHIRESSCROLL_H
+#define LOGID_ACTION_TOGGLEHIRESSCROLL_H
 
-#include "../backend/hidpp20/features/HiresScroll.h"
-#include "DeviceFeature.h"
+#include "Action.h"
+#include "../features/HiresScroll.h"
 
 namespace logid {
-namespace features
+namespace actions
 {
-    class HiresScroll : public DeviceFeature
+    class ToggleHiresScroll : public Action
     {
     public:
-        explicit HiresScroll(Device* dev);
-        virtual void configure();
-        virtual void listen();
+        ToggleHiresScroll(Device* dev, libconfig::Setting& config);
 
-        uint8_t getMode();
-        void setMode(uint8_t mode);
+        virtual void press();
+        virtual void release();
 
-        class Config : public DeviceFeature::Config
+        virtual uint8_t reprogFlags() const;
+
+        class Config : public Action::Config
         {
         public:
-            explicit Config(Device* dev);
-            uint8_t getMode() const;
-            uint8_t getMask() const;
-        protected:
-            uint8_t _mode;
-            uint8_t _mask;
+            explicit Config(Device* device, libconfig::Setting& root);
         };
-    private:
-        backend::hidpp20::HiresScroll _hires_scroll;
+    protected:
         Config _config;
+        std::shared_ptr<features::HiresScroll> _hires_scroll;
     };
 }}
 
-#endif //LOGID_FEATURE_HIRESSCROLL_H
+#endif //LOGID_ACTION_TOGGLEHIRESSCROLL_H

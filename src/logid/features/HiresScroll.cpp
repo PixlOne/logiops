@@ -39,6 +39,16 @@ void HiresScroll::listen()
     ///TODO: Map hires scroll events
 }
 
+uint8_t HiresScroll::getMode()
+{
+    return _hires_scroll.getMode();
+}
+
+void HiresScroll::setMode(uint8_t mode)
+{
+    _hires_scroll.setMode(mode);
+}
+
 HiresScroll::Config::Config(Device *dev) : DeviceFeature::Config(dev)
 {
     try {
