@@ -171,6 +171,9 @@ void RemapButton::Config::_parseButton(libconfig::Setting &setting)
     } catch(libconfig::SettingNotFoundException& e) {
         logPrintf(WARN, "Line %d: action is required, ignoring.",
                   setting.getSourceLine());
+    } catch(InvalidAction& e) {
+        logPrintf(WARN, "Line %d: %s is not a valid action, ignoring.",
+                setting["action"].getSourceLine(), e.what());
     }
 }
 
