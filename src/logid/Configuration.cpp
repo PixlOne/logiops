@@ -70,7 +70,6 @@ Configuration::Configuration(const std::string& config_file)
     try {
         auto& timeout = root["io_timeout"];
         if(timeout.isNumber()) {
-            auto t = timeout.getType();
             if(timeout.getType() == Setting::TypeFloat)
                 _io_timeout = duration_cast<milliseconds>(
                         duration<double, std::milli>(timeout));

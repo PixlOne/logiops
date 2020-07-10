@@ -27,20 +27,13 @@ namespace actions {
     class ToggleSmartShift : public Action
     {
     public:
-        ToggleSmartShift(Device* dev, libconfig::Setting& config);
+        explicit ToggleSmartShift(Device* dev);
 
         virtual void press();
         virtual void release();
 
         virtual uint8_t reprogFlags() const;
-
-        class Config : public Action::Config
-        {
-        public:
-            explicit Config(Device* device, libconfig::Setting& root);
-        };
     protected:
-        Config _config;
         std::shared_ptr<features::SmartShift> _smartshift;
     };
 }}

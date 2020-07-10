@@ -116,6 +116,7 @@ ReprogControls::ControlInfo ReprogControls::getControlReporting(uint16_t cid)
 void ReprogControls::setControlReporting(uint8_t cid, ControlInfo info)
 {
     // This function does not exist pre-v4 and cannot be emulated, ignore.
+    (void)cid; (void)info; // Suppress unused warnings
 }
 
 std::set<uint16_t> ReprogControls::divertedButtonEvent(
