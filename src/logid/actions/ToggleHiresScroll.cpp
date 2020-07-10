@@ -18,7 +18,7 @@
 #include "ToggleHiresScroll.h"
 #include "../Device.h"
 #include "../util/log.h"
-#include "../util/thread.h"
+#include "../util/task.h"
 #include "../backend/hidpp20/features/ReprogControls.h"
 
 using namespace logid::actions;
@@ -40,7 +40,7 @@ void ToggleHiresScroll::press()
     _pressed = true;
     if(_hires_scroll)
     {
-        thread::spawn([hires=this->_hires_scroll](){
+        task::spawn([hires=this->_hires_scroll](){
             auto mode = hires->getMode();
             mode ^= backend::hidpp20::HiresScroll::HiRes;
             hires->setMode(mode);

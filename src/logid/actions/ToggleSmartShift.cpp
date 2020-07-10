@@ -18,7 +18,7 @@
 #include "ToggleSmartShift.h"
 #include "../Device.h"
 #include "../backend/hidpp20/features/ReprogControls.h"
-#include "../util/thread.h"
+#include "../util/task.h"
 
 using namespace logid::actions;
 using namespace logid::backend;
@@ -39,7 +39,7 @@ void ToggleSmartShift::press()
     _pressed = true;
     if(_smartshift)
     {
-        thread::spawn([ss=this->_smartshift](){
+        task::spawn([ss=this->_smartshift](){
             auto status = ss->getStatus();
             status.setActive = true;
             status.active = !status.active;

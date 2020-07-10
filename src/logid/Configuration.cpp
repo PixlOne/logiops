@@ -50,12 +50,28 @@ Configuration::Configuration(const std::string& config_file)
         return;
     }
 
+    _worker_threads = LOGID_DEFAULT_WORKER_COUNT;
+    try {
+        auto& worker_count = root["workers"];
+        if(worker_count.getType() == Setting::TypeInt) {
+            _worker_threads = worker_count;
+            if(_worker_threads < 0)
+                logPrintf(WARN, "Line %d: workers cannot be negative.",
+                        worker_count.getSourceLine());
+        } else {
+            logPrintf(WARN, "Line %d: workers must be an integer.",
+                    worker_count.getSourceLine());
+        }
+    } catch(const SettingNotFoundException& e) {
+        // Ignore
+    }
+
     _io_timeout = LOGID_DEFAULT_RAWDEVICE_TIMEOUT;
     try {
         auto& timeout = root["io_timeout"];
         if(timeout.isNumber()) {
             auto t = timeout.getType();
-            if(timeout.getType() == libconfig::Setting::TypeFloat)
+            if(timeout.getType() == Setting::TypeFloat)
                 _io_timeout = duration_cast<milliseconds>(
                         duration<double, std::milli>(timeout));
             else
@@ -107,6 +123,11 @@ Configuration::DeviceNotFound::DeviceNotFound(std::string name) :
 const char * Configuration::DeviceNotFound::what() const noexcept
 {
     return _name.c_str();
+}
+
+int Configuration::workerCount() const
+{
+    return _worker_threads;
 }
 
 std::chrono::milliseconds Configuration::ioTimeout() const
