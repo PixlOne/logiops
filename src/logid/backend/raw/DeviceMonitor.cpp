@@ -17,7 +17,7 @@
  */
 
 #include "DeviceMonitor.h"
-#include "../../util/thread.h"
+#include "../../util/task.h"
 #include "../../util/log.h"
 
 #include <thread>
@@ -98,14 +98,14 @@ void DeviceMonitor::run()
             std::string devnode = udev_device_get_devnode(device);
 
             if (action == "add")
-                thread::spawn([this, name=devnode]() {
+                task::spawn([this, name=devnode]() {
                     this->addDevice(name);
                 }, [name=devnode](std::exception& e){
                     logPrintf(WARN, "Error adding device %s: %s",
                             name.c_str(), e.what());
                 });
             else if (action == "remove")
-                thread::spawn([this, name=devnode]() {
+                task::spawn([this, name=devnode]() {
                     this->removeDevice(name);
                 }, [name=devnode](std::exception& e){
                     logPrintf(WARN, "Error removing device %s: %s",
@@ -157,7 +157,7 @@ void DeviceMonitor::enumerate()
         std::string devnode = udev_device_get_devnode(device);
         udev_device_unref(device);
 
-        thread::spawn([this, name=devnode]() {
+        task::spawn([this, name=devnode]() {
             this->addDevice(name);
         }, [name=devnode](std::exception& e){
             logPrintf(ERROR, "Error adding device %s: %s",

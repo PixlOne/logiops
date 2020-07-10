@@ -49,6 +49,9 @@ add_executable(logid
         backend/hidpp20/features/HiresScroll.cpp
         backend/dj/Report.cpp
         util/mutex_queue.h
+        util/workqueue.cpp
+        util/worker_thread.cpp
+        util/task.cpp
         util/thread.cpp
         util/ExceptionHandler.cpp)
 

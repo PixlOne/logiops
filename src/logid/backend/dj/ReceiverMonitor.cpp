@@ -17,7 +17,7 @@
  */
 
 #include "ReceiverMonitor.h"
-#include "../../util/thread.h"
+#include "../../util/task.h"
 #include "../../util/log.h"
 
 #include <utility>
@@ -57,7 +57,7 @@ void ReceiverMonitor::run()
             /* Running in a new thread prevents deadlocks since the
              * receiver may be enumerating.
              */
-            thread::spawn({[this, report]() {
+            task::spawn({[this, report]() {
                 if (report.subId() == Receiver::DeviceConnection)
                     this->addDevice(this->_receiver->deviceConnectionEvent
                     (report));

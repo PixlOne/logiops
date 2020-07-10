@@ -25,6 +25,7 @@
 #include <chrono>
 
 #define LOGID_DEFAULT_RAWDEVICE_TIMEOUT std::chrono::seconds(2)
+#define LOGID_DEFAULT_WORKER_COUNT 2
 
 namespace logid
 {
@@ -46,9 +47,11 @@ namespace logid
         };
 
         std::chrono::milliseconds ioTimeout() const;
+        int workerCount() const;
     private:
         std::map<std::string, std::string> _device_paths;
         std::chrono::milliseconds _io_timeout;
+        int _worker_threads;
         libconfig::Config _config;
     };
 
