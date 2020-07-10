@@ -42,12 +42,12 @@ namespace logid
         workqueue* _parent;
         std::size_t _worker_number;
 
-        std::unique_ptr<thread> _thread;
-        std::mutex _busy;
-
         std::mutex _run_lock;
         std::atomic<bool> _continue_run;
         std::condition_variable _queue_cv;
+
+        std::unique_ptr<thread> _thread;
+        std::mutex _busy;
 
         mutex_queue<std::shared_ptr<task>> _queue;
     };

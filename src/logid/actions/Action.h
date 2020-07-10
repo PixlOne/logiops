@@ -52,6 +52,8 @@ namespace actions {
         virtual void release() = 0;
         virtual void move(int16_t x, int16_t y)
         {
+            // Suppress unused warning
+            (void)x; (void)y;
         }
 
         virtual bool pressed()

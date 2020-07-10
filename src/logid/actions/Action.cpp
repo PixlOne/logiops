@@ -50,9 +50,9 @@ std::shared_ptr<Action> Action::makeAction(Device *device, libconfig::Setting
         if(type == "keypress")
             return std::make_shared<KeypressAction>(device, setting);
         else if(type == "togglesmartshift")
-            return std::make_shared<ToggleSmartShift>(device, setting);
+            return std::make_shared<ToggleSmartShift>(device);
         else if(type == "togglehiresscroll")
-            return std::make_shared<ToggleHiresScroll>(device, setting);
+            return std::make_shared<ToggleHiresScroll>(device);
         else
             throw InvalidAction(type);
 

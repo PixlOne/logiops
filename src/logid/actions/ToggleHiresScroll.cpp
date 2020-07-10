@@ -17,15 +17,13 @@
  */
 #include "ToggleHiresScroll.h"
 #include "../Device.h"
-#include "../util/log.h"
 #include "../util/task.h"
 #include "../backend/hidpp20/features/ReprogControls.h"
 
 using namespace logid::actions;
 using namespace logid::backend;
 
-ToggleHiresScroll::ToggleHiresScroll(Device *dev, libconfig::Setting &config) :
-    Action (dev), _config (dev, config)
+ToggleHiresScroll::ToggleHiresScroll(Device *dev) : Action (dev)
 {
     _hires_scroll = _device->getFeature<features::HiresScroll>("hiresscroll");
     if(!_hires_scroll)
@@ -56,9 +54,4 @@ void ToggleHiresScroll::release()
 uint8_t ToggleHiresScroll::reprogFlags() const
 {
     return hidpp20::ReprogControls::TemporaryDiverted;
-}
-
-ToggleHiresScroll::Config::Config(Device *device, libconfig::Setting &root) :
-    Action::Config(device)
-{
 }

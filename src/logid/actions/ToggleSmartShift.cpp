@@ -23,8 +23,7 @@
 using namespace logid::actions;
 using namespace logid::backend;
 
-ToggleSmartShift::ToggleSmartShift(Device *dev, libconfig::Setting &config) :
-    Action (dev), _config (dev, config)
+ToggleSmartShift::ToggleSmartShift(Device *dev) : Action (dev)
 {
     _smartshift = _device->getFeature<features::SmartShift>("smartshift");
     if(!_smartshift)
@@ -56,9 +55,4 @@ void ToggleSmartShift::release()
 uint8_t ToggleSmartShift::reprogFlags() const
 {
     return hidpp20::ReprogControls::TemporaryDiverted;
-}
-
-ToggleSmartShift::Config::Config(Device *device, libconfig::Setting &root) :
-    Action::Config(device)
-{
 }

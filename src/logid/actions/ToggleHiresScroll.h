@@ -27,20 +27,13 @@ namespace actions
     class ToggleHiresScroll : public Action
     {
     public:
-        ToggleHiresScroll(Device* dev, libconfig::Setting& config);
+        explicit ToggleHiresScroll(Device* dev);
 
         virtual void press();
         virtual void release();
 
         virtual uint8_t reprogFlags() const;
-
-        class Config : public Action::Config
-        {
-        public:
-            explicit Config(Device* device, libconfig::Setting& root);
-        };
     protected:
-        Config _config;
         std::shared_ptr<features::HiresScroll> _hires_scroll;
     };
 }}
