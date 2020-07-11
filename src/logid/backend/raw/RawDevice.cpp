@@ -23,6 +23,7 @@
 #include "../../util/log.h"
 #include "../hidpp/Report.h"
 #include "../../Configuration.h"
+#include "../../util/thread.h"
 
 #include <string>
 #include <system_error>
@@ -327,8 +328,8 @@ void RawDevice::interruptRead()
 void RawDevice::listen()
 {
     std::lock_guard<std::mutex> lock(_listening);
-
     _continue_listen = true;
+    _listen_condition.notify_all();
     while(_continue_listen) {
         while(!_io_queue.empty()) {
             auto task = _io_queue.front();
@@ -349,6 +350,18 @@ void RawDevice::listen()
     }
 
     _continue_listen = false;
+}
+
+void RawDevice::listenAsync()
+{
+    std::mutex listen_check;
+    std::unique_lock<std::mutex> check_lock(listen_check);
+    thread::spawn({[this]() { listen(); }});
+
+    // Block until RawDevice is listening
+    _listen_condition.wait(check_lock, [this](){
+        return (bool)_continue_listen;
+    });
 }
 
 void RawDevice::stopListener()
