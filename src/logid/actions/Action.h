@@ -65,11 +65,10 @@ namespace actions {
 
         class Config
         {
-        public:
+        protected:
             explicit Config(Device* device) : _device (device)
             {
             }
-        protected:
             Device* _device;
         };
     protected:

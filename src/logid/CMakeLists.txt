@@ -24,6 +24,9 @@ add_executable(logid
         actions/KeypressAction.cpp
         actions/ToggleHiresScroll.cpp
         actions/ToggleSmartShift.cpp
+        actions/GestureAction.cpp
+        actions/gesture/Gesture.cpp
+        actions/gesture/ReleaseGesture.cpp
         backend/Error.cpp
         backend/raw/DeviceMonitor.cpp
         backend/raw/RawDevice.cpp

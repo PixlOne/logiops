@@ -50,7 +50,7 @@ namespace logid
         int workerCount() const;
     private:
         std::map<std::string, std::string> _device_paths;
-        std::chrono::milliseconds _io_timeout;
+        std::chrono::milliseconds _io_timeout = LOGID_DEFAULT_RAWDEVICE_TIMEOUT;
         int _worker_threads;
         libconfig::Config _config;
     };
