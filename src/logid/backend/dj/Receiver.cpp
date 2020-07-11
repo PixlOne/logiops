@@ -325,9 +325,7 @@ void Receiver::listen()
 {
     if(!_raw_device->isListening())
         ///TODO: Kill RawDevice?
-        thread::spawn({[raw=this->_raw_device]() {
-            raw->listen();
-        }});
+        _raw_device->listenAsync();
 
     if(_raw_device->eventHandlers().find("RECV_HIDPP") ==
         _raw_device->eventHandlers().end()) {

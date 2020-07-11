@@ -54,6 +54,7 @@ namespace raw
         void interruptRead();
 
         void listen();
+        void listenAsync();
         void stopListener();
         bool isListening();
 
@@ -74,6 +75,7 @@ namespace raw
         std::vector<uint8_t> rdesc;
 
         std::atomic<bool> _continue_listen;
+        std::condition_variable _listen_condition;
 
         std::map<std::string, std::shared_ptr<RawEventHandler>>
             _event_handlers;

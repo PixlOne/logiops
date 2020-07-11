@@ -200,9 +200,7 @@ uint16_t Device::pid() const
 void Device::listen()
 {
     if(!_raw_device->isListening())
-        thread::spawn({[raw=this->_raw_device]() {
-            raw->listen();
-        }});
+        _raw_device->listenAsync();
 
     // Pass all HID++ events with device index to this device.
     auto handler = std::make_shared<raw::RawEventHandler>();
