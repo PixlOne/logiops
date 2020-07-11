@@ -110,6 +110,8 @@ namespace hidpp20
     protected:
         ReprogControls(Device* dev, uint16_t _id);
         std::map<uint16_t, ControlInfo> _cids;
+        bool _cids_initialized = false;
+        std::mutex _cids_populating;
     };
 
     class ReprogControlsV2 : public ReprogControls

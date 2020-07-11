@@ -36,11 +36,11 @@ try { \
 }
 
 // Define all of the ReprogControls versions
-DEFINE_REPROG(ReprogControls, Feature);
-DEFINE_REPROG(ReprogControlsV2, ReprogControls);
-DEFINE_REPROG(ReprogControlsV2_2, ReprogControlsV2);
-DEFINE_REPROG(ReprogControlsV3, ReprogControlsV2_2);
-DEFINE_REPROG(ReprogControlsV4, ReprogControlsV3);
+DEFINE_REPROG(ReprogControls, Feature)
+DEFINE_REPROG(ReprogControlsV2, ReprogControls)
+DEFINE_REPROG(ReprogControlsV2_2, ReprogControlsV2)
+DEFINE_REPROG(ReprogControlsV3, ReprogControlsV2_2)
+DEFINE_REPROG(ReprogControlsV4, ReprogControlsV3)
 
 std::shared_ptr<ReprogControls> ReprogControls::autoVersion(Device *dev)
 {
@@ -81,10 +81,16 @@ ReprogControls::ControlInfo ReprogControls::getControlInfo(uint8_t index)
 
 ReprogControls::ControlInfo ReprogControls::getControlIdInfo(uint16_t cid)
 {
-    if(_cids.empty()) {
-        for(uint8_t i = 0; i < getControlCount(); i++) {
-            auto info = getControlInfo(i);
-            _cids.emplace(info.controlID, info);
+    if(!_cids_initialized) {
+        std::unique_lock<std::mutex> lock(_cids_populating);
+        if(!_cids_initialized) {
+            uint8_t controls = getControlCount();
+            for(uint8_t i = 0; i < controls; i++) {
+                auto info = getControlInfo(i);
+                _cids.emplace(info.controlID, info);
+            }
+            _cids_populating.unlock();
+            _cids_initialized = true;
         }
     }
 

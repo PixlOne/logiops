@@ -56,7 +56,7 @@ void RemapButton::configure()
         }
 
         if((i.second->reprogFlags() & hidpp20::ReprogControls::RawXYDiverted) &&
-                (!_reprog_controls->supportsRawXY() || (info.additionalFlags &
+                (!_reprog_controls->supportsRawXY() || !(info.additionalFlags &
                 hidpp20::ReprogControls::RawXY)))
             logPrintf(WARN, "%s: Cannot divert raw XY movements for CID "
                             "0x%02x", _device->name().c_str(), i.first);
