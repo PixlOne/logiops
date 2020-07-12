@@ -22,6 +22,7 @@
 #include "ReleaseGesture.h"
 #include "../../backend/hidpp20/features/ReprogControls.h"
 #include "IntervalGesture.h"
+#include "AxisGesture.h"
 
 using namespace logid::actions;
 
@@ -51,7 +52,7 @@ Gesture::Config::Config(Device* device, libconfig::Setting& root,
             _threshold = (int)threshold;
             if(_threshold <= 0) {
                 _threshold = LOGID_GESTURE_DEFAULT_THRESHOLD;
-                logPrintf(WARN, "Line %d: threshold must be positive, setting"
+                logPrintf(WARN, "Line %d: threshold must be positive, setting "
                                 "to default (%d)", threshold.getSourceLine(),
                                 _threshold);
             }
@@ -87,8 +88,10 @@ std::shared_ptr<Gesture> Gesture::makeGesture(Device *device,
 
         if(type == "onrelease")
             return std::make_shared<ReleaseGesture>(device, setting);
-        if(type == "oninterval" || type == "onfewpixels")
+        else if(type == "oninterval" || type == "onfewpixels")
             return std::make_shared<IntervalGesture>(device, setting);
+        else if(type == "axis")
+            return std::make_shared<AxisGesture>(device, setting);
         else {
             logPrintf(WARN, "Line %d: Unknown gesture mode %s, defaulting to "
                             "OnRelease.", gesture_mode.getSourceLine(),

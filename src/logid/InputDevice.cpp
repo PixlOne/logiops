@@ -87,7 +87,7 @@ uint InputDevice::toKeyCode(std::string name)
 
 uint InputDevice::toAxisCode(std::string name)
 {
-    return _toEventCode(EV_KEY, std::move(name));
+    return _toEventCode(EV_REL, std::move(name));
 }
 
 uint InputDevice::_toEventCode(uint type, const std::string& name)
