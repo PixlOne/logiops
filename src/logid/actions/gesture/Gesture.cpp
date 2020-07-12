@@ -23,6 +23,7 @@
 #include "../../backend/hidpp20/features/ReprogControls.h"
 #include "IntervalGesture.h"
 #include "AxisGesture.h"
+#include "NullGesture.h"
 
 using namespace logid::actions;
 
@@ -92,6 +93,8 @@ std::shared_ptr<Gesture> Gesture::makeGesture(Device *device,
             return std::make_shared<IntervalGesture>(device, setting);
         else if(type == "axis")
             return std::make_shared<AxisGesture>(device, setting);
+        else if(type == "nopress")
+            return std::make_shared<NullGesture>(device, setting);
         else {
             logPrintf(WARN, "Line %d: Unknown gesture mode %s, defaulting to "
                             "OnRelease.", gesture_mode.getSourceLine(),
