@@ -31,6 +31,7 @@ Receiver::Receiver(std::string path) : dj::ReceiverMonitor(path), _path (path)
 
 void Receiver::addDevice(hidpp::DeviceConnectionEvent event)
 {
+    std::unique_lock<std::mutex> lock(_devices_change);
     try {
         auto dev = _devices.find(event.index);
         if(dev != _devices.end()) {
@@ -71,5 +72,6 @@ void Receiver::addDevice(hidpp::DeviceConnectionEvent event)
 
 void Receiver::removeDevice(hidpp::DeviceIndex index)
 {
+    std::unique_lock<std::mutex> lock(_devices_change);
     _devices.erase(index);
 }
