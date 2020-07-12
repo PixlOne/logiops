@@ -75,12 +75,10 @@ find_path(EVDEV_INCLUDE_DIR libevdev/libevdev.h
 find_library(EVDEV_LIBRARY
         NAMES evdev libevdev)
 
-include_directories(${EVDEV_INCLUDE_DIR} ${DBUSCXX_INCLUDE_DIR} ${LIBUDEV_INCLUDE_DIRECTORIES})
+include_directories(${EVDEV_INCLUDE_DIR} ${LIBUDEV_INCLUDE_DIRECTORIES})
 
 target_link_libraries(logid ${CMAKE_THREAD_LIBS_INIT} ${EVDEV_LIBRARY} config++
-        ${DBUSCXX_LIBRARIES} ${LIBUDEV_LIBRARIES})
-
-target_link_libraries(logid ${CMAKE_THREAD_LIBS_INIT} ${EVDEV_LIBRARY} config++ ${HIDPP_LIBRARY})
+        ${LIBUDEV_LIBRARIES})
 
 install(TARGETS logid DESTINATION bin)
 
