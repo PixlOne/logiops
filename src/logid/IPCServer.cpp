@@ -20,7 +20,7 @@
 #include <thread>
 
 #include "logid.h"
-#include "util.h"
+#include "util/log.h"
 #include "ipc/util.h"
 #include "ipc/dbus_server.h"
 #include "IPCServer.h"
