@@ -404,6 +404,7 @@ void RawDevice::stopListener()
 void RawDevice::addEventHandler(const std::string& nickname,
         const std::shared_ptr<raw::RawEventHandler>& handler)
 {
+    std::unique_lock<std::mutex> lock(_event_handler_lock);
     auto it = _event_handlers.find(nickname);
     assert(it == _event_handlers.end());
     assert(handler);
@@ -412,17 +413,20 @@ void RawDevice::addEventHandler(const std::string& nickname,
 
 void RawDevice::removeEventHandler(const std::string &nickname)
 {
+    std::unique_lock<std::mutex> lock(_event_handler_lock);
     _event_handlers.erase(nickname);
 }
 
 const std::map<std::string, std::shared_ptr<raw::RawEventHandler>>&
 RawDevice::eventHandlers()
 {
+    std::unique_lock<std::mutex> lock(_event_handler_lock);
     return _event_handlers;
 }
 
 void RawDevice::_handleEvent(std::vector<uint8_t> &report)
 {
+    std::unique_lock<std::mutex> lock(_event_handler_lock);
     for(auto& handler : _event_handlers)
         if(handler.second->condition(report))
             handler.second->callback(report);

@@ -95,6 +95,37 @@ void ReceiverMonitor::enumerate()
     _receiver->enumerateHidpp();
 }
 
+void ReceiverMonitor::waitForDevice(hidpp::DeviceIndex index)
+{
+    std::string nickname = "WAIT_DEV_" + std::to_string(index);
+    auto handler = std::make_shared<raw::RawEventHandler>();
+    handler->condition = [index](std::vector<uint8_t>& report)->bool {
+        return report[Offset::DeviceIndex] == index;
+    };
+
+    handler->callback = [this, index, nickname](std::vector<uint8_t>& report) {
+        (void)report; // Suppress unused warning
+
+        hidpp::DeviceConnectionEvent event{};
+        event.withPayload = false;
+        event.linkEstablished = true;
+        event.index = index;
+        event.fromTimeoutCheck = true;
+
+        task::spawn({[this, event, nickname]() {
+                _receiver->rawDevice()->removeEventHandler(nickname);
+                this->addDevice(event);
+        }}, {[path=_receiver->rawDevice()->hidrawPath(), event]
+        (std::exception& e) {
+            logPrintf(ERROR, "Failed to add device %d to receiver "
+                             "on %s: %s", event.index,
+                             path.c_str(), e.what());
+        }});
+    };
+
+    _receiver->rawDevice()->addEventHandler(nickname, handler);
+}
+
 std::shared_ptr<Receiver> ReceiverMonitor::receiver() const
 {
     return _receiver;
