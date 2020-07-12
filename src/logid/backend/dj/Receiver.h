@@ -189,6 +189,7 @@ namespace hidpp
         bool encrypted;
         bool linkEstablished;
         bool withPayload;
+        bool fromTimeoutCheck = false; // Fake field
     };
 }}}
 

@@ -21,6 +21,7 @@
 #include "util/log.h"
 #include "backend/hidpp10/Error.h"
 #include "backend/hidpp20/Error.h"
+#include "backend/Error.h"
 
 using namespace logid;
 using namespace logid::backend;
@@ -67,6 +68,11 @@ void Receiver::addDevice(hidpp::DeviceConnectionEvent event)
     } catch(hidpp20::Error &e) {
         logPrintf(ERROR, "Caught HID++ 2.0 error while trying to initialize "
                           "%s:%d: %s", _path.c_str(), event.index, e.what());
+    } catch(TimeoutError &e) {
+        if(!event.fromTimeoutCheck)
+            logPrintf(DEBUG, "%s:%d timed out, waiting for input from device to"
+                             " initialize.", _path.c_str(), event.index);
+        waitForDevice(event.index);
     }
 }
 

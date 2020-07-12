@@ -238,6 +238,7 @@ hidpp::DeviceConnectionEvent Receiver::deviceConnectionEvent(const
     event.encrypted = report.paramBegin()[0] & (1<<5);
     event.linkEstablished = !(report.paramBegin()[0] & (1<<6));
     event.withPayload = report.paramBegin()[0] & (1<<7);
+    event.fromTimeoutCheck = false;
 
     event.pid =(report.paramBegin()[2] << 8);
     event.pid |= report.paramBegin()[1];

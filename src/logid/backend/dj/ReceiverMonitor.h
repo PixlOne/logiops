@@ -42,6 +42,8 @@ namespace dj
         virtual void addDevice(hidpp::DeviceConnectionEvent event) = 0;
         virtual void removeDevice(hidpp::DeviceIndex index) = 0;
 
+        void waitForDevice(hidpp::DeviceIndex index);
+
         // Internal methods for derived class
         void _pair(uint8_t timeout = 0);
         void _stopPairing();

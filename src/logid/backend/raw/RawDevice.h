@@ -80,6 +80,7 @@ namespace raw
 
         std::map<std::string, std::shared_ptr<RawEventHandler>>
             _event_handlers;
+        std::mutex _event_handler_lock;
         void _handleEvent(std::vector<uint8_t>& report);
 
         /* These will only be used internally and processed with a queue */
