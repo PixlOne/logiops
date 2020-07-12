@@ -66,12 +66,20 @@ DPI::DPI(Device* device) : DeviceFeature(device), _config (device),
 void DPI::configure()
 {
     const uint8_t sensors = _adjustable_dpi.getSensorCount();
-    for(uint8_t i = 0; i < _config.getSensorCount() && i < sensors; i++) {
-        auto dpi = _config.getDPI(i);
-        if(dpi) {
-            auto dpi_list = _adjustable_dpi.getSensorDPIList(i);
-            _adjustable_dpi.setSensorDPI(i, getClosestDPI(dpi_list,
-                    dpi));
+    for(uint8_t i = 0; i < _config.getSensorCount(); i++) {
+        hidpp20::AdjustableDPI::SensorDPIList dpi_list;
+        if(_dpi_lists.size() <= i) {
+            dpi_list = _adjustable_dpi.getSensorDPIList(i);
+            _dpi_lists.push_back(dpi_list);
+        } else {
+            dpi_list = _dpi_lists[i];
+        }
+        if(i < sensors) {
+            auto dpi = _config.getDPI(i);
+            if(dpi) {
+                _adjustable_dpi.setSensorDPI(i, getClosestDPI(dpi_list,
+                        dpi));
+            }
         }
     }
 }
@@ -87,7 +95,15 @@ uint16_t DPI::getDPI(uint8_t sensor)
 
 void DPI::setDPI(uint16_t dpi, uint8_t sensor)
 {
-    _adjustable_dpi.setSensorDPI(sensor, dpi);
+    hidpp20::AdjustableDPI::SensorDPIList dpi_list;
+    if(_dpi_lists.size() <= sensor) {
+        dpi_list = _adjustable_dpi.getSensorDPIList(sensor);
+        for(std::size_t i = _dpi_lists.size()-1; i <= sensor; i++) {
+            _dpi_lists.push_back(_adjustable_dpi.getSensorDPIList(i));
+        }
+    }
+    dpi_list = _dpi_lists[sensor];
+    _adjustable_dpi.setSensorDPI(sensor, getClosestDPI(dpi_list, dpi));
 }
 
 /* Some devices have multiple sensors, but an older config format
