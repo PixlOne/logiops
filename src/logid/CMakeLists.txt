@@ -27,6 +27,7 @@ add_executable(logid
         actions/GestureAction.cpp
         actions/gesture/Gesture.cpp
         actions/gesture/ReleaseGesture.cpp
+        actions/gesture/IntervalGesture.cpp
         backend/Error.cpp
         backend/raw/DeviceMonitor.cpp
         backend/raw/RawDevice.cpp

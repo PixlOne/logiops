@@ -21,6 +21,7 @@
 #include "../../util/log.h"
 #include "ReleaseGesture.h"
 #include "../../backend/hidpp20/features/ReprogControls.h"
+#include "IntervalGesture.h"
 
 using namespace logid::actions;
 
@@ -86,6 +87,8 @@ std::shared_ptr<Gesture> Gesture::makeGesture(Device *device,
 
         if(type == "onrelease")
             return std::make_shared<ReleaseGesture>(device, setting);
+        if(type == "oninterval" || type == "onfewpixels")
+            return std::make_shared<IntervalGesture>(device, setting);
         else {
             logPrintf(WARN, "Line %d: Unknown gesture mode %s, defaulting to "
                             "OnRelease.", gesture_mode.getSourceLine(),
