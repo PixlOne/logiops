@@ -24,6 +24,7 @@
 #include "util/log.h"
 #include "backend/hidpp10/Error.h"
 #include "backend/dj/Receiver.h"
+#include "backend/Error.h"
 
 #define NON_WIRELESS_DEV(index) (index) == HIDPP::DefaultDevice ? "default" : "corded"
 
@@ -46,6 +47,9 @@ void DeviceManager::addDevice(std::string path)
         logPrintf(WARN, "I/O error on %s: %s, skipping device.",
                 path.c_str(), e.what());
         return;
+    } catch (TimeoutError &e) {
+        logPrintf(WARN, "Device %s timed out.", path.c_str());
+        defaultExists = false;
     }
 
     if(isReceiver) {

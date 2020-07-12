@@ -25,7 +25,7 @@
 #include <chrono>
 
 #define LOGID_DEFAULT_RAWDEVICE_TIMEOUT std::chrono::seconds(2)
-#define LOGID_DEFAULT_WORKER_COUNT 2
+#define LOGID_DEFAULT_WORKER_COUNT 4
 
 namespace logid
 {

@@ -15,6 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+#include <cassert>
 #include "workqueue.h"
 #include "log.h"
 
@@ -48,6 +49,7 @@ workqueue::~workqueue()
 
 void workqueue::queue(std::shared_ptr<task> t)
 {
+    assert(t != nullptr);
     _queue.push(t);
     _queue_cv.notify_all();
 }
@@ -61,27 +63,6 @@ void workqueue::stop()
 {
     _continue_run = false;
     std::unique_lock<std::mutex> lock(_run_lock);
-}
-
-void workqueue::setThreadCount(std::size_t count)
-{
-    while(_workers.size() < count)
-        _workers.push_back(std::make_unique<worker_thread>(this,
-            _workers.size()));
-
-    if(_workers.size() > count) {
-        // Restart manager thread
-        stop();
-        while (_workers.size() > count)
-            _workers.pop_back();
-        _manager_thread = std::make_unique<thread>(
-                [this](){ _run(); }
-                , [this](std::exception& e){ _exception_handler(e); }
-        );
-        _manager_thread->run();
-    }
-
-    _worker_count = count;
 }
 
 std::size_t workqueue::threadCount() const
@@ -98,7 +79,6 @@ void workqueue::_run()
     while(_continue_run) {
         _queue_cv.wait(lock, [this]{ return !(_queue.empty()); });
         while(!_queue.empty()) {
-
             if(_workers.empty()) {
                 if(_worker_count)
                     logPrintf(DEBUG, "No workers were found, running task in"

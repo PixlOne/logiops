@@ -24,6 +24,8 @@
 #include "../hidpp/Report.h"
 #include "../../Configuration.h"
 #include "../../util/thread.h"
+#include "../../util/task.h"
+#include "../../util/workqueue.h"
 
 #include <string>
 #include <system_error>
@@ -63,7 +65,7 @@ bool RawDevice::supportedReport(uint8_t id, uint8_t length)
 }
 
 RawDevice::RawDevice(std::string path) : _path (std::move(path)),
-    _continue_listen (false)
+    _continue_listen (false), _continue_respond (false)
 {
     int ret;
 
@@ -151,15 +153,41 @@ std::vector<uint8_t> RawDevice::sendReport(const std::vector<uint8_t>& report)
     /* If the listener will stop, handle I/O manually.
      * Otherwise, push to queue and wait for result. */
     if(_continue_listen) {
-        std::packaged_task<std::vector<uint8_t>()> task( [this, report]() {
+        std::mutex send_report;
+        std::unique_lock<std::mutex> lock(send_report);
+        std::condition_variable cv;
+        bool top_of_queue = false;
+        std::packaged_task<std::vector<uint8_t>()> task( [this, report, &cv,
+                &top_of_queue] () {
+            top_of_queue = true;
+            cv.notify_all();
             return this->_respondToReport(report);
         });
         auto f = task.get_future();
         _io_queue.push(&task);
+        cv.wait(lock, [&top_of_queue]{ return top_of_queue; });
+        auto status = f.wait_for(global_config->ioTimeout());
+        if(status == std::future_status::timeout) {
+            _continue_respond = false;
+            throw TimeoutError();
+        }
         return f.get();
     }
-    else
-        return _respondToReport(report);
+    else {
+        std::vector<uint8_t> response;
+        std::shared_ptr<task> t = std::make_shared<task>(
+                [this, report, &response]() {
+                    response = _respondToReport(report);
+        });
+        global_workqueue->queue(t);
+        t->waitStart();
+        auto status = t->waitFor(global_config->ioTimeout());
+        if(status == std::future_status::timeout) {
+            _continue_respond = false;
+            throw TimeoutError();
+        } else
+            return response;
+    }
 }
 
 // DJ commands are not systematically acknowledged, do not expect a result.
@@ -184,7 +212,8 @@ std::vector<uint8_t> RawDevice::_respondToReport
     (const std::vector<uint8_t>& request)
 {
     _sendReport(request);
-    while(true) {
+    _continue_respond = true;
+    while(_continue_respond) {
         std::vector<uint8_t> response;
         _readReport(response, MAX_DATA_LENGTH);
 
@@ -227,6 +256,8 @@ std::vector<uint8_t> RawDevice::_respondToReport
         if(_continue_listen)
             this->_handleEvent(response);
     }
+
+    return {};
 }
 
 int RawDevice::_sendReport(const std::vector<uint8_t>& report)

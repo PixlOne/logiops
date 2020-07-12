@@ -43,7 +43,7 @@ LogLevel logid::global_loglevel = INFO;
 std::shared_ptr<Configuration> logid::global_config;
 std::unique_ptr<DeviceManager> logid::device_manager;
 std::unique_ptr<InputDevice> logid::virtual_input;
-std::unique_ptr<workqueue> logid::global_workqueue;
+std::shared_ptr<workqueue> logid::global_workqueue;
 
 bool logid::kill_logid = false;
 std::mutex logid::device_manager_reload;
@@ -157,8 +157,6 @@ Possible options are:
 
 int main(int argc, char** argv)
 {
-    global_workqueue = std::make_unique<workqueue>(LOGID_DEFAULT_WORKER_COUNT);
-
     readCliOptions(argc, argv);
 
     // Read config
@@ -168,8 +166,7 @@ int main(int argc, char** argv)
     catch (std::exception &e) {
         global_config = std::make_shared<Configuration>();
     }
-
-    global_workqueue->setThreadCount(global_config->workerCount());
+    global_workqueue = std::make_shared<workqueue>(global_config->workerCount());
 
     //Create a virtual input device
     try {
