@@ -16,7 +16,6 @@
  *
  */
 #include "ReleaseGesture.h"
-#include "../../util/log.h"
 
 using namespace logid::actions;
 
