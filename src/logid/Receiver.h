@@ -34,6 +34,7 @@ namespace logid
         void addDevice(backend::hidpp::DeviceConnectionEvent event) override;
         void removeDevice(backend::hidpp::DeviceIndex index) override;
     private:
+        std::mutex _devices_change;
         std::map<backend::hidpp::DeviceIndex, std::shared_ptr<Device>> _devices;
         std::string _path;
     };
