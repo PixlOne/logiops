@@ -23,6 +23,7 @@
 #include "ToggleSmartShift.h"
 #include "ToggleHiresScroll.h"
 #include "GestureAction.h"
+#include "NullAction.h"
 
 using namespace logid;
 using namespace logid::actions;
@@ -56,6 +57,8 @@ std::shared_ptr<Action> Action::makeAction(Device *device, libconfig::Setting
             return std::make_shared<ToggleHiresScroll>(device);
         else if(type == "gestures")
             return std::make_shared<GestureAction>(device, setting);
+        else if(type == "none")
+            return std::make_shared<NullAction>(device);
         else
             throw InvalidAction(type);
 
