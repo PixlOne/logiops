@@ -38,6 +38,7 @@ task::task(const std::function<void()>& function,
 void task::run()
 {
     _status = Running;
+    _status_cv.notify_all();
     _task_pkg();
     _status = Completed;
 }
@@ -50,6 +51,18 @@ task::Status task::getStatus()
 void task::wait()
 {
     _task_pkg.get_future().wait();
+}
+
+void task::waitStart()
+{
+    std::mutex wait_start;
+    std::unique_lock<std::mutex> lock(wait_start);
+    _status_cv.wait(lock, [this](){ return _status != Waiting; });
+}
+
+std::future_status task::waitFor(std::chrono::milliseconds ms)
+{
+    return _task_pkg.get_future().wait_for(ms);
 }
 
 void task::spawn(const std::function<void ()>& function,

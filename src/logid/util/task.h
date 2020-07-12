@@ -44,6 +44,8 @@ namespace logid
 
         void run(); // Runs synchronously
         void wait();
+        void waitStart();
+        std::future_status waitFor(std::chrono::milliseconds ms);
 
         /* This function spawns a new task into the least used worker queue
          * and forgets about it.
@@ -53,13 +55,12 @@ namespace logid
                           exception_handler={[](std::exception& e)
                                              {ExceptionHandler::Default(e);}});
 
-        static void autoQueue(std::shared_ptr<task>);
-
     private:
         std::shared_ptr<std::function<void()>> _function;
         std::shared_ptr<std::function<void(std::exception&)>>
                 _exception_handler;
         std::atomic<Status> _status;
+        std::condition_variable _status_cv;
         std::packaged_task<void()> _task_pkg;
     };
 }

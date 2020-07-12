@@ -35,7 +35,6 @@ namespace logid
 
         void stop();
 
-        void setThreadCount(std::size_t count);
         std::size_t threadCount() const;
     private:
         void _run();
@@ -53,7 +52,7 @@ namespace logid
         std::size_t _worker_count;
     };
 
-    extern std::unique_ptr<workqueue> global_workqueue;
+    extern std::shared_ptr<workqueue> global_workqueue;
 }
 
 #endif //LOGID_WORKQUEUE_H

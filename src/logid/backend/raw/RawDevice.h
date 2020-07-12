@@ -75,6 +75,7 @@ namespace raw
         std::vector<uint8_t> rdesc;
 
         std::atomic<bool> _continue_listen;
+        std::atomic<bool> _continue_respond;
         std::condition_variable _listen_condition;
 
         std::map<std::string, std::shared_ptr<RawEventHandler>>

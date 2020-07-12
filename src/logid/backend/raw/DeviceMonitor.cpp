@@ -160,7 +160,7 @@ void DeviceMonitor::enumerate()
         task::spawn([this, name=devnode]() {
             this->addDevice(name);
         }, [name=devnode](std::exception& e){
-            logPrintf(ERROR, "Error adding device %s: %s",
+            logPrintf(WARN, "Error adding device %s: %s",
                        name.c_str(), e.what());
         });
     }
