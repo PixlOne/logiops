@@ -31,6 +31,9 @@ namespace features
         virtual void configure();
         virtual void listen();
 
+        uint16_t getDPI(uint8_t sensor=0);
+        void setDPI(uint16_t dpi, uint8_t sensor=0);
+
         class Config : public DeviceFeature::Config
         {
         public:

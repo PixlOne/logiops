@@ -80,6 +80,16 @@ void DPI::listen()
 {
 }
 
+uint16_t DPI::getDPI(uint8_t sensor)
+{
+    return _adjustable_dpi.getSensorDPI(sensor);
+}
+
+void DPI::setDPI(uint16_t dpi, uint8_t sensor)
+{
+    _adjustable_dpi.setSensorDPI(sensor, dpi);
+}
+
 /* Some devices have multiple sensors, but an older config format
  * only supports a single DPI. The dpi setting can be an array or
  * an integer.

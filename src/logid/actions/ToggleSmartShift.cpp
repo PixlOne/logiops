@@ -30,14 +30,13 @@ ToggleSmartShift::ToggleSmartShift(Device *dev) : Action (dev)
         logPrintf(WARN, "%s:%d: SmartShift feature not found, cannot use "
                         "ToggleSmartShift action.",
                         _device->hidpp20().devicePath().c_str(),
-                        _device->hidpp20().devicePath().c_str());
+                        _device->hidpp20().deviceIndex());
 }
 
 void ToggleSmartShift::press()
 {
     _pressed = true;
-    if(_smartshift)
-    {
+    if(_smartshift) {
         task::spawn([ss=this->_smartshift](){
             auto status = ss->getStatus();
             status.setActive = true;
