@@ -24,6 +24,7 @@
 #include "ToggleHiresScroll.h"
 #include "GestureAction.h"
 #include "NullAction.h"
+#include "CycleDPI.h"
 
 using namespace logid;
 using namespace logid::actions;
@@ -57,6 +58,8 @@ std::shared_ptr<Action> Action::makeAction(Device *device, libconfig::Setting
             return std::make_shared<ToggleHiresScroll>(device);
         else if(type == "gestures")
             return std::make_shared<GestureAction>(device, setting);
+        else if(type == "cycledpi")
+            return std::make_shared<CycleDPI>(device, setting);
         else if(type == "none")
             return std::make_shared<NullAction>(device);
         else
