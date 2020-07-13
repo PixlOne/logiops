@@ -79,20 +79,23 @@ ReprogControls::ControlInfo ReprogControls::getControlInfo(uint8_t index)
     return info;
 }
 
+void ReprogControls::initCidMap()
+{
+    std::unique_lock<std::mutex> lock(_cids_populating);
+    if(_cids_initialized)
+        return;
+    uint8_t controls = getControlCount();
+    for(uint8_t i = 0; i < controls; i++) {
+        auto info = getControlInfo(i);
+        _cids.emplace(info.controlID, info);
+    }
+    _cids_initialized = true;
+}
+
 ReprogControls::ControlInfo ReprogControls::getControlIdInfo(uint16_t cid)
 {
-    if(!_cids_initialized) {
-        std::unique_lock<std::mutex> lock(_cids_populating);
-        if(!_cids_initialized) {
-            uint8_t controls = getControlCount();
-            for(uint8_t i = 0; i < controls; i++) {
-                auto info = getControlInfo(i);
-                _cids.emplace(info.controlID, info);
-            }
-            _cids_populating.unlock();
-            _cids_initialized = true;
-        }
-    }
+    if(!_cids_initialized)
+        initCidMap();
 
     auto it = _cids.find(cid);
     if(it == _cids.end())

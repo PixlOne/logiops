@@ -32,6 +32,7 @@ using namespace logid::actions;
 RemapButton::RemapButton(Device *dev): DeviceFeature(dev), _config (dev),
     _reprog_controls (hidpp20::ReprogControls::autoVersion(&dev->hidpp20()))
 {
+    _reprog_controls->initCidMap();
 }
 
 RemapButton::~RemapButton()
