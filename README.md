@@ -1,5 +1,7 @@
 # logiops
 
+#### This branch is experimental. If you are a normal user, please use the master branch
+
 This is an unofficial driver for Logitech mice and keyboard.
 
 This is currently only compatible with HID++ \>2.0 devices.
@@ -13,11 +15,11 @@ Default location for the configuration file is /etc/logid.cfg.
 
 ## Dependencies
 
-This project requires a C++14 compiler, cmake, libevdev, libudev, and libconfig. For popular distributions, I've included commands below. 
+This project requires a C++14 compiler, cmake, libevdev, libudev, libdbus-c++, and libconfig. For popular distributions, I've included commands below.
 
-**Debian/Ubuntu:** `sudo apt install cmake libevdev-dev libudev-dev libconfig++-dev`
+**Debian/Ubuntu:** `sudo apt install cmake libevdev-dev libudev-dev libdbus-c++-dev libconfig++-dev`
 
-**Arch Linux:** `sudo pacman -S cmake libevdev libconfig libudev`
+**Arch Linux:** `sudo pacman -S cmake libevdev libconfig dbus-c++ libudev`
 
 ## Building
 

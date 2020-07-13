@@ -14,6 +14,7 @@
 #include "DeviceFinder.h"
 #include "util.h"
 #include "Device.h"
+#include "IPCServer.h"
 
 #define NON_WIRELESS_DEV(index) (index) == HIDPP::DefaultDevice ? "default" : "corded"
 
@@ -67,7 +68,6 @@ Device* DeviceFinder::insertNewDevice(const std::string &path, HIDPP::DeviceInde
 Device* DeviceFinder::insertNewReceiverDevice(const std::string &path, HIDPP::DeviceIndex index)
 {
     auto *device = new Device(path, index);
-
     this->devices_mutex.lock();
     auto path_bucket = this->devices.emplace(path, std::map<HIDPP::DeviceIndex, ConnectedDevice>()).first;
     path_bucket->second.emplace(index, ConnectedDevice{
@@ -139,6 +139,7 @@ void DeviceFinder::addDevice(const char *path)
                         std::tie(major, minor) = version;
                         if(index == HIDPP::DefaultDevice && version == std::make_tuple(1, 0))
                         {
+                            ipc_server->addReceiver(string_path);
                             HIDPP10::Device receiver(&dispatcher, index);
                             HIDPP10::IReceiver irecv(&receiver);
                             log_printf(INFO, "Found %s on %s", receiver.name().c_str(), string_path.c_str());
@@ -208,5 +209,6 @@ void DeviceFinder::addDevice(const char *path)
 
 void DeviceFinder::removeDevice(const char* path)
 {
+    ipc_server->removeReceiver(path);
     this->stopAndDeleteAllDevicesIn(std::string(path));
 }

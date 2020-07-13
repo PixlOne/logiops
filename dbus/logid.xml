@@ -1,0 +1,114 @@
+<!--
+LogiOps interface xml:
+
+The logid dbus server will implement:
+pizza.pixl.logiops
+pizza.pixl.logiops.Config
+pizza.pixl.logiops.Device
+pizza.pixl.logiops.Device.Button
+pizza.pixl.logiops.Receiver
+
+Sample device name string: /dev/hidraw0:1
+Sample receiver string: /dev/hidraw0
+
+-->
+
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+"https://specifications.freedesktop.org/dbus/introspect-latest.dtd">
+<node name="/pizza/pixl/logiops">
+    <interface name="pizza.pixl.logiops">
+        <property name="Version" type="s" access="read" />
+        <property name="Receivers" type="as" access="read" />
+        <property name="Devices" type="as" access="read" />
+        <method name="Reload" />
+        <signal name="DeviceConnected">
+            <arg name="device" type="s" />
+        </signal>
+        <signal name="DeviceDisconnected">
+            <arg name="device" type="s" />
+        </signal>
+        <signal name="ReceiverConnected">
+            <arg name="receiver" type="s" />
+        </signal>
+        <signal name="ReceiverDisconnected">
+            <arg name="receiver" type="s" />
+        </signal>
+    </interface>
+
+    <interface name="pizza.pixl.logiops.Config">
+        <property name="Devices" type="as" access="read" />
+        <method name="Get">
+            <arg name="device"   type="s" direction="in" />
+            <arg name="property" type="s" direction="in" />
+            <arg name="value"    type="v" direction="out" />
+        </method>
+        <method name="GetAll">
+            <arg name="device"     type="s" direction="in" />
+            <arg name="properties" type="a{sv}" direction="out"/>
+        </method>
+        <method name="ReloadAll" />
+        <method name="ReloadDevice">
+            <arg name="device" type="s" direction="in" />
+        </method>
+        <method name="SaveAll" />
+        <method name="SaveDevice">
+            <arg name="device" type="s" direction="in" />
+        </method>
+        <method name="ClearAll">
+            <arg name="device" type="s" direction="in" />
+        </method>
+        <method name="Clear">
+            <arg name="device"   type="s" direction="in" />
+            <arg name="property" type="s" direction="in" />
+        </method>
+    </interface>
+
+    <!-- General interface for devices
+        Certain properties will be added as necessary (e.g. if a device
+        supports changing the DPI, a read/write property called DPI will be
+        added).
+        Example of node name: /pizza/pixl/logiops/device/hidraw0/1
+    -->
+    <interface name="pizza.pixl.logiops.Device">
+        <property name="Name" type="s" access="read" />
+        <property name="DeviceID" type="q" access="read" />
+        <property name="Features" type="as" access="read" />
+    </interface>
+
+    <!-- General interface for receivers
+        Example of node name: /pizza/pixl/logiops/receiver/hidraw0
+    -->
+    <interface name="pizza.pixl.logiops.Receiver">
+        <property name="Devices" type="as" access="read" />
+        <method name="Pair">
+            <arg name="device" type="s" direction="out" />
+        </method>
+        <method name="Unpair">
+            <arg name="device" type="s" direction="in" />
+        </method>
+    </interface>
+
+    <!-- General interface for device buttons (only divertable buttons appear)
+        Example of node name: /pizza/pixl/logiops/device/hidraw0/1/buttons/1   -->
+    <interface name="pizza.pixl.logiops.Device.Button">
+        <property name="Remapped" type="b" access="read" />
+        <property name="ActionType" type="s" access="read" />
+        <property name="Action" type="a{sv}" access="read" />
+        <method name="Reset" />
+        <method name="ClearAction" />
+        <method name="Remap">
+            <arg name="actionType" type="s" direction="in" />
+            <arg name="action"     type="s" direction="in" />
+        </method>
+    </interface>
+
+    <!-- General interface for device buttons (only divertable buttons appear)
+        Example of node name: /pizza/pixl/logiops/device/hidraw0/1/dpi         -->
+    <interface name="pizza.pixl.logiops.Device.DPI">
+        <property name="DPI" type="i" access="read" />
+        <property name="AvailableDPIs" type="ai" access="read" />
+        <method name="SetDPI">
+            <arg name="DPI" type="i" direction="in" />
+        </method>
+    </interface>
+</node>

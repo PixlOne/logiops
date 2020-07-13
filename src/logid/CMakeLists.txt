@@ -3,10 +3,11 @@ project(logid)
 
 set(CMAKE_CXX_STANDARD 14)
 
-set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/../CMake")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
 find_package(Threads REQUIRED)
 find_package(PkgConfig REQUIRED)
+find_package(DBusCXX REQUIRED)
 
 add_executable(logid
         logid.cpp
@@ -21,7 +22,13 @@ add_executable(logid
         DeviceFinder.cpp
         DeviceFinder.h
         EvdevDevice.cpp
-        EvdevDevice.h)
+        EvdevDevice.h
+        IPCServer.cpp
+        IPCServer.h
+        ipc/util.cpp
+        ipc/Root.cpp
+        ipc/Device.cpp)
+
 set_target_properties(logid PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 pkg_check_modules(PC_EVDEV libevdev)
@@ -70,11 +77,17 @@ else()
     set(HIDPP_INCLUDE_DIR ${HIDPP_INCLUDE_DIR}/hidpp)
 endif()
 
-include_directories(${HIDPP_INCLUDE_DIR} ${EVDEV_INCLUDE_DIR})
+include_directories(${HIDPP_INCLUDE_DIR} ${EVDEV_INCLUDE_DIR} ${DBUSCXX_INCLUDE_DIR})
 
-target_link_libraries(logid ${CMAKE_THREAD_LIBS_INIT} ${EVDEV_LIBRARY} config++ ${HIDPP_LIBRARY})
+target_link_libraries(logid ${CMAKE_THREAD_LIBS_INIT} ${EVDEV_LIBRARY} config++ ${HIDPP_LIBRARY}
+        ${DBUSCXX_LIBRARIES})
+
+configure_file(${CMAKE_SOURCE_DIR}/dbus/logid.xml ${CMAKE_BINARY_DIR}/dbus/logid.xml)
 
 install(TARGETS logid DESTINATION bin)
+install(FILES ${CMAKE_BINARY_DIR}/dbus/logid.xml
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/share/logiops/dbus/logid.xml
+        COMPONENT cp)
 
 if (SYSTEMD_FOUND AND "${SYSTEMD_SERVICES_INSTALL_DIR}" STREQUAL "")
     execute_process(COMMAND ${PKG_CONFIG_EXECUTABLE}

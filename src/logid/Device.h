@@ -1,3 +1,4 @@
+
 #ifndef LOGID_DEVICE_H
 #define LOGID_DEVICE_H
 
@@ -35,6 +36,7 @@ namespace logid
         ~Device();
 
         std::string name;
+        uint16_t pid;
 
         bool init();
         void configure();
