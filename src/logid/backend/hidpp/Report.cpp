@@ -161,9 +161,10 @@ Report::Report(Report::Type type, DeviceIndex device_index,
             (sw_id & 0x0f);
 }
 
-Report::Report(const std::vector<uint8_t>& data)
+Report::Report(const std::vector<uint8_t>& data) :
+    _data (data)
 {
-    _data = data;
+    _data.resize(HeaderLength + LongParamLength);
 
     // Truncating data is entirely valid here.
     switch(_data[Offset::Type]) {

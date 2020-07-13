@@ -262,6 +262,9 @@ std::vector<uint8_t> RawDevice::_respondToReport
             throw TimeoutError();
         _readReport(response, MAX_DATA_LENGTH, timeout);
 
+        if(!_continue_respond)
+            throw TimeoutError();
+
         // All reports have the device index at byte 2
         if(response[1] != request[1]) {
             if(_continue_listen)
