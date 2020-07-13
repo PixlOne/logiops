@@ -94,20 +94,7 @@ RawDevice::RawDevice(std::string path) : _path (std::move(path)),
     }
     _name.assign(name_buf, ret - 1);
 
-    hidraw_report_descriptor _rdesc{};
-    if (-1 == ::ioctl(_fd, HIDIOCGRDESCSIZE, &_rdesc.size)) {
-        int err = errno;
-        ::close(_fd);
-        throw std::system_error(err, std::system_category(),
-                "RawDevice HIDIOCGRDESCSIZE failed");
-    }
-    if (-1 == ::ioctl(_fd, HIDIOCGRDESC, &_rdesc)) {
-        int err = errno;
-        ::close(_fd);
-        throw std::system_error(err, std::system_category(),
-                "RawDevice HIDIOCGRDESC failed");
-    }
-    rdesc = std::vector<uint8_t>(_rdesc.value, _rdesc.value + _rdesc.size);
+    _rdesc = getReportDescriptor(_fd);
 
     if (-1 == ::pipe(_pipe)) {
         int err = errno;
@@ -148,6 +135,41 @@ uint16_t RawDevice::productId() const
     return _pid;
 }
 
+std::vector<uint8_t> RawDevice::getReportDescriptor(std::string path)
+{
+    int fd = ::open(path.c_str(), O_RDWR);
+    if (fd == -1)
+        throw std::system_error(errno, std::system_category(),
+                                "open failed");
+
+    auto rdesc = getReportDescriptor(fd);
+    ::close(fd);
+    return rdesc;
+}
+
+std::vector<uint8_t> RawDevice::getReportDescriptor(int fd)
+{
+    hidraw_report_descriptor rdesc{};
+    if (-1 == ::ioctl(fd, HIDIOCGRDESCSIZE, &rdesc.size)) {
+        int err = errno;
+        ::close(fd);
+        throw std::system_error(err, std::system_category(),
+                                "RawDevice HIDIOCGRDESCSIZE failed");
+    }
+    if (-1 == ::ioctl(fd, HIDIOCGRDESC, &rdesc)) {
+        int err = errno;
+        ::close(fd);
+        throw std::system_error(err, std::system_category(),
+                                "RawDevice HIDIOCGRDESC failed");
+    }
+    return std::vector<uint8_t>(rdesc.value, rdesc.value + rdesc.size);
+}
+
+std::vector<uint8_t> RawDevice::reportDescriptor() const
+{
+    return _rdesc;
+}
+
 std::vector<uint8_t> RawDevice::sendReport(const std::vector<uint8_t>& report)
 {
     /* If the listener will stop, handle I/O manually.
@@ -157,33 +179,47 @@ std::vector<uint8_t> RawDevice::sendReport(const std::vector<uint8_t>& report)
         std::unique_lock<std::mutex> lock(send_report);
         std::condition_variable cv;
         bool top_of_queue = false;
-        std::packaged_task<std::vector<uint8_t>()> task( [this, report, &cv,
-                &top_of_queue] () {
+        auto task = std::make_shared<std::packaged_task<std::vector<uint8_t>()>>
+                ( [this, report, &cv, &top_of_queue] () {
             top_of_queue = true;
             cv.notify_all();
             return this->_respondToReport(report);
         });
-        auto f = task.get_future();
-        _io_queue.push(&task);
+        auto f = task->get_future();
+        _io_queue.push(task);
         cv.wait(lock, [&top_of_queue]{ return top_of_queue; });
         auto status = f.wait_for(global_config->ioTimeout());
         if(status == std::future_status::timeout) {
             _continue_respond = false;
-            throw TimeoutError();
+            interruptRead();
+            return f.get(); // Expecting an error, but it could work
         }
         return f.get();
     }
     else {
         std::vector<uint8_t> response;
+        std::exception_ptr _exception;
         std::shared_ptr<task> t = std::make_shared<task>(
                 [this, report, &response]() {
                     response = _respondToReport(report);
-        });
+        }, [&_exception](std::exception& e) {
+                    try {
+                        throw e;
+                    } catch(std::exception& e) {
+                        _exception = std::make_exception_ptr(e);
+                    }
+                });
         global_workqueue->queue(t);
         t->waitStart();
         auto status = t->waitFor(global_config->ioTimeout());
+        if(_exception)
+            std::rethrow_exception(_exception);
         if(status == std::future_status::timeout) {
             _continue_respond = false;
+            interruptRead();
+            t->wait();
+            if(_exception)
+                std::rethrow_exception(_exception);
             throw TimeoutError();
         } else
             return response;
@@ -196,12 +232,13 @@ void RawDevice::sendReportNoResponse(const std::vector<uint8_t>& report)
     /* If the listener will stop, handle I/O manually.
      * Otherwise, push to queue and wait for result. */
     if(_continue_listen) {
-        std::packaged_task<std::vector<uint8_t>()> task([this, report]() {
+        auto task = std::make_shared<std::packaged_task<std::vector<uint8_t>()>>
+                ([this, report]() {
             this->_sendReport(report);
             return std::vector<uint8_t>();
         });
-        auto f = task.get_future();
-        _io_queue.push(&task);
+        auto f = task->get_future();
+        _io_queue.push(task);
         f.get();
     }
     else
@@ -213,9 +250,17 @@ std::vector<uint8_t> RawDevice::_respondToReport
 {
     _sendReport(request);
     _continue_respond = true;
+
+    auto start_point = std::chrono::steady_clock::now();
+
     while(_continue_respond) {
         std::vector<uint8_t> response;
-        _readReport(response, MAX_DATA_LENGTH);
+        auto current_point = std::chrono::steady_clock::now();
+        auto timeout = global_config->ioTimeout() - std::chrono::duration_cast
+                <std::chrono::milliseconds>(current_point - start_point);
+        if(timeout.count() <= 0)
+            throw TimeoutError();
+        _readReport(response, MAX_DATA_LENGTH, timeout);
 
         // All reports have the device index at byte 2
         if(response[1] != request[1]) {
@@ -285,21 +330,27 @@ int RawDevice::_sendReport(const std::vector<uint8_t>& report)
     return ret;
 }
 
-int RawDevice::_readReport(std::vector<uint8_t>& report, std::size_t maxDataLength)
+int RawDevice::_readReport(std::vector<uint8_t> &report,
+                           std::size_t maxDataLength)
+{
+    return _readReport(report, maxDataLength, global_config->ioTimeout());
+}
+
+int RawDevice::_readReport(std::vector<uint8_t> &report,
+                           std::size_t maxDataLength, std::chrono::milliseconds timeout)
 {
     std::lock_guard<std::mutex> lock(_dev_io);
     int ret;
     report.resize(maxDataLength);
 
-    timeval timeout{};
-    timeout.tv_sec = duration_cast<seconds>(global_config->ioTimeout())
+    timeval timeout_tv{};
+    timeout_tv.tv_sec = duration_cast<seconds>(global_config->ioTimeout())
             .count();
-    timeout.tv_usec = duration_cast<microseconds>(
+    timeout_tv.tv_usec = duration_cast<microseconds>(
             global_config->ioTimeout()).count() %
             duration_cast<microseconds>(seconds(1)).count();
 
-    auto timeout_ms = duration_cast<milliseconds>(
-            global_config->ioTimeout()).count();
+    auto timeout_ms = duration_cast<milliseconds>(timeout).count();
 
     fd_set fds;
     do {
@@ -309,7 +360,7 @@ int RawDevice::_readReport(std::vector<uint8_t>& report, std::size_t maxDataLeng
 
         ret = select(std::max(_fd, _pipe[0]) + 1,
                      &fds, nullptr, nullptr,
-                     (timeout_ms > 0 ? nullptr : &timeout));
+                     (timeout_ms > 0 ? nullptr : &timeout_tv));
     } while(ret == -1 && errno == EINTR);
 
     if(ret == -1)

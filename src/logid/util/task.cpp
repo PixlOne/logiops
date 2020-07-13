@@ -31,7 +31,7 @@ task::task(const std::function<void()>& function,
          } catch(std::exception& e) {
              (*_exception_handler)(e);
          }
-     })
+     }), _future (_task_pkg.get_future())
 {
 }
 
@@ -41,6 +41,7 @@ void task::run()
     _status_cv.notify_all();
     _task_pkg();
     _status = Completed;
+    _status_cv.notify_all();
 }
 
 task::Status task::getStatus()
@@ -50,7 +51,13 @@ task::Status task::getStatus()
 
 void task::wait()
 {
-    _task_pkg.get_future().wait();
+    if(_future.valid())
+        _future.wait();
+    else {
+        std::mutex wait_start;
+        std::unique_lock<std::mutex> lock(wait_start);
+        _status_cv.wait(lock, [this](){ return _status == Completed; });
+    }
 }
 
 void task::waitStart()
@@ -62,7 +69,7 @@ void task::waitStart()
 
 std::future_status task::waitFor(std::chrono::milliseconds ms)
 {
-    return _task_pkg.get_future().wait_for(ms);
+    return _future.wait_for(ms);
 }
 
 void task::spawn(const std::function<void ()>& function,

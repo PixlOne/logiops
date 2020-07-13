@@ -47,7 +47,9 @@ namespace raw
         uint16_t vendorId() const;
         uint16_t productId() const;
 
-        std::vector<uint8_t> reportDescriptor() const { return rdesc; }
+        static std::vector<uint8_t> getReportDescriptor(std::string path);
+        static std::vector<uint8_t> getReportDescriptor(int fd);
+        std::vector<uint8_t> reportDescriptor() const;
 
         std::vector<uint8_t> sendReport(const std::vector<uint8_t>& report);
         void sendReportNoResponse(const std::vector<uint8_t>& report);
@@ -72,7 +74,7 @@ namespace raw
         uint16_t _vid;
         uint16_t _pid;
         std::string _name;
-        std::vector<uint8_t> rdesc;
+        std::vector<uint8_t> _rdesc;
 
         std::atomic<bool> _continue_listen;
         std::atomic<bool> _continue_respond;
@@ -86,11 +88,14 @@ namespace raw
         /* These will only be used internally and processed with a queue */
         int _sendReport(const std::vector<uint8_t>& report);
         int _readReport(std::vector<uint8_t>& report, std::size_t maxDataLength);
+        int _readReport(std::vector<uint8_t>& report, std::size_t maxDataLength,
+                std::chrono::milliseconds timeout);
 
         std::vector<uint8_t> _respondToReport(const std::vector<uint8_t>&
                 request);
 
-        mutex_queue<std::packaged_task<std::vector<uint8_t>()>*> _io_queue;
+        mutex_queue<std::shared_ptr<std::packaged_task<std::vector<uint8_t>()>>>
+            _io_queue;
     };
 }}}
 

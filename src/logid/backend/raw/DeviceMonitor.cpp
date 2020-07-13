@@ -19,6 +19,8 @@
 #include "DeviceMonitor.h"
 #include "../../util/task.h"
 #include "../../util/log.h"
+#include "RawDevice.h"
+#include "../hidpp/Device.h"
 
 #include <thread>
 #include <system_error>
@@ -99,10 +101,16 @@ void DeviceMonitor::run()
 
             if (action == "add")
                 task::spawn([this, name=devnode]() {
-                    this->addDevice(name);
+                    auto supported_reports = backend::hidpp::getSupportedReports(
+                            RawDevice::getReportDescriptor(name));
+                    if(supported_reports)
+                        this->addDevice(name);
+                    else
+                        logPrintf(DEBUG, "Unsupported device %s ignored",
+                                  name.c_str());
                 }, [name=devnode](std::exception& e){
                     logPrintf(WARN, "Error adding device %s: %s",
-                            name.c_str(), e.what());
+                              name.c_str(), e.what());
                 });
             else if (action == "remove")
                 task::spawn([this, name=devnode]() {
@@ -158,10 +166,16 @@ void DeviceMonitor::enumerate()
         udev_device_unref(device);
 
         task::spawn([this, name=devnode]() {
-            this->addDevice(name);
+            auto supported_reports = backend::hidpp::getSupportedReports(
+                    RawDevice::getReportDescriptor(name));
+            if(supported_reports)
+                this->addDevice(name);
+            else
+                logPrintf(DEBUG, "Unsupported device %s ignored",
+                          name.c_str());
         }, [name=devnode](std::exception& e){
             logPrintf(WARN, "Error adding device %s: %s",
-                       name.c_str(), e.what());
+                      name.c_str(), e.what());
         });
     }
 

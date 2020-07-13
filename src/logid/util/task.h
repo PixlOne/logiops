@@ -62,6 +62,7 @@ namespace logid
         std::atomic<Status> _status;
         std::condition_variable _status_cv;
         std::packaged_task<void()> _task_pkg;
+        std::future<void> _future;
     };
 }
 
