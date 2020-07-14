@@ -157,17 +157,17 @@ struct Receiver::PairingInfo
 {
     std::vector<uint8_t> request(1);
     request[0] = index;
-    request[0] += 0x19;
+    request[0] += 0x1f;
 
     auto response = _hidpp10_device.getRegister(PairingInfo, request,
             hidpp::ReportType::Long);
 
     struct PairingInfo info{};
-    info.destinationId = response[0];
-    info.reportInterval = response[1];
-    info.pid = response[2];
+    info.destinationId = response[1];
+    info.reportInterval = response[2];
+    info.pid = response[4];
     info.pid |= (response[3] << 8);
-    info.deviceType = static_cast<DeviceType::DeviceType>(response[6]);
+    info.deviceType = static_cast<DeviceType::DeviceType>(response[7]);
 
     return info;
 }
@@ -177,7 +177,7 @@ struct Receiver::ExtendedPairingInfo
 {
     std::vector<uint8_t> request(1);
     request[0] = index;
-    request[0] += 0x29;
+    request[0] += 0x2f;
 
     auto response = _hidpp10_device.getRegister(PairingInfo, request,
             hidpp::ReportType::Long);
@@ -186,10 +186,10 @@ struct Receiver::ExtendedPairingInfo
 
     info.serialNumber = 0;
     for(uint8_t i = 0; i < 4; i++)
-        info.serialNumber |= (response[i] << 8*i);
+        info.serialNumber |= (response[i+1] << 8*i);
 
     for(uint8_t i = 0; i < 4; i++)
-        info.reportTypes[i] = response[i + 4];
+        info.reportTypes[i] = response[i + 5];
 
     uint8_t psl = response[8] & 0xf;
     if(psl > 0xc)
@@ -204,17 +204,17 @@ std::string Receiver::getDeviceName(hidpp::DeviceIndex index)
 {
     std::vector<uint8_t> request(1);
     request[0] = index;
-    request[0] += 0x39;
+    request[0] += 0x3f;
 
     auto response = _hidpp10_device.getRegister(PairingInfo, request,
             hidpp::ReportType::Long);
 
-    uint8_t size = response[0];
+    uint8_t size = response[1];
     assert(size <= 14);
 
     std::string name(size, ' ');
     for(std::size_t i = 0; i < size; i++)
-        name[i] = response[i + 1];
+        name[i] = response[i + 2];
 
     return name;
 }
