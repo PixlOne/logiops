@@ -96,6 +96,46 @@ Configuration::Configuration(const std::string& config_file)
     catch(const SettingNotFoundException &e) {
         logPrintf(WARN, "No devices listed in config file.");
     }
+
+    try {
+        auto& ignore = root.lookup("ignore");
+        if(ignore.getType() == libconfig::Setting::TypeInt) {
+            _ignore_list.insert((int)ignore);
+        } else if(ignore.isList() || ignore.isArray()) {
+            int ignore_count = ignore.getLength();
+            for(int i = 0; i < ignore_count; i++) {
+                if(ignore[i].getType() != libconfig::Setting::TypeInt) {
+                    logPrintf(WARN, "Line %d: ignore must refer to device PIDs",
+                            ignore[i].getSourceLine());
+                    if(ignore.isArray())
+                        break;
+                } else
+                    _ignore_list.insert((int)ignore[i]);
+            }
+        }
+    } catch(const SettingNotFoundException& e) {
+        // May be called blacklist
+        try {
+            auto& ignore = root.lookup("blacklist");
+            if(ignore.getType() == libconfig::Setting::TypeInt) {
+                _ignore_list.insert((int)ignore);
+            } else if(ignore.isList() || ignore.isArray()) {
+                int ignore_count = ignore.getLength();
+                for(int i = 0; i < ignore_count; i++) {
+                    if(ignore[i].getType() != libconfig::Setting::TypeInt) {
+                        logPrintf(WARN, "Line %d: blacklist must refer to "
+                                        "device PIDs",
+                                        ignore[i].getSourceLine());
+                        if(ignore.isArray())
+                            break;
+                    } else
+                        _ignore_list.insert((int)ignore[i]);
+                }
+            }
+        } catch(const SettingNotFoundException& e) {
+            // Ignore
+        }
+    }
 }
 
 libconfig::Setting& Configuration::getSetting(const std::string& path)
@@ -110,6 +150,11 @@ std::string Configuration::getDevice(const std::string& name)
         throw DeviceNotFound(name);
     else
         return it->second;
+}
+
+bool Configuration::isIgnored(uint16_t pid) const
+{
+    return _ignore_list.find(pid) != _ignore_list.end();
 }
 
 Configuration::DeviceNotFound::DeviceNotFound(std::string name) :

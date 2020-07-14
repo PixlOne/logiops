@@ -23,6 +23,7 @@
 #include <libconfig.h++>
 #include <memory>
 #include <chrono>
+#include <set>
 
 #define LOGID_DEFAULT_IO_TIMEOUT std::chrono::seconds(2)
 #define LOGID_DEFAULT_WORKER_COUNT 4
@@ -36,6 +37,7 @@ namespace logid
         Configuration() = default;
         libconfig::Setting& getSetting(const std::string& path);
         std::string getDevice(const std::string& name);
+        bool isIgnored(uint16_t pid) const;
 
         class DeviceNotFound : public std::exception
         {
@@ -50,6 +52,7 @@ namespace logid
         int workerCount() const;
     private:
         std::map<std::string, std::string> _device_paths;
+        std::set<uint16_t> _ignore_list;
         std::chrono::milliseconds _io_timeout = LOGID_DEFAULT_IO_TIMEOUT;
         int _worker_threads = LOGID_DEFAULT_WORKER_COUNT;
         libconfig::Config _config;

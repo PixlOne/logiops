@@ -32,6 +32,17 @@ void DeviceManager::addDevice(std::string path)
 {
     bool defaultExists = true;
     bool isReceiver = false;
+
+    // Check if device is ignored before continuing
+    {
+        raw::RawDevice raw_dev(path);
+        if(global_config->isIgnored(raw_dev.productId())) {
+            logPrintf(DEBUG, "%s: Device 0x%04x ignored.",
+                  path.c_str(), raw_dev.productId());
+            return;
+        }
+    }
+
     try {
         hidpp::Device device(path, hidpp::DefaultDevice);
         isReceiver = device.version() == std::make_tuple(1, 0);

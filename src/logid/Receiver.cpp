@@ -34,6 +34,13 @@ void Receiver::addDevice(hidpp::DeviceConnectionEvent event)
 {
     std::unique_lock<std::mutex> lock(_devices_change);
     try {
+        // Check if device is ignored before continuing
+        if(global_config->isIgnored(event.pid)) {
+            logPrintf(DEBUG, "%s:%d: Device 0x%04x ignored.",
+                      _path.c_str(), event.index, event.pid);
+            return;
+        }
+
         auto dev = _devices.find(event.index);
         if(dev != _devices.end()) {
             if(event.linkEstablished)
