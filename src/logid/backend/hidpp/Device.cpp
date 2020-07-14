@@ -71,7 +71,10 @@ Device::Device(std::shared_ptr<dj::Receiver> receiver,
     if(!event.linkEstablished)
         throw InvalidDevice(InvalidDevice::Asleep);
 
-    _pid = event.pid;
+    if(!event.fromTimeoutCheck)
+        _pid = event.pid;
+    else
+        _pid = receiver->getPairingInfo(_index).pid;
     _init();
 }
 
