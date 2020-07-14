@@ -44,10 +44,10 @@ DEFINE_REPROG(ReprogControlsV4, ReprogControlsV3)
 
 std::shared_ptr<ReprogControls> ReprogControls::autoVersion(Device *dev)
 {
-    MAKE_REPROG(ReprogControlsV4, dev);
-    MAKE_REPROG(ReprogControlsV3, dev);
-    MAKE_REPROG(ReprogControlsV2_2, dev);
-    MAKE_REPROG(ReprogControlsV2, dev);
+    MAKE_REPROG(ReprogControlsV4, dev)
+    MAKE_REPROG(ReprogControlsV3, dev)
+    MAKE_REPROG(ReprogControlsV2_2, dev)
+    MAKE_REPROG(ReprogControlsV2, dev)
 
     // If base version cannot be made, throw error
     return std::make_shared<ReprogControls>(dev);

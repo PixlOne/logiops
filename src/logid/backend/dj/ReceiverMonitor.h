@@ -33,6 +33,7 @@ namespace dj
     {
     public:
         explicit ReceiverMonitor(std::string path);
+        ~ReceiverMonitor();
 
         void enumerate();
         void run();

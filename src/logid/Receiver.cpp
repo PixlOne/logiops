@@ -16,7 +16,6 @@
  *
  */
 
-#include <cassert>
 #include "Receiver.h"
 #include "util/log.h"
 #include "backend/hidpp10/Error.h"
@@ -26,7 +25,8 @@
 using namespace logid;
 using namespace logid::backend;
 
-Receiver::Receiver(std::string path) : dj::ReceiverMonitor(path), _path (path)
+Receiver::Receiver(const std::string& path) :
+    dj::ReceiverMonitor(path), _path (path)
 {
 }
 

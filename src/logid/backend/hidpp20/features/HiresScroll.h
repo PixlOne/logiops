@@ -85,7 +85,6 @@ namespace hidpp20
         void setMode(uint8_t mode);
         bool getRatchetState();
 
-        ///TODO: Event handlers
         static WheelStatus wheelMovementEvent(const hidpp::Report& report);
         static RatchetState ratchetSwitchEvent(const hidpp::Report& report);
     };

@@ -45,8 +45,8 @@ void thread::spawn(const std::function<void()>& function,
 
 void thread::run()
 {
-    _thread = std::make_shared<std::thread>([f=this->_function,
-                                             eh=this->_exception_handler]() {
+    _thread = std::make_shared<std::thread>(
+            [f=this->_function,eh=this->_exception_handler]() {
         try {
             (*f)();
         } catch (std::exception& e) {

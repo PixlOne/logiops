@@ -37,7 +37,10 @@
 
 using namespace logid;
 
-std::string config_file = DEFAULT_CONFIG_FILE;
+struct CmdlineOptions
+{
+    std::string config_file = DEFAULT_CONFIG_FILE;
+};
 
 LogLevel logid::global_loglevel = INFO;
 std::shared_ptr<Configuration> logid::global_config;
@@ -72,7 +75,7 @@ void logid::reload()
 }
  */
 
-void readCliOptions(int argc, char** argv)
+void readCliOptions(const int argc, char** argv, CmdlineOptions& options)
 {
     for(int i = 1; i < argc; i++) {
         Option option = Option::None;
@@ -132,7 +135,7 @@ void readCliOptions(int argc, char** argv)
                     logPrintf(ERROR, "Config file is not specified.");
                     exit(EXIT_FAILURE);
                 }
-                config_file = argv[i];
+                options.config_file = argv[i];
                 break;
             }
             case Option::Help:
@@ -157,16 +160,18 @@ Possible options are:
 
 int main(int argc, char** argv)
 {
-    readCliOptions(argc, argv);
+    CmdlineOptions options{};
+    readCliOptions(argc, argv, options);
 
     // Read config
     try {
-        global_config = std::make_shared<Configuration>(config_file);
+        global_config = std::make_shared<Configuration>(options.config_file);
     }
     catch (std::exception &e) {
         global_config = std::make_shared<Configuration>();
     }
-    global_workqueue = std::make_shared<workqueue>(global_config->workerCount());
+    global_workqueue = std::make_shared<workqueue>(
+            global_config->workerCount());
 
     //Create a virtual input device
     try {

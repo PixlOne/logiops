@@ -113,7 +113,10 @@ void Device::_makeResetMechanism()
     try {
         hidpp20::Reset reset(&_hidpp20);
         _reset_mechanism = std::make_unique<std::function<void()>>(
-                [dev=&this->_hidpp20]{ hidpp20::Reset(dev).reset(); });
+                [dev=&this->_hidpp20]{
+                    hidpp20::Reset reset(dev);
+                        reset.reset(reset.getProfile());
+                });
     } catch(hidpp20::UnsupportedFeature& e) {
         // Reset unsupported, ignore.
     }
@@ -130,7 +133,7 @@ DeviceConfig::DeviceConfig(const std::shared_ptr<Configuration>& config, Device*
     }
 }
 
-libconfig::Setting& DeviceConfig::getSetting(std::string path)
+libconfig::Setting& DeviceConfig::getSetting(const std::string& path)
 {
     return _config->getSetting(_root_setting + '/' + path);
 }

@@ -23,10 +23,7 @@
 #include "Receiver.h"
 #include "util/log.h"
 #include "backend/hidpp10/Error.h"
-#include "backend/dj/Receiver.h"
 #include "backend/Error.h"
-
-#define NON_WIRELESS_DEV(index) (index) == HIDPP::DefaultDevice ? "default" : "corded"
 
 using namespace logid;
 using namespace logid::backend;

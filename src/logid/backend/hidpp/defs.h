@@ -16,8 +16,8 @@
  *
  */
 
-#ifndef LOGID_HIDPP_DEFS_H
-#define LOGID_HIDPP_DEFS_H
+#ifndef LOGID_BACKEND_HIDPP_DEFS_H
+#define LOGID_BACKEND_HIDPP_DEFS_H
 
 #define LOGID_HIDPP_SOFTWARE_ID 0
 
@@ -52,4 +52,4 @@ namespace hidpp
     static constexpr std::size_t LongParamLength = 16;
 } } }
 
-#endif //LOGID_HIDPP_DEFS_H
+#endif //LOGID_BACKEND_HIDPP_DEFS_H

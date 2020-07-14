@@ -17,7 +17,6 @@
  */
 
 #include <system_error>
-#include <utility>
 
 #include "InputDevice.h"
 
@@ -25,13 +24,13 @@ extern "C"
 {
 #include <libevdev/libevdev.h>
 #include <libevdev/libevdev-uinput.h>
-};
+}
 
 using namespace logid;
 
-InputDevice::InvalidEventCode::InvalidEventCode(std::string name)
+InputDevice::InvalidEventCode::InvalidEventCode(const std::string& name) :
+        _what ("Invalid event code " + name)
 {
-    _what = "Invalid event code " + name;
 }
 
 const char* InputDevice::InvalidEventCode::what() const noexcept
@@ -46,10 +45,10 @@ InputDevice::InputDevice(const char* name)
 
     ///TODO: Is it really a good idea to enable all events?
     libevdev_enable_event_type(device, EV_KEY);
-    for(int i = 0; i < KEY_CNT; i++)
+    for(unsigned int i = 0; i < KEY_CNT; i++)
         libevdev_enable_event_code(device, EV_KEY, i, nullptr);
     libevdev_enable_event_type(device, EV_REL);
-    for(int i = 0; i < REL_CNT; i++)
+    for(unsigned int i = 0; i < REL_CNT; i++)
         libevdev_enable_event_code(device, EV_REL, i, nullptr);
 
     int err = libevdev_uinput_create_from_device(device,
@@ -80,14 +79,14 @@ void InputDevice::releaseKey(uint code)
     _sendEvent(EV_KEY, code, 0);
 }
 
-uint InputDevice::toKeyCode(std::string name)
+uint InputDevice::toKeyCode(const std::string& name)
 {
-    return _toEventCode(EV_KEY, std::move(name));
+    return _toEventCode(EV_KEY, name);
 }
 
-uint InputDevice::toAxisCode(std::string name)
+uint InputDevice::toAxisCode(const std::string& name)
 {
-    return _toEventCode(EV_REL, std::move(name));
+    return _toEventCode(EV_REL, name);
 }
 
 uint InputDevice::_toEventCode(uint type, const std::string& name)

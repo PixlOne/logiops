@@ -35,7 +35,7 @@ namespace logid
     public:
         DeviceConfig(const std::shared_ptr<Configuration>& config, Device*
         device);
-        libconfig::Setting& getSetting(std::string path);
+        libconfig::Setting& getSetting(const std::string& path);
     private:
         Device* _device;
         std::string _root_setting;
@@ -72,8 +72,8 @@ namespace logid
             try {
                 return std::dynamic_pointer_cast<T>(it->second);
             } catch(std::bad_cast& e) {
-                logPrintf(ERROR, "bad_cast while getting device feature %s: "
-                                 "%s", name.c_str(), e.what());
+                logPrintf(ERROR, "bad_cast while getting device feature %s: %s",
+                                 name.c_str(), e.what());
                 return nullptr;
             }
         }

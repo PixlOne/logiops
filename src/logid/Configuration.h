@@ -24,7 +24,7 @@
 #include <memory>
 #include <chrono>
 
-#define LOGID_DEFAULT_RAWDEVICE_TIMEOUT std::chrono::seconds(2)
+#define LOGID_DEFAULT_IO_TIMEOUT std::chrono::seconds(2)
 #define LOGID_DEFAULT_WORKER_COUNT 4
 
 namespace logid
@@ -34,8 +34,8 @@ namespace logid
     public:
         explicit Configuration(const std::string& config_file);
         Configuration() = default;
-        libconfig::Setting& getSetting(std::string path);
-        std::string getDevice(std::string name);
+        libconfig::Setting& getSetting(const std::string& path);
+        std::string getDevice(const std::string& name);
 
         class DeviceNotFound : public std::exception
         {
@@ -50,8 +50,8 @@ namespace logid
         int workerCount() const;
     private:
         std::map<std::string, std::string> _device_paths;
-        std::chrono::milliseconds _io_timeout = LOGID_DEFAULT_RAWDEVICE_TIMEOUT;
-        int _worker_threads;
+        std::chrono::milliseconds _io_timeout = LOGID_DEFAULT_IO_TIMEOUT;
+        int _worker_threads = LOGID_DEFAULT_WORKER_COUNT;
         libconfig::Config _config;
     };
 

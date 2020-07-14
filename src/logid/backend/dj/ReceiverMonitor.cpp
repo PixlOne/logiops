@@ -40,6 +40,11 @@ ReceiverMonitor::ReceiverMonitor(std::string path) : _receiver (
    _receiver->enableHidppNotifications(notification_flags);
 }
 
+ReceiverMonitor::~ReceiverMonitor()
+{
+    this->stop();
+}
+
 void ReceiverMonitor::run()
 {
     _receiver->listen();

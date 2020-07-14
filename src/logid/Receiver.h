@@ -28,7 +28,7 @@ namespace logid
     class Receiver : public backend::dj::ReceiverMonitor
     {
     public:
-        Receiver(std::string path);
+        Receiver(const std::string& path);
 
     protected:
         void addDevice(backend::hidpp::DeviceConnectionEvent event) override;

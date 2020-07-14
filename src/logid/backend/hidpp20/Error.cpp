@@ -17,7 +17,6 @@
  */
 
 #include <cassert>
-#include <cstring>
 #include "Error.h"
 
 using namespace logid::backend::hidpp20;

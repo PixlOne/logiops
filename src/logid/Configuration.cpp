@@ -42,15 +42,7 @@ Configuration::Configuration(const std::string& config_file)
     }
 
     const Setting &root = _config.getRoot();
-    Setting* devices;
 
-    try { devices = &root["devices"]; }
-    catch(const SettingNotFoundException &e) {
-        logPrintf(WARN, "No devices listed in config file.");
-        return;
-    }
-
-    _worker_threads = LOGID_DEFAULT_WORKER_COUNT;
     try {
         auto& worker_count = root["workers"];
         if(worker_count.getType() == Setting::TypeInt) {
@@ -66,7 +58,6 @@ Configuration::Configuration(const std::string& config_file)
         // Ignore
     }
 
-    _io_timeout = LOGID_DEFAULT_RAWDEVICE_TIMEOUT;
     try {
         auto& timeout = root["io_timeout"];
         if(timeout.isNumber()) {
@@ -82,30 +73,37 @@ Configuration::Configuration(const std::string& config_file)
         // Ignore
     }
 
-    for(int i = 0; i < devices->getLength(); i++) {
-        const Setting &device = (*devices)[i];
-        std::string name;
-        try {
-            if(!device.lookupValue("name", name)) {
-                logPrintf(WARN, "Line %d: 'name' must be a string, skipping "
-                                "device.", device["name"].getSourceLine());
+    try {
+        auto& devices = root["devices"];
+
+        for(int i = 0; i < devices.getLength(); i++) {
+            const Setting& device = devices[i];
+            std::string name;
+            try {
+                if(!device.lookupValue("name", name)) {
+                    logPrintf(WARN, "Line %d: 'name' must be a string, skipping"
+                                    " device.", device["name"].getSourceLine());
+                    continue;
+                }
+            } catch(SettingNotFoundException &e) {
+                logPrintf(WARN, "Line %d: Missing name field, skipping device."
+                        , device.getSourceLine());
                 continue;
             }
-        } catch(SettingNotFoundException &e) {
-            logPrintf(WARN, "Line %d: Missing 'name' field, skipping device."
-                , device.getSourceLine());
-            continue;
+            _device_paths.insert({name, device.getPath()});
         }
-        _device_paths.insert({name, device.getPath()});
+    }
+    catch(const SettingNotFoundException &e) {
+        logPrintf(WARN, "No devices listed in config file.");
     }
 }
 
-libconfig::Setting& Configuration::getSetting(std::string path)
+libconfig::Setting& Configuration::getSetting(const std::string& path)
 {
     return _config.lookup(path);
 }
 
-std::string Configuration::getDevice(std::string name)
+std::string Configuration::getDevice(const std::string& name)
 {
     auto it = _device_paths.find(name);
     if(it == _device_paths.end())

@@ -16,8 +16,8 @@
  *
  */
 
-#ifndef LOGID_HIDPP20_DEVICE_H
-#define LOGID_HIDPP20_DEVICE_H
+#ifndef LOGID_BACKEND_HIDPP20_DEVICE_H
+#define LOGID_BACKEND_HIDPP20_DEVICE_H
 
 #include "../hidpp/Device.h"
 #include <cstdint>
@@ -37,4 +37,4 @@ namespace hidpp20 {
     };
 }}}
 
-#endif //LOGID_HIDPP20_DEVICE_H
+#endif //LOGID_BACKEND_HIDPP20_DEVICE_H

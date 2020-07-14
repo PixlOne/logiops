@@ -28,7 +28,7 @@ workqueue::workqueue(std::size_t thread_count) : _manager_thread (
         )), _continue_run (false), _worker_count (thread_count)
 {
     _workers.reserve(_worker_count);
-    for(std::size_t i = 0; i < thread_count; i++)
+    for(std::size_t i = 0; i < _worker_count; i++)
         _workers.push_back(std::make_unique<worker_thread>(this, i));
     _manager_thread->run();
 }

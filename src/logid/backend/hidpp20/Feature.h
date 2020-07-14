@@ -16,8 +16,8 @@
  *
  */
 
-#ifndef LOGID_HIDPP20_FEATURE_H
-#define LOGID_HIDPP20_FEATURE_H
+#ifndef LOGID_BACKEND_HIDPP20_FEATURE_H
+#define LOGID_BACKEND_HIDPP20_FEATURE_H
 
 #include <cstdint>
 #include "Device.h"
@@ -51,4 +51,4 @@ namespace hidpp20 {
     };
 }}}
 
-#endif //LOGID_HIDPP20_FEATURE_H
+#endif //LOGID_BACKEND_HIDPP20_FEATURE_H

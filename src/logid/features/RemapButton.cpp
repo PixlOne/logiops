@@ -43,7 +43,7 @@ RemapButton::~RemapButton()
 void RemapButton::configure()
 {
     ///TODO: DJ reporting trickery if cannot be remapped
-    for(auto& i : _config.buttons()) {
+    for(const auto& i : _config.buttons()) {
         hidpp20::ReprogControls::ControlInfo info{};
         try {
             info = _reprog_controls->getControlIdInfo(i.first);
@@ -89,23 +89,23 @@ void RemapButton::listen()
                         report));
             else { // RawXY
                 auto divertedXY = _reprog_controls->divertedRawXYEvent(report);
-                for(auto& button : this->_config.buttons())
+                for(const auto& button : this->_config.buttons())
                     if(button.second->pressed())
                         button.second->move(divertedXY.x, divertedXY.y);
             }
         };
 
         _device->hidpp20().addEventHandler(EVENTHANDLER_NAME, handler);
-    };
+    }
 }
 
-void RemapButton::_buttonEvent(std::set<uint16_t> new_state)
+void RemapButton::_buttonEvent(const std::set<uint16_t>& new_state)
 {
     // Ensure I/O doesn't occur while updating button state
     std::lock_guard<std::mutex> lock(_button_lock);
 
     // Press all added buttons
-    for(auto& i : new_state) {
+    for(const auto& i : new_state) {
         auto old_i = _pressed_buttons.find(i);
         if(old_i != _pressed_buttons.end()) {
             _pressed_buttons.erase(old_i);

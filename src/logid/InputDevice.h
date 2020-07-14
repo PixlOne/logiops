@@ -25,22 +25,20 @@ extern "C"
 {
 #include <libevdev/libevdev.h>
 #include <libevdev/libevdev-uinput.h>
-};
+}
 
 namespace logid
 {
-    typedef uint keycode;
-
     class InputDevice
     {
     public:
         class InvalidEventCode : public std::exception
         {
         public:
-            explicit InvalidEventCode(std::string name);
+            explicit InvalidEventCode(const std::string& name);
             const char* what() const noexcept override;
         private:
-            std::string _what;
+            const std::string _what;
         };
         explicit InputDevice(const char *name);
         ~InputDevice();
@@ -49,15 +47,15 @@ namespace logid
         void pressKey(uint code);
         void releaseKey(uint code);
 
-        static uint toKeyCode(std::string name);
-        static uint toAxisCode(std::string name);
+        static uint toKeyCode(const std::string& name);
+        static uint toAxisCode(const std::string& name);
     private:
         void _sendEvent(uint type, uint code, int value);
 
         static uint _toEventCode(uint type, const std::string& name);
 
         libevdev* device;
-        libevdev_uinput* ui_device;
+        libevdev_uinput* ui_device{};
     };
 
     extern std::unique_ptr<InputDevice> virtual_input;
