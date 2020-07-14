@@ -58,8 +58,7 @@ void DeviceManager::addDevice(std::string path)
         receiver->run();
         _receivers.emplace(path, receiver);
     } else {
-        /* TODO: Error check?
-         * TODO: Can non-receivers only contain 1 device?
+         /* TODO: Can non-receivers only contain 1 device?
          * If the device exists, it is guaranteed to be an HID++ 2.0 device */
         if(defaultExists) {
             auto device = std::make_shared<Device>(path, hidpp::DefaultDevice);
