@@ -126,11 +126,28 @@ namespace dj
             DeviceType::DeviceType deviceType;
         };
 
+        enum class PowerSwitchLocation : uint8_t
+        {
+            Reserved = 0x0,
+            Base = 0x1,
+            TopCase = 0x2,
+            TopRightEdge = 0x3,
+            Other = 0x4,
+            TopLeft = 0x5,
+            BottomLeft = 0x6,
+            TopRight = 0x7,
+            BottomRight = 0x8,
+            TopEdge = 0x9,
+            RightEdge = 0xa,
+            LeftEdge = 0xb,
+            BottomEdge = 0xc
+        };
+
         struct ExtendedPairingInfo
         {
             uint32_t serialNumber;
             uint8_t reportTypes[4];
-            uint8_t powerSwitchLocation; ///TODO: Make enum
+            PowerSwitchLocation powerSwitchLocation;
         };
 
         struct PairingInfo getPairingInfo(hidpp::DeviceIndex index);

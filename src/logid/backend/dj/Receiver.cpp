@@ -191,7 +191,11 @@ struct Receiver::ExtendedPairingInfo
     for(uint8_t i = 0; i < 4; i++)
         info.reportTypes[i] = response[i + 4];
 
-    info.powerSwitchLocation = response[8] & 0xf;
+    uint8_t psl = response[8] & 0xf;
+    if(psl > 0xc)
+        info.powerSwitchLocation = PowerSwitchLocation::Reserved;
+    else
+        info.powerSwitchLocation = static_cast<PowerSwitchLocation>(psl);
 
     return info;
 }
@@ -325,7 +329,6 @@ Receiver::ConnectionStatusEvent Receiver::connectionStatusEvent(Report& report)
 void Receiver::listen()
 {
     if(!_raw_device->isListening())
-        ///TODO: Kill RawDevice?
         _raw_device->listenAsync();
 
     if(_raw_device->eventHandlers().find("RECV_HIDPP") ==
