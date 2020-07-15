@@ -189,6 +189,22 @@ Report Device::sendReport(Report& report)
     return response;
 }
 
+void Device::sendReportNoResponse(Report &report)
+{
+    switch(report.type())
+    {
+    case Report::Type::Short:
+        if(!(_supported_reports & HIDPP_REPORT_SHORT_SUPPORTED))
+            report.setType(Report::Type::Long);
+        break;
+    case Report::Type::Long:
+        /* Report can be truncated, but that isn't a good idea. */
+        assert(_supported_reports & HIDPP_REPORT_LONG_SUPPORTED);
+    }
+
+    _raw_device->sendReportNoResponse(report.rawReport());
+}
+
 std::string Device::name() const
 {
     return _name;

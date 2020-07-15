@@ -45,6 +45,8 @@ namespace hidpp20 {
         explicit Feature(Device* dev, uint16_t _id);
         std::vector<uint8_t> callFunction(uint8_t function_id,
             std::vector<uint8_t>& params);
+        void callFunctionNoResponse(uint8_t function_id,
+            std::vector<uint8_t>& params);
     private:
         Device* _device;
         uint8_t _index;

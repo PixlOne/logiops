@@ -33,9 +33,16 @@ uint16_t UnsupportedFeature::code() const noexcept
     return _f_id;
 }
 
-std::vector<uint8_t> Feature::callFunction(uint8_t function_id, std::vector<uint8_t>& params)
+std::vector<uint8_t> Feature::callFunction(uint8_t function_id,
+        std::vector<uint8_t>& params)
 {
     return _device->callFunction(_index, function_id, params);
+}
+
+void Feature::callFunctionNoResponse(uint8_t function_id,
+        std::vector<uint8_t>& params)
+{
+    _device->callFunctionNoResponse(_index, function_id, params);
 }
 
 Feature::Feature(Device* dev, uint16_t _id) : _device (dev)

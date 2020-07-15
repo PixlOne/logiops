@@ -34,6 +34,10 @@ namespace hidpp20 {
         std::vector<uint8_t> callFunction(uint8_t feature_index,
                 uint8_t function,
                 std::vector<uint8_t>& params);
+
+        void callFunctionNoResponse(uint8_t feature_index,
+                uint8_t function,
+                std::vector<uint8_t>& params);
     };
 }}}
 

@@ -85,6 +85,7 @@ namespace hidpp
             eventHandlers();
 
         Report sendReport(Report& report);
+        void sendReportNoResponse(Report& report);
 
         void handleEvent(Report& report);
     private:
