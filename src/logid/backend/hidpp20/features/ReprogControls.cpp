@@ -92,6 +92,12 @@ void ReprogControls::initCidMap()
     _cids_initialized = true;
 }
 
+const std::map<uint16_t, ReprogControls::ControlInfo>&
+        ReprogControls::getControls() const
+{
+    return _cids;
+}
+
 ReprogControls::ControlInfo ReprogControls::getControlIdInfo(uint16_t cid)
 {
     if(!_cids_initialized)

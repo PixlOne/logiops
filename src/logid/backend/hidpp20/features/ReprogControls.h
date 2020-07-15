@@ -97,6 +97,8 @@ namespace hidpp20
 
         virtual void initCidMap();
 
+        const std::map<uint16_t, ControlInfo>& getControls() const;
+
         // Onlu controlId and flags will be set
         virtual ControlInfo getControlReporting(uint16_t cid);
 

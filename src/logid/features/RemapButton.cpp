@@ -33,6 +33,25 @@ RemapButton::RemapButton(Device *dev): DeviceFeature(dev), _config (dev),
     _reprog_controls (hidpp20::ReprogControls::autoVersion(&dev->hidpp20()))
 {
     _reprog_controls->initCidMap();
+
+    if(global_loglevel <= DEBUG) {
+        #define FLAG(x) control.second.flags & hidpp20::ReprogControls::x ? \
+            "YES" : ""
+        #define ADDITIONAL_FLAG(x) control.second.additionalFlags & \
+            hidpp20::ReprogControls::x ? "YES" : ""
+
+        // Print CIDs, originally by zv0n
+        logPrintf(DEBUG,  "%s:%d remappable buttons:",
+                dev->hidpp20().devicePath().c_str(),
+                dev->hidpp20().deviceIndex());
+        logPrintf(DEBUG, "CID  | reprog? | fn key? | mouse key? | "
+                         "gesture support?");
+        for(const auto & control : _reprog_controls->getControls())
+                logPrintf(DEBUG, "0x%02x | %-7s | %-7s | %-10s | %s",
+                        control.first, FLAG(TemporaryDivertable), FLAG(FKey),
+                        FLAG(MouseButton), ADDITIONAL_FLAG(RawXY));
+        #undef FLAG
+    }
 }
 
 RemapButton::~RemapButton()
