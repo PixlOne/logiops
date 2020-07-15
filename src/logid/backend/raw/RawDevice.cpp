@@ -459,8 +459,7 @@ void RawDevice::addEventHandler(const std::string& nickname,
         const std::shared_ptr<raw::RawEventHandler>& handler)
 {
     std::unique_lock<std::mutex> lock(_event_handler_lock);
-    auto it = _event_handlers.find(nickname);
-    assert(it == _event_handlers.end());
+    assert(_event_handlers.find(nickname) == _event_handlers.end());
     assert(handler);
     _event_handlers.emplace(nickname, handler);
 }

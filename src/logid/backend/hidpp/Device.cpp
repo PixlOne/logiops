@@ -138,8 +138,7 @@ Device::~Device()
 void Device::addEventHandler(const std::string& nickname,
         const std::shared_ptr<EventHandler>& handler)
 {
-    auto it = _event_handlers.find(nickname);
-    assert(it == _event_handlers.end());
+    assert(_event_handlers.find(nickname) == _event_handlers.end());
 
     _event_handlers.emplace(nickname, handler);
 }

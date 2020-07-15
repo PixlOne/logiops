@@ -267,8 +267,7 @@ void Receiver::_handleHidppEvent(hidpp::Report &report)
 void Receiver::addDjEventHandler(const std::string& nickname,
         const std::shared_ptr<EventHandler>& handler)
 {
-    auto it = _dj_event_handlers.find(nickname);
-    assert(it == _dj_event_handlers.end());
+    assert(_dj_event_handlers.find(nickname) == _dj_event_handlers.end());
     _dj_event_handlers.emplace(nickname, handler);
 }
 
@@ -286,8 +285,7 @@ Receiver::djEventHandlers()
 void Receiver::addHidppEventHandler(const std::string& nickname,
         const std::shared_ptr<hidpp::EventHandler>& handler)
 {
-    auto it = _hidpp_event_handlers.find(nickname);
-    assert(it == _hidpp_event_handlers.end());
+    assert(_hidpp_event_handlers.find(nickname) == _hidpp_event_handlers.end());
     _hidpp_event_handlers.emplace(nickname, handler);
 }
 
