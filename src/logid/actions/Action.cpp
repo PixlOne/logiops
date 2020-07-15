@@ -26,6 +26,7 @@
 #include "NullAction.h"
 #include "CycleDPI.h"
 #include "ChangeDPI.h"
+#include "ChangeHostAction.h"
 
 using namespace logid;
 using namespace logid::actions;
@@ -65,6 +66,8 @@ std::shared_ptr<Action> Action::makeAction(Device *device, libconfig::Setting
             return std::make_shared<ChangeDPI>(device, setting);
         else if(type == "none")
             return std::make_shared<NullAction>(device);
+        else if(type == "changehost")
+            return std::make_shared<ChangeHostAction>(device, setting);
         else
             throw InvalidAction(type);
 
