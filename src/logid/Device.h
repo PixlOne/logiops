@@ -1,172 +1,106 @@
+/*
+ * Copyright 2019-2020 PixlOne
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 #ifndef LOGID_DEVICE_H
 #define LOGID_DEVICE_H
 
-#include "Actions.h"
-#include "DeviceFinder.h"
+#include "backend/hidpp/defs.h"
+#include "backend/hidpp20/Device.h"
+#include "backend/hidpp20/Feature.h"
+#include "features/DeviceFeature.h"
 #include "Configuration.h"
-
-#include <map>
-#include <memory>
-#include <atomic>
-#include <hidpp/Dispatcher.h>
-#include <hidpp/SimpleDispatcher.h>
-#include <hidpp10/IReceiver.h>
-#include <hidpp20/IWirelessDeviceStatus.h>
+#include "util/log.h"
 
 namespace logid
 {
-    class EventListener;
-    class DeviceConfig;
+    class Device;
 
-    class BlacklistedDevice : public std::exception
+    class DeviceConfig
     {
     public:
-        BlacklistedDevice() = default;
-        virtual const char* what()
-        {
-            return "Blacklisted device";
-        }
+        DeviceConfig(const std::shared_ptr<Configuration>& config, Device*
+        device);
+        libconfig::Setting& getSetting(const std::string& path);
+    private:
+        Device* _device;
+        std::string _root_setting;
+        std::shared_ptr<Configuration> _config;
     };
 
+    /* TODO: Implement HID++ 1.0 support
+     * Currently, the logid::Device class has a hardcoded requirement
+     * for an HID++ 2.0 device.
+     */
     class Device
     {
     public:
-        Device(std::string p, const HIDPP::DeviceIndex i);
-        ~Device();
+        Device(std::string path, backend::hidpp::DeviceIndex index);
+        Device(const std::shared_ptr<backend::raw::RawDevice>& raw_device,
+                backend::hidpp::DeviceIndex index);
 
-        std::string name;
+        std::string name();
+        uint16_t pid();
 
-        bool init();
-        void configure();
+        DeviceConfig& config();
+        backend::hidpp20::Device& hidpp20();
+
+        void wakeup();
+        void sleep();
+
         void reset();
 
-        void pressButton(uint16_t cid);
-        void releaseButton(uint16_t cid);
-        void moveDiverted(uint16_t cid, HIDPP20::IReprogControlsV4::Move move);
-
-        void waitForReceiver();
-        void start();
-        void stop();
-        bool testConnection();
-
-        std::map<uint16_t, uint8_t> getFeatures();
-
-        std::map<uint16_t, uint8_t> features;
-
-        const std::string path;
-        const HIDPP::DeviceIndex index;
-        HIDPP::Dispatcher* dispatcher;
-        HIDPP20::Device* hidpp_dev;
-
-        std::mutex configuring;
-        std::atomic_bool disconnected;
-        bool initialized = false;
-        bool waiting_for_receiver = false;
-
-    protected:
-        DeviceConfig* config;
-        EventListener* listener;
-
-        void divert_buttons();
-        void printCIDs();
-        void setSmartShift(HIDPP20::ISmartShift::SmartshiftStatus ops);
-        void setHiresScroll(uint8_t flags);
-        void setDPI(int dpi);
-    };
-
-    class EventHandler
-    {
-    public:
-        virtual const HIDPP20::FeatureInterface *feature() const = 0;
-        virtual const std::vector<uint8_t> featureIndices() const
-        {
-            return {feature()->index()};
-        };
-        virtual void handleEvent (const HIDPP::Report &event) = 0;
-    };
-    class ButtonHandler : public EventHandler
-    {
-    public:
-        ButtonHandler (Device *d) : dev (d), _irc (HIDPP20::IReprogControls::auto_version(d->hidpp_dev)) { }
-        const HIDPP20::FeatureInterface *feature () const
-        {
-            return &_irc;
-        }
-        void handleEvent (const HIDPP::Report &event);
-    protected:
-        Device* dev;
-        HIDPP20::IReprogControls _irc;
-        std::vector<uint16_t> states;
-        std::vector<uint16_t> new_states;
-    };
-    class ReceiverHandler : public EventHandler
-    {
-    public:
-        ReceiverHandler (Device *d) : dev (d) { }
-        const HIDPP20::FeatureInterface *feature () const
-        {
-            return nullptr; // This sounds like a horrible idea
-        }
-        virtual const std::vector<uint8_t> featureIndices() const
-        {
-            return HIDPP10::IReceiver::Events;
-        }
-        void handleEvent (const HIDPP::Report &event);
-    protected:
-        Device* dev;
-    };
-    class WirelessStatusHandler : public EventHandler
-    {
-    public:
-        WirelessStatusHandler (Device *d) : dev (d), _iws (d->hidpp_dev) { }
-        const HIDPP20::FeatureInterface *feature () const
-        {
-            return &_iws;
-        }
-        void handleEvent (const HIDPP::Report &event);
-    protected:
-        Device* dev;
-        HIDPP20::IWirelessDeviceStatus _iws;
-    };
-
-    class EventListener
-    {
-        HIDPP::Dispatcher *dispatcher;
-        HIDPP::DeviceIndex index;
-        std::map<uint8_t, std::unique_ptr<EventHandler>> handlers;
-        std::map<uint8_t, HIDPP::Dispatcher::listener_iterator> iterators;
-    public:
-        EventListener (HIDPP::Dispatcher *dispatcher, HIDPP::DeviceIndex index): dispatcher (dispatcher), index (index) {}
-
-        virtual void removeEventHandlers ();
-        virtual ~EventListener();
-        virtual void addEventHandler (std::unique_ptr<EventHandler> &&handler);
-
-        virtual void start () = 0;
-        virtual void stop () = 0;
-
-    protected:
-        virtual bool event (EventHandler* handler, const HIDPP::Report &report) = 0;
-    };
-    class SimpleListener : public EventListener
-    {
-        HIDPP::SimpleDispatcher *dispatcher;
-
-    public:
-        SimpleListener (HIDPP::SimpleDispatcher* dispatcher, HIDPP::DeviceIndex index):
-                EventListener (dispatcher, index),
-                dispatcher (dispatcher)
-        {
+        template<typename T>
+        std::shared_ptr<T> getFeature(std::string name) {
+            auto it = _features.find(name);
+            if(it == _features.end())
+                return nullptr;
+            try {
+                return std::dynamic_pointer_cast<T>(it->second);
+            } catch(std::bad_cast& e) {
+                logPrintf(ERROR, "bad_cast while getting device feature %s: %s",
+                                 name.c_str(), e.what());
+                return nullptr;
+            }
         }
 
-        bool stopped = false;
-        virtual void start();
-        virtual void stop();
+    private:
+        void _init();
 
-    protected:
-        virtual bool event (EventHandler* handler, const HIDPP::Report &report);
+        /* Adds a feature without calling an error if unsupported */
+        template<typename T>
+        void _addFeature(std::string name)
+        {
+            try {
+                _features.emplace(name, std::make_shared<T>(this));
+            } catch (backend::hidpp20::UnsupportedFeature& e) {
+            }
+        }
+
+        backend::hidpp20::Device _hidpp20;
+        std::string _path;
+        backend::hidpp::DeviceIndex _index;
+        std::map<std::string, std::shared_ptr<features::DeviceFeature>>
+            _features;
+        DeviceConfig _config;
+
+        void _makeResetMechanism();
+        std::unique_ptr<std::function<void()>> _reset_mechanism;
     };
-
 }
 
 #endif //LOGID_DEVICE_H

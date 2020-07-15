@@ -13,7 +13,7 @@ Default location for the configuration file is /etc/logid.cfg.
 
 ## Dependencies
 
-This project requires a C++14 compiler, cmake, libevdev, libudev, and libconfig. For popular distributions, I've included commands below. 
+This project requires a C++14 compiler, cmake, libevdev, libudev, and libconfig. For popular distributions, I've included commands below.
 
 **Debian/Ubuntu:** `sudo apt install cmake libevdev-dev libudev-dev libconfig++-dev`
 
@@ -42,3 +42,11 @@ I'm also looking for contributors to help in my project; feel free to submit a p
 ## Compatible Devices
 
 [For a list of tested devices, check TESTED.md](TESTED.md)
+
+## Special Thanks
+Thanks to the following people for contributing to this repository.
+
+- [Clément Vuchener & contributors for creating the old HID++ library](https://github.com/cvuchener/hidpp)
+- [Developers of Solaar for providing information on HID++](https://github.com/pwr-Solaar/Solaar)
+- [Nestor Lopez Casado for providing Logitech documentation on the HID++ protocol](http://drive.google.com/folderview?id=0BxbRzx7vEV7eWmgwazJ3NUFfQ28)
+- Everyone listed in the contributors page
