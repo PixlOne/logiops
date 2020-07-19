@@ -21,7 +21,6 @@
 
 #include "backend/hidpp/defs.h"
 #include "backend/hidpp20/Device.h"
-#include "backend/hidpp20/Feature.h"
 #include "features/DeviceFeature.h"
 #include "Configuration.h"
 #include "util/log.h"
@@ -87,7 +86,7 @@ namespace logid
         {
             try {
                 _features.emplace(name, std::make_shared<T>(this));
-            } catch (backend::hidpp20::UnsupportedFeature& e) {
+            } catch (features::UnsupportedFeature& e) {
             }
         }
 

@@ -45,7 +45,7 @@ namespace features
         };
     private:
         Config _config;
-        backend::hidpp20::AdjustableDPI _adjustable_dpi;
+        std::shared_ptr<backend::hidpp20::AdjustableDPI> _adjustable_dpi;
         std::vector<backend::hidpp20::AdjustableDPI::SensorDPIList> _dpi_lists;
     };
  }}

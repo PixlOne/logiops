@@ -21,17 +21,21 @@
 using namespace logid::features;
 using namespace logid::backend;
 
-HiresScroll::HiresScroll(Device *dev) : DeviceFeature(dev),
-    _hires_scroll(&dev->hidpp20()), _config(dev)
+HiresScroll::HiresScroll(Device *dev) : DeviceFeature(dev), _config(dev)
 {
+    try {
+        _hires_scroll = std::make_shared<hidpp20::HiresScroll>(&dev->hidpp20());
+    } catch(hidpp20::UnsupportedFeature& e) {
+        throw UnsupportedFeature();
+    }
 }
 
 void HiresScroll::configure()
 {
-    auto mode = _hires_scroll.getMode();
+    auto mode = _hires_scroll->getMode();
     mode &= ~_config.getMask();
     mode |= (_config.getMode() & _config.getMask());
-    _hires_scroll.setMode(mode);
+    _hires_scroll->setMode(mode);
 }
 
 void HiresScroll::listen()
@@ -41,12 +45,12 @@ void HiresScroll::listen()
 
 uint8_t HiresScroll::getMode()
 {
-    return _hires_scroll.getMode();
+    return _hires_scroll->getMode();
 }
 
 void HiresScroll::setMode(uint8_t mode)
 {
-    _hires_scroll.setMode(mode);
+    _hires_scroll->setMode(mode);
 }
 
 HiresScroll::Config::Config(Device *dev) : DeviceFeature::Config(dev)

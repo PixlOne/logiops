@@ -23,13 +23,18 @@ using namespace logid::features;
 using namespace logid::backend;
 
 SmartShift::SmartShift(Device* device) : DeviceFeature(device), _config
-    (device), _smartshift(&device->hidpp20())
+    (device)
 {
+    try {
+        _smartshift = std::make_shared<hidpp20::SmartShift>(&device->hidpp20());
+    } catch (hidpp20::UnsupportedFeature& e) {
+        throw UnsupportedFeature();
+    }
 }
 
 void SmartShift::configure()
 {
-    _smartshift.setStatus(_config.getSettings());
+    _smartshift->setStatus(_config.getSettings());
 }
 
 void SmartShift::listen()
@@ -38,13 +43,13 @@ void SmartShift::listen()
 
 hidpp20::SmartShift::SmartshiftStatus SmartShift::getStatus()
 {
-    return _smartshift.getStatus();
+    return _smartshift->getStatus();
 }
 
 void SmartShift::setStatus(backend::hidpp20::SmartShift::SmartshiftStatus
     status)
 {
-    _smartshift.setStatus(status);
+    _smartshift->setStatus(status);
 }
 
 SmartShift::Config::Config(Device *dev) : DeviceFeature::Config(dev), _status()

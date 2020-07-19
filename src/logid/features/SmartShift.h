@@ -44,7 +44,7 @@ namespace features
         };
     private:
         Config _config;
-        backend::hidpp20::SmartShift _smartshift;
+        std::shared_ptr<backend::hidpp20::SmartShift> _smartshift;
     };
 }}
 

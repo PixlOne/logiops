@@ -45,7 +45,7 @@ namespace features
             uint8_t _mask;
         };
     private:
-        backend::hidpp20::HiresScroll _hires_scroll;
+        std::shared_ptr<backend::hidpp20::HiresScroll> _hires_scroll;
         Config _config;
     };
 }}

@@ -25,6 +25,16 @@ namespace logid {
     class Device;
 namespace features
 {
+    class UnsupportedFeature : public std::exception
+    {
+    public:
+        UnsupportedFeature() = default;
+        virtual const char* what() const noexcept
+        {
+            return "Unsupported feature";
+        }
+    };
+
     class DeviceFeature
     {
     public:

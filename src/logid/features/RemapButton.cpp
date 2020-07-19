@@ -29,9 +29,15 @@ using namespace logid::actions;
 
 #define EVENTHANDLER_NAME "REMAP_BUTTON"
 
-RemapButton::RemapButton(Device *dev): DeviceFeature(dev), _config (dev),
-    _reprog_controls (hidpp20::ReprogControls::autoVersion(&dev->hidpp20()))
+RemapButton::RemapButton(Device *dev): DeviceFeature(dev), _config (dev)
 {
+    try {
+        _reprog_controls = hidpp20::ReprogControls::autoVersion(
+                &dev->hidpp20());
+    } catch(hidpp20::UnsupportedFeature& e) {
+        throw UnsupportedFeature();
+    }
+
     _reprog_controls->initCidMap();
 
     if(global_loglevel <= DEBUG) {
