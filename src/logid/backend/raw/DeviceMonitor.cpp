@@ -101,6 +101,8 @@ void DeviceMonitor::run()
 
             if (action == "add")
                 task::spawn([this, name=devnode]() {
+                    // Wait for device to initialise
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
                     auto supported_reports = backend::hidpp::getSupportedReports(
                             RawDevice::getReportDescriptor(name));
                     if(supported_reports)
