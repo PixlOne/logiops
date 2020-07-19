@@ -53,7 +53,7 @@ namespace raw
 
         std::vector<uint8_t> sendReport(const std::vector<uint8_t>& report);
         void sendReportNoResponse(const std::vector<uint8_t>& report);
-        void interruptRead();
+        void interruptRead(bool wait_for_halt=true);
 
         void listen();
         void listenAsync();

@@ -187,6 +187,7 @@ std::vector<uint8_t> RawDevice::sendReport(const std::vector<uint8_t>& report)
         });
         auto f = task->get_future();
         _io_queue.push(task);
+        interruptRead(false); // Alert listener to prioritise
         cv.wait(lock, [&top_of_queue]{ return top_of_queue; });
         auto status = f.wait_for(global_config->ioTimeout());
         if(status == std::future_status::timeout) {
@@ -399,7 +400,7 @@ int RawDevice::_readReport(std::vector<uint8_t> &report,
     return ret;
 }
 
-void RawDevice::interruptRead()
+void RawDevice::interruptRead(bool wait_for_halt)
 {
     char c = 0;
     if(-1 == write(_pipe[1], &c, sizeof(char)))
@@ -407,7 +408,8 @@ void RawDevice::interruptRead()
                 "interruptRead write pipe failed");
 
     // Ensure I/O has halted
-    std::lock_guard<std::mutex> lock(_dev_io);
+    if(wait_for_halt)
+        std::lock_guard<std::mutex> lock(_dev_io);
 }
 
 void RawDevice::listen()
