@@ -57,6 +57,7 @@ add_executable(logid
         backend/hidpp20/features/ReprogControls.cpp
         backend/hidpp20/features/HiresScroll.cpp
         backend/hidpp20/features/ChangeHost.cpp
+        backend/hidpp20/features/WirelessDeviceStatus.cpp
         backend/dj/Report.cpp
         util/mutex_queue.h
         util/workqueue.cpp
