@@ -10,4 +10,5 @@ This is not by any means an exhaustive list. Many more devices are supported but
 | MX Vertical  |     Yes     |
 |   MX Ergo    |     Yes     |
 |     M720     |     Yes     |
+|     M590     |     Yes     |
 |     T400     |     Yes     |
