@@ -23,6 +23,7 @@
 #include "features/RemapButton.h"
 #include "backend/hidpp20/features/Reset.h"
 #include "features/HiresScroll.h"
+#include "features/DeviceStatus.h"
 
 using namespace logid;
 using namespace logid::backend;
@@ -51,6 +52,7 @@ void Device::_init()
     _addFeature<features::SmartShift>("smartshift");
     _addFeature<features::HiresScroll>("hiresscroll");
     _addFeature<features::RemapButton>("remapbutton");
+    _addFeature<features::DeviceStatus>("devicestatus");
 
     _makeResetMechanism();
     reset();

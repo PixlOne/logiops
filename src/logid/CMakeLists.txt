@@ -20,6 +20,7 @@ add_executable(logid
         features/SmartShift.cpp
         features/HiresScroll.cpp
         features/RemapButton.cpp
+        features/DeviceStatus.cpp
         actions/Action.cpp
         actions/NullAction.cpp
         actions/KeypressAction.cpp
