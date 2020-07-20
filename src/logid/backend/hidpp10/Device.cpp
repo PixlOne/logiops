@@ -36,6 +36,12 @@ Device::Device(std::shared_ptr<raw::RawDevice> raw_dev,
     assert(version() == std::make_tuple(1, 0));
 }
 
+Device::Device(std::shared_ptr<dj::Receiver> receiver, hidpp::DeviceIndex index)
+        : hidpp::Device(receiver, index)
+{
+    assert(version() == std::make_tuple(1, 0));
+}
+
 std::vector<uint8_t> Device::getRegister(uint8_t address,
         const std::vector<uint8_t>& params, hidpp::Report::Type type)
 {

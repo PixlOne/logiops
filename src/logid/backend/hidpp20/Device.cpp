@@ -35,6 +35,12 @@ Device::Device(std::shared_ptr<raw::RawDevice> raw_device, hidpp::DeviceIndex in
     assert(std::get<0>(version()) >= 2);
 }
 
+Device::Device(std::shared_ptr<dj::Receiver> receiver, hidpp::DeviceIndex index)
+    : hidpp::Device(receiver, index)
+{
+    assert(std::get<0>(version()) >= 2);
+}
+
 std::vector<uint8_t> Device::callFunction(uint8_t feature_index,
         uint8_t function, std::vector<uint8_t>& params)
 {

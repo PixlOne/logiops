@@ -65,7 +65,8 @@ Device::Device(std::shared_ptr<raw::RawDevice> raw_device, DeviceIndex index) :
 
 Device::Device(std::shared_ptr<dj::Receiver> receiver,
         hidpp::DeviceConnectionEvent event) :
-    _raw_device (receiver->rawDevice()), _index (event.index)
+    _raw_device (receiver->rawDevice()), _receiver (receiver),
+    _path (receiver->rawDevice()->hidrawPath()), _index (event.index)
 {
     // Device will throw an error soon, just do it now
     if(!event.linkEstablished)
@@ -75,6 +76,15 @@ Device::Device(std::shared_ptr<dj::Receiver> receiver,
         _pid = event.pid;
     else
         _pid = receiver->getPairingInfo(_index).pid;
+    _init();
+}
+
+Device::Device(std::shared_ptr<dj::Receiver> receiver,
+        DeviceIndex index) : _raw_device (receiver->rawDevice()),
+        _receiver (receiver), _path (receiver->rawDevice()->hidrawPath()),
+        _index (index)
+{
+    _pid = receiver->getPairingInfo(_index).pid;
     _init();
 }
 
@@ -125,7 +135,16 @@ void Device::_init()
             _name = _raw_device->name();
         }
     } else {
-        _name = _receiver->getDeviceName(_index);
+        if(std::get<0>(_version) >= 2) {
+            try {
+                hidpp20::EssentialDeviceName deviceName(this);
+                _name = deviceName.getName();
+            } catch(hidpp20::UnsupportedFeature &e) {
+                _name = _receiver->getDeviceName(_index);
+            }
+        } else {
+            _name = _receiver->getDeviceName(_index);
+        }
     }
 }
 

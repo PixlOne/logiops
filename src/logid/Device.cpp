@@ -19,6 +19,7 @@
 #include "util/log.h"
 #include "features/DPI.h"
 #include "Device.h"
+#include "Receiver.h"
 #include "features/SmartShift.h"
 #include "features/RemapButton.h"
 #include "backend/hidpp20/features/Reset.h"
@@ -30,7 +31,7 @@ using namespace logid::backend;
 
 Device::Device(std::string path, backend::hidpp::DeviceIndex index) :
     _hidpp20 (path, index), _path (std::move(path)), _index (index),
-    _config (global_config, this)
+    _config (global_config, this), _receiver (nullptr)
 {
     _init();
 }
@@ -38,7 +39,14 @@ Device::Device(std::string path, backend::hidpp::DeviceIndex index) :
 Device::Device(const std::shared_ptr<backend::raw::RawDevice>& raw_device,
         hidpp::DeviceIndex index) : _hidpp20(raw_device, index), _path
         (raw_device->hidrawPath()), _index (index),
-        _config (global_config, this)
+        _config (global_config, this), _receiver (nullptr)
+{
+    _init();
+}
+
+Device::Device(Receiver* receiver, hidpp::DeviceIndex index) : _hidpp20
+    (receiver->rawReceiver(), index), _path (receiver->path()), _index (index),
+        _config (global_config, this), _receiver (receiver)
 {
     _init();
 }

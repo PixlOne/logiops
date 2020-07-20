@@ -31,6 +31,8 @@ namespace hidpp10
         Device(const std::string& path, hidpp::DeviceIndex index);
         Device(std::shared_ptr<raw::RawDevice> raw_dev,
                 hidpp::DeviceIndex index);
+        Device(std::shared_ptr<dj::Receiver> receiver,
+               hidpp::DeviceIndex index);
 
         std::vector<uint8_t> getRegister(uint8_t address,
                 const std::vector<uint8_t>& params, hidpp::Report::Type type);

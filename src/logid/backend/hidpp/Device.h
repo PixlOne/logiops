@@ -62,10 +62,12 @@ namespace hidpp
         };
 
         explicit Device(const std::string& path, DeviceIndex index);
-        explicit Device(std::shared_ptr<raw::RawDevice> raw_device,
+        Device(std::shared_ptr<raw::RawDevice> raw_device,
                 DeviceIndex index);
-        explicit Device(std::shared_ptr<dj::Receiver> receiver,
+        Device(std::shared_ptr<dj::Receiver> receiver,
                 hidpp::DeviceConnectionEvent event);
+        Device(std::shared_ptr<dj::Receiver> receiver,
+                DeviceIndex index);
         ~Device();
 
         std::string devicePath() const;

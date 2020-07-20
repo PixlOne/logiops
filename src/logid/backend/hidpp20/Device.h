@@ -30,6 +30,8 @@ namespace hidpp20 {
     public:
         Device(std::string path, hidpp::DeviceIndex index);
         Device(std::shared_ptr<raw::RawDevice> raw_device, hidpp::DeviceIndex index);
+        Device(std::shared_ptr<dj::Receiver> receiver, hidpp::DeviceIndex
+            index);
 
         std::vector<uint8_t> callFunction(uint8_t feature_index,
                 uint8_t function,

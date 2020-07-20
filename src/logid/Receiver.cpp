@@ -63,8 +63,8 @@ void Receiver::addDevice(hidpp::DeviceConnectionEvent event)
             return;
         }
 
-        std::shared_ptr<Device> device = std::make_shared<Device>(
-                receiver()->rawDevice(), event.index);
+        std::shared_ptr<Device> device = std::make_shared<Device>(this,
+                event.index);
 
         _devices.emplace(event.index, device);
 
@@ -87,4 +87,14 @@ void Receiver::removeDevice(hidpp::DeviceIndex index)
 {
     std::unique_lock<std::mutex> lock(_devices_change);
     _devices.erase(index);
+}
+
+const std::string& Receiver::path() const
+{
+    return _path;
+}
+
+std::shared_ptr<dj::Receiver> Receiver::rawReceiver()
+{
+    return receiver();
 }
