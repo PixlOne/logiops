@@ -102,7 +102,7 @@ void DeviceManager::removeDevice(std::string path)
         logPrintf(INFO, "Receiver on %s disconnected", path.c_str());
     } else {
         auto device = _devices.find(path);
-        if(device != _devices.find(path)) {
+        if(device != _devices.end()) {
             _devices.erase(device);
             logPrintf(INFO, "Device on %s disconnected", path.c_str());
         }
