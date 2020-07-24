@@ -4,7 +4,7 @@ This is not by any means an exhaustive list. Many more devices are supported but
 
 |    Device    | Compatible? |         Config Name          |
 |:------------:|:-----------:|:----------------------------:|
-| MX Master 3  |     Yes     | `MX Keys Wireless Keyboard`  |
+| MX Master 3  |     Yes     | `Wireless Mouse MX Master 3` |
 | MX Master 2S |     Yes     |                              |
 |  MX Master   |     Yes     |                              |
 | MX Vertical  |     Yes     |                              |
@@ -12,4 +12,4 @@ This is not by any means an exhaustive list. Many more devices are supported but
 |     M720     |     Yes     |                              |
 |     M590     |     Yes     |                              |
 |     T400     |     Yes     |                              |
-|   MX Keys    |     Yes     | `Wireless Mouse MX Master 3` |
+|   MX Keys    |     Yes     | `MX Keys Wireless Keyboard`  |
