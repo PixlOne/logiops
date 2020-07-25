@@ -5,11 +5,11 @@ This is not by any means an exhaustive list. Many more devices are supported but
 |    Device    | Compatible? |         Config Name          |
 |:------------:|:-----------:|:----------------------------:|
 | MX Master 3  |     Yes     | `Wireless Mouse MX Master 3` |
-| MX Master 2S |     Yes     |                              |
-|  MX Master   |     Yes     |                              |
+| MX Master 2S |     Yes     | `Wireless Mouse MX Master 2S` |
+|  MX Master   |     Yes     | `Wireless Mouse MX Master`   |
 | MX Vertical  |     Yes     |                              |
 |   MX Ergo    |     Yes     |                              |
 |     M720     |     Yes     | `M720 Triathlon Multi-Device Mouse` |
 |     M590     |     Yes     |                              |
-|     T400     |     Yes     |                              |
+|     T400     |     Yes     | `Zone Touch Mouse T400`      |
 |   MX Keys    |     Yes     | `MX Keys Wireless Keyboard`  |
