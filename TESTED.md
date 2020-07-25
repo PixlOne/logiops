@@ -9,7 +9,7 @@ This is not by any means an exhaustive list. Many more devices are supported but
 |  MX Master   |     Yes     |                              |
 | MX Vertical  |     Yes     |                              |
 |   MX Ergo    |     Yes     |                              |
-|     M720     |     Yes     |                              |
+|     M720     |     Yes     | `M720 Triathlon Multi-Device Mouse` |
 |     M590     |     Yes     |                              |
 |     T400     |     Yes     |                              |
 |   MX Keys    |     Yes     | `MX Keys Wireless Keyboard`  |
