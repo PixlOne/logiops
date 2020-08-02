@@ -70,7 +70,7 @@ HiresScroll::WheelStatus HiresScroll::wheelMovementEvent(const hidpp::Report
 HiresScroll::RatchetState HiresScroll::ratchetSwitchEvent(const hidpp::Report
     &report)
 {
-    assert(report.function() == WheelMovement);
+    assert(report.function() == RatchetSwitch);
     // Possible bad cast
     return static_cast<RatchetState>(report.paramBegin()[0]);
 }
