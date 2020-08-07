@@ -21,6 +21,7 @@
 #include <vector>
 #include <libconfig.h++>
 #include "Action.h"
+#include "../features/RemapButton.h"
 
 namespace logid {
     namespace actions
@@ -63,6 +64,7 @@ namespace logid {
 
         protected:
             Config _config;
+            std::shared_ptr<features::RemapButton> remapfeat;
         };
     }}
 

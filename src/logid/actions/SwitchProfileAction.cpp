@@ -18,22 +18,31 @@
 #include "SwitchProfileAction.h"
 #include "../util/log.h"
 #include "../backend/hidpp20/features/ReprogControls.h"
+#include "../Device.h"
 
-logid::actions::SwitchProfileAction::SwitchProfileAction(logid::Device *device, libconfig::Setting &config) : Action(device), _config(device, config) {
+logid::actions::SwitchProfileAction::SwitchProfileAction(logid::Device *device, libconfig::Setting &config) : Action(device), _config(device, config),
+                                                                                        remapfeat(nullptr)
+{
 
 }
 
 void logid::actions::SwitchProfileAction::press() {
     _pressed = true;
+
+    if(remapfeat == nullptr){
+        remapfeat = _device->getFeature<features::RemapButton>("remapbutton");
+    }
+
     auto switchType = _config.getSwitchType();
     if(switchType == Config::SwitchType_NEXT){
-
+        remapfeat->nextProfile();
     }
     else if(switchType == Config::SwitchType_PREVIOUS){
-
+        remapfeat->prevProfile();
     }
     else if(switchType == Config::SwitchType_DIRECT){
-
+        int nextprofind = _config.getDirectProfileId();
+        remapfeat->setProfile(nextprofind);
     }
 }
 
