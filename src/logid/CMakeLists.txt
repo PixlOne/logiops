@@ -30,6 +30,7 @@ add_executable(logid
         actions/ChangeDPI.cpp
         actions/GestureAction.cpp
         actions/ChangeHostAction.cpp
+        actions/SwitchProfileAction.cpp
         actions/gesture/Gesture.cpp
         actions/gesture/ReleaseGesture.cpp
         actions/gesture/IntervalGesture.cpp
