@@ -54,7 +54,7 @@ logid::actions::SwitchProfileAction::Config::Config(logid::Device *device, libco
 
     _switchType = SwitchType_UNKNOWN;
     try {
-        auto &type = config.lookup("type");
+        auto &type = config.lookup("switchtype");
         if(type.getType() == libconfig::Setting::TypeString){
             std::string typestr = type;
             if(typestr == "next"){
@@ -76,7 +76,7 @@ logid::actions::SwitchProfileAction::Config::Config(logid::Device *device, libco
                         return;
                     }
                 } catch (libconfig::SettingNotFoundException& e) {
-                    logPrintf(WARN, "Line %d: profile is a required field with direct type, skipping.",
+                    logPrintf(WARN, "Line %d: profile is a required field with direct switchtype, skipping.",
                               config.getSourceLine());
                     return;
                 }
@@ -88,12 +88,12 @@ logid::actions::SwitchProfileAction::Config::Config(logid::Device *device, libco
             }
         }
         else{
-            logPrintf(WARN, "Line %d: type is not string, skipping.",
+            logPrintf(WARN, "Line %d: switchtype is not string, skipping.",
                       config.getSourceLine());
             return;
         }
     } catch (libconfig::SettingNotFoundException& e) {
-        logPrintf(WARN, "Line %d: type is a required field, skipping.",
+        logPrintf(WARN, "Line %d: switchtype is a required field, skipping.",
                   config.getSourceLine());
     }
 }
