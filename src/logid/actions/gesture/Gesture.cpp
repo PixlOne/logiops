@@ -20,6 +20,7 @@
 #include "Gesture.h"
 #include "../../util/log.h"
 #include "ReleaseGesture.h"
+#include "ThresholdGesture.h"
 #include "../../backend/hidpp20/features/ReprogControls.h"
 #include "IntervalGesture.h"
 #include "AxisGesture.h"
@@ -89,6 +90,8 @@ std::shared_ptr<Gesture> Gesture::makeGesture(Device *device,
 
         if(type == "onrelease")
             return std::make_shared<ReleaseGesture>(device, setting);
+        else if(type == "onthreshold")
+            return std::make_shared<ThresholdGesture>(device, setting);
         else if(type == "oninterval" || type == "onfewpixels")
             return std::make_shared<IntervalGesture>(device, setting);
         else if(type == "axis")
