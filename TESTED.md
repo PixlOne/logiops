@@ -10,6 +10,6 @@ This is not by any means an exhaustive list. Many more devices are supported but
 | MX Vertical  |     Yes     |                                     |
 |   MX Ergo    |     Yes     |                                     |
 |     M720     |     Yes     | `M720 Triathlon Multi-Device Mouse` |
-|     M590     |     Yes     |                                     |
+|     M590     |     Yes     |    `M585/M590 Multi-Device Mouse`   |
 |     T400     |     Yes     |       `Zone Touch Mouse T400`       |
 |   MX Keys    |     Yes     |     `MX Keys Wireless Keyboard`     |
