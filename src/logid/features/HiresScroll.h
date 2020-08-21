@@ -20,6 +20,7 @@
 
 #include "../backend/hidpp20/features/HiresScroll.h"
 #include "DeviceFeature.h"
+#include "../actions/gesture/Gesture.h"
 
 namespace logid {
 namespace features
@@ -40,12 +41,21 @@ namespace features
             explicit Config(Device* dev);
             uint8_t getMode() const;
             uint8_t getMask() const;
+
+            const std::shared_ptr<actions::Gesture>& upAction() const;
+            const std::shared_ptr<actions::Gesture>& downAction() const;
         protected:
             uint8_t _mode;
             uint8_t _mask;
+
+            std::shared_ptr<actions::Gesture> _up_action;
+            std::shared_ptr<actions::Gesture> _down_action;
         };
     private:
+        void _handleScroll(backend::hidpp20::HiresScroll::WheelStatus event);
         std::shared_ptr<backend::hidpp20::HiresScroll> _hires_scroll;
+        std::chrono::time_point<std::chrono::system_clock> _last_scroll;
+        int16_t _last_direction = 0;
         Config _config;
     };
 }}

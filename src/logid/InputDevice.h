@@ -49,6 +49,8 @@ namespace logid
 
         static uint toKeyCode(const std::string& name);
         static uint toAxisCode(const std::string& name);
+        static int getLowResAxis(uint axis_code);
+
     private:
         void _sendEvent(uint type, uint code, int value);
 

@@ -25,9 +25,9 @@ IntervalGesture::IntervalGesture(Device *device, libconfig::Setting &root) :
 {
 }
 
-void IntervalGesture::press()
+void IntervalGesture::press(bool init_threshold)
 {
-    _axis = 0;
+    _axis = init_threshold ? _config.threshold() : 0;
     _interval_pass_count = 0;
 }
 
@@ -50,6 +50,11 @@ void IntervalGesture::move(int16_t axis)
         _config.action()->release();
     }
     _interval_pass_count = new_interval_count;
+}
+
+bool IntervalGesture::wheelCompatibility() const
+{
+    return true;
 }
 
 bool IntervalGesture::metThreshold() const

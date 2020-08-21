@@ -28,10 +28,11 @@ namespace actions
     public:
         ReleaseGesture(Device* device, libconfig::Setting& root);
 
-        virtual void press();
+        virtual void press(bool init_threshold=false);
         virtual void release(bool primary=false);
         virtual void move(int16_t axis);
 
+        virtual bool wheelCompatibility() const;
         virtual bool metThreshold() const;
 
     protected:

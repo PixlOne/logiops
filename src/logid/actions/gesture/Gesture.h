@@ -42,10 +42,11 @@ namespace actions
     class Gesture
     {
     public:
-        virtual void press() = 0;
+        virtual void press(bool init_threshold=false) = 0;
         virtual void release(bool primary=false) = 0;
         virtual void move(int16_t axis) = 0;
 
+        virtual bool wheelCompatibility() const = 0;
         virtual bool metThreshold() const = 0;
 
         class Config

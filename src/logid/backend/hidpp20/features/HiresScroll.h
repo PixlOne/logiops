@@ -75,7 +75,7 @@ namespace hidpp20
         {
             bool hiRes;
             uint8_t periods;
-            uint16_t deltaV;
+            int16_t deltaV;
         };
 
         explicit HiresScroll(Device* device);

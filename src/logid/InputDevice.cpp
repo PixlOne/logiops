@@ -89,6 +89,17 @@ uint InputDevice::toAxisCode(const std::string& name)
     return _toEventCode(EV_REL, name);
 }
 
+/* Returns -1 if axis_code is not hi-res */
+int InputDevice::getLowResAxis(const uint axis_code)
+{
+    if(axis_code == REL_WHEEL_HI_RES)
+        return REL_WHEEL;
+    if(axis_code == REL_HWHEEL_HI_RES)
+        return REL_HWHEEL;
+
+    return -1;
+}
+
 uint InputDevice::_toEventCode(uint type, const std::string& name)
 {
     int code = libevdev_event_code_from_name(type, name.c_str());

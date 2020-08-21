@@ -24,9 +24,9 @@ ReleaseGesture::ReleaseGesture(Device *device, libconfig::Setting &root) :
 {
 }
 
-void ReleaseGesture::press()
+void ReleaseGesture::press(bool init_threshold)
 {
-    _axis = 0;
+    _axis = init_threshold ? _config.threshold() : 0;
 }
 
 void ReleaseGesture::release(bool primary)
@@ -40,6 +40,11 @@ void ReleaseGesture::release(bool primary)
 void ReleaseGesture::move(int16_t axis)
 {
     _axis += axis;
+}
+
+bool ReleaseGesture::wheelCompatibility() const
+{
+    return false;
 }
 
 bool ReleaseGesture::metThreshold() const

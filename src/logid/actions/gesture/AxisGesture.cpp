@@ -27,10 +27,11 @@ AxisGesture::AxisGesture(Device *device, libconfig::Setting &root) :
 {
 }
 
-void AxisGesture::press()
+void AxisGesture::press(bool init_threshold)
 {
-    _axis = 0;
+    _axis = init_threshold ? _config.threshold() : 0;
     _axis_remainder = 0;
+    _hires_remainder = 0;
 }
 
 void AxisGesture::release(bool primary)
@@ -41,7 +42,10 @@ void AxisGesture::release(bool primary)
 
 void AxisGesture::move(int16_t axis)
 {
-    int16_t new_axis = _axis + axis;
+    int16_t new_axis = _axis+axis;
+    int low_res_axis = InputDevice::getLowResAxis(_config.axis());
+    int hires_remainder = _hires_remainder;
+
     if(new_axis > _config.threshold()) {
         double move = axis;
         if(_axis < _config.threshold())
@@ -63,7 +67,22 @@ void AxisGesture::move(int16_t axis)
         if(negative_multiplier)
             move_floor = -move_floor;
 
-        virtual_input->moveAxis(_config.axis(), move_floor);
+        if(low_res_axis != -1) {
+            int lowres_movement = 0, hires_movement = move_floor;
+            virtual_input->moveAxis(_config.axis(), hires_movement);
+            hires_remainder += hires_movement;
+            if(abs(hires_remainder) >= 60) {
+                lowres_movement = hires_remainder/120;
+                if(lowres_movement == 0)
+                    lowres_movement = hires_remainder > 0 ? 1 : -1;
+                hires_remainder -= lowres_movement*120;
+                virtual_input->moveAxis(low_res_axis, lowres_movement);
+            }
+
+            _hires_remainder = hires_remainder;
+        } else {
+            virtual_input->moveAxis(_config.axis(), move_floor);
+        }
     }
     _axis = new_axis;
 }
@@ -71,6 +90,11 @@ void AxisGesture::move(int16_t axis)
 bool AxisGesture::metThreshold() const
 {
     return _axis >= _config.threshold();
+}
+
+void AxisGesture::setHiresMultiplier(double multiplier)
+{
+    _config.setHiresMultiplier(multiplier);
 }
 
 AxisGesture::Config::Config(Device *device, libconfig::Setting &setting) :
@@ -113,6 +137,9 @@ AxisGesture::Config::Config(Device *device, libconfig::Setting &setting) :
     } catch(libconfig::SettingNotFoundException& e) {
         // Ignore
     }
+
+    if(InputDevice::getLowResAxis(_axis) != -1)
+        _multiplier *= 120;
 }
 
 unsigned int AxisGesture::Config::axis() const
@@ -123,4 +150,22 @@ unsigned int AxisGesture::Config::axis() const
 double AxisGesture::Config::multiplier() const
 {
     return _multiplier;
+}
+
+bool AxisGesture::wheelCompatibility() const
+{
+    return true;
+}
+
+void AxisGesture::Config::setHiresMultiplier(double multiplier)
+{
+    if(_hires_multiplier == multiplier || multiplier == 0)
+        return;
+
+    if(InputDevice::getLowResAxis(_axis) != -1) {
+        _multiplier *= _hires_multiplier;
+        _multiplier /= multiplier;
+    }
+
+    _hires_multiplier = multiplier;
 }
