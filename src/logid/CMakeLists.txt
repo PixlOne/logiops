@@ -32,6 +32,7 @@ add_executable(logid
         actions/ChangeHostAction.cpp
         actions/gesture/Gesture.cpp
         actions/gesture/ReleaseGesture.cpp
+        actions/gesture/ThresholdGesture.cpp
         actions/gesture/IntervalGesture.cpp
         actions/gesture/AxisGesture.cpp
         actions/gesture/NullGesture.cpp
