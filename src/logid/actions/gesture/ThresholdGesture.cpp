@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2020 PixlOne, michtere
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,31 +24,36 @@ ThresholdGesture::ThresholdGesture(Device *device, libconfig::Setting &root) :
 {
 }
 
-void ThresholdGesture::press()
+void ThresholdGesture::press(bool init_threshold)
 {
-    _axis = 0;
-    this->executed = false;
+    _axis = init_threshold ? _config.threshold() : 0;
+    this->_executed = false;
 }
 
 void ThresholdGesture::release(bool primary)
 {
     (void)primary; // Suppress unused warning
     
-    this->executed = false;
+    this->_executed = false;
 }
 
 void ThresholdGesture::move(int16_t axis)
 {
     _axis += axis;
 
-    if(!this->executed && metThreshold()) {
+    if(!this->_executed && metThreshold()) {
         _config.action()->press();
         _config.action()->release();
-        this->executed = true;
+        this->_executed = true;
     }
 }
 
 bool ThresholdGesture::metThreshold() const
 {
     return _axis >= _config.threshold();
+}
+
+bool ThresholdGesture::wheelCompatibility() const
+{
+    return false;
 }

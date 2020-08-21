@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2020 PixlOne, michtere
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,18 +28,20 @@ namespace actions
     public:
         ThresholdGesture(Device* device, libconfig::Setting& root);
 
-        virtual void press();
+        virtual void press(bool init_threshold=false);
         virtual void release(bool primary=false);
         virtual void move(int16_t axis);
 
         virtual bool metThreshold() const;
+
+        virtual bool wheelCompatibility() const;
 
     protected:
         int16_t _axis;
         Gesture::Config _config;
 
     private:
-        bool executed = false;
+        bool _executed = false;
     };
 }}
 
