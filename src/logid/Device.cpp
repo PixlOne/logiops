@@ -25,6 +25,7 @@
 #include "backend/hidpp20/features/Reset.h"
 #include "features/HiresScroll.h"
 #include "features/DeviceStatus.h"
+#include "features/ThumbWheel.h"
 
 using namespace logid;
 using namespace logid::backend;
@@ -61,6 +62,7 @@ void Device::_init()
     _addFeature<features::HiresScroll>("hiresscroll");
     _addFeature<features::RemapButton>("remapbutton");
     _addFeature<features::DeviceStatus>("devicestatus");
+    _addFeature<features::ThumbWheel>("thumbwheel");
 
     _makeResetMechanism();
     reset();

@@ -21,6 +21,7 @@ add_executable(logid
         features/HiresScroll.cpp
         features/RemapButton.cpp
         features/DeviceStatus.cpp
+        features/ThumbWheel.cpp
         actions/Action.cpp
         actions/NullAction.cpp
         actions/KeypressAction.cpp
