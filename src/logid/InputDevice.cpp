@@ -17,6 +17,7 @@
  */
 
 #include <system_error>
+#include <linux/input-event-codes.h>
 
 #include "InputDevice.h"
 
