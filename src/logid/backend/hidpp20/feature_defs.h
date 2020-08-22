@@ -81,6 +81,7 @@ namespace hidpp20 {
             HIRES_SCROLLING = 0x2120,
             HIRES_SCROLLING_V2 = 0x2121, // Referred to as Hi-res wheel in cvuchener/hidpp, seems to be V2?
             LORES_SCROLLING = 0x2130,
+            THUMB_WHEEL = 0x2150,
             MOUSE_POINTER = 0x2200, // Possibly predecessor to 0x2201?
             ADJUSTABLE_DPI = 0x2201,
             ANGLE_SNAPPING = 0x2230,
