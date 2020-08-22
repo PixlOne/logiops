@@ -17,7 +17,6 @@
  */
 
 #include <system_error>
-#include <linux/input-event-codes.h>
 
 #include "InputDevice.h"
 
@@ -93,10 +92,15 @@ uint InputDevice::toAxisCode(const std::string& name)
 /* Returns -1 if axis_code is not hi-res */
 int InputDevice::getLowResAxis(const uint axis_code)
 {
+    /* Some systems don't have these hi-res axes */
+#ifdef REL_WHEEL_HI_RES
     if(axis_code == REL_WHEEL_HI_RES)
         return REL_WHEEL;
+#endif
+#ifdef REL_HWHEEL_HI_RES
     if(axis_code == REL_HWHEEL_HI_RES)
         return REL_HWHEEL;
+#endif
 
     return -1;
 }
