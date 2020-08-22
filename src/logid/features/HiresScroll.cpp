@@ -61,6 +61,11 @@ HiresScroll::HiresScroll(Device *dev) : DeviceFeature(dev), _config(dev)
     _last_scroll = std::chrono::system_clock::now();
 }
 
+HiresScroll::~HiresScroll()
+{
+    _device->hidpp20().removeEventHandler(MOVE_EVENTHANDLER_NAME);
+}
+
 void HiresScroll::configure()
 {
     auto mode = _hires_scroll->getMode();

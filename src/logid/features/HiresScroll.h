@@ -29,6 +29,7 @@ namespace features
     {
     public:
         explicit HiresScroll(Device* dev);
+        ~HiresScroll();
         virtual void configure();
         virtual void listen();
 
