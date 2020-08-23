@@ -218,7 +218,7 @@ std::shared_ptr<InputDevice> Device::virtualInput() const {
     }
 }
 
-DeviceConfig& Device::config()
+Device::Config& Device::config()
 {
     return _config;
 }
@@ -248,7 +248,7 @@ Device::DeviceIPC::DeviceIPC(Device* device) :
 
 }
 
-DeviceConfig::DeviceConfig(const std::shared_ptr<Configuration>& config, Device*
+Device::Config::Config(const std::shared_ptr<Configuration>& config, Device*
     device) : _device (device), _config (config)
 {
     try {
@@ -256,10 +256,110 @@ DeviceConfig::DeviceConfig(const std::shared_ptr<Configuration>& config, Device*
     } catch(Configuration::DeviceNotFound& e) {
         logPrintf(INFO, "Device %s not configured, using default config.",
                 device->name().c_str());
+        return;
+    }
+
+    try {
+        auto& profiles = _config->getSetting(_root_setting + "/profiles");
+        int profile_index = 0;
+        if(!profiles.isList()) {
+            logPrintf(WARN, "Line %d: profiles must be a list, defaulting to"
+                            "old-style config", profiles.getSourceLine());
+        }
+
+        try {
+            auto& default_profile = _config->getSetting(_root_setting +
+                    "/default_profile");
+            if(default_profile.getType() == libconfig::Setting::TypeString) {
+                _profile_name = (const char*)default_profile;
+            } else if(default_profile.isNumber()) {
+                profile_index = default_profile;
+            } else {
+                logPrintf(WARN, "Line %d: default_profile must be a string or"
+                                " integer, defaulting to first profile",
+                                default_profile.getSourceLine());
+            }
+        } catch(libconfig::SettingNotFoundException& e) {
+            logPrintf(INFO, "Line %d: default_profile missing, defaulting to "
+                            "first profile", profiles.getSourceLine());
+        }
+
+        if(profiles.getLength() <= profile_index) {
+            if(profiles.getLength() == 0) {
+                logPrintf(WARN, "Line %d: No profiles defined",
+                          profiles.getSourceLine());
+            } else {
+                logPrintf(WARN, "Line %d: default_profile does not exist, "
+                                "defaulting to first",
+                                profiles.getSourceLine());
+                profile_index = 0;
+            }
+        }
+
+        for(int i = 0; i < profiles.getLength(); i++) {
+            const auto& profile = profiles[i];
+            std::string name;
+            if(!profile.isGroup()) {
+                logPrintf(WARN, "Line %d: Profile must be a group, "
+                                "skipping", profile.getSourceLine());
+                continue;
+            }
+
+            try {
+                const auto& name_setting = profile.lookup("name");
+                if(name_setting.getType() !=
+                   libconfig::Setting::TypeString) {
+                    logPrintf(WARN, "Line %d: Profile names must be "
+                                    "strings, using name \"%d\"",
+                              name_setting.getSourceLine(), i);
+                    name = std::to_string(i);
+                } else {
+                    name = (const char *) name_setting;
+                }
+
+                if(_profiles.find(name) != _profiles.end()) {
+                    logPrintf(WARN, "Line %d: Profile with the same name "
+                                    "already exists, skipping.",
+                              name_setting.getSourceLine());
+                    continue;
+                }
+            } catch(libconfig::SettingNotFoundException& e) {
+                logPrintf(INFO, "Line %d: Profile is unnamed, using name "
+                                "\"%d\"", profile.getSourceLine(), i);
+            }
+
+            if(i == profile_index && _profile_name.empty())
+                _profile_root = profile.getPath();
+            _profiles[name] = profile.getPath();
+        }
+
+        if(_profiles.empty()) {
+            _profile_name = "0";
+        }
+
+        if(_profile_root.empty())
+            _profile_root = _profiles[_profile_name];
+    } catch(libconfig::SettingNotFoundException& e) {
+        // No profiles, default to root
+        _profile_root = _root_setting;
     }
 }
 
-libconfig::Setting& DeviceConfig::getSetting(const std::string& path)
+libconfig::Setting& Device::Config::getSetting(const std::string& path)
 {
-    return _config->getSetting(_root_setting + '/' + path);
+    if(_profile_root.empty())
+        throw libconfig::SettingNotFoundException((_root_setting + '/' +
+            path).c_str());
+    return _config->getSetting(_profile_root + '/' + path);
+}
+
+const std::map<std::string, std::string> & Device::Config::getProfiles() const
+{
+    return _profiles;
+}
+
+void Device::Config::setProfile(const std::string &name)
+{
+    _profile_name = name;
+    _profile_root = _profiles[name];
 }

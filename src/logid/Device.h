@@ -47,29 +47,19 @@ namespace logid
         const std::weak_ptr<DeviceManager> _manager;
     };
 
-    class DeviceConfig
-    {
-    public:
-        DeviceConfig(const std::shared_ptr<Configuration>& config, Device*
-        device);
-        libconfig::Setting& getSetting(const std::string& path);
-    private:
-        Device* _device;
-        std::string _root_setting;
-        std::shared_ptr<Configuration> _config;
-    };
-
     /* TODO: Implement HID++ 1.0 support
      * Currently, the logid::Device class has a hardcoded requirement
      * for an HID++ 2.0 device.
      */
     class Device : public ipcgull::object
     {
+    private:
+        class Config;
     public:
         std::string name();
         uint16_t pid();
 
-        DeviceConfig& config();
+        Config& config();
         backend::hidpp20::Device& hidpp20();
 
         static std::shared_ptr<Device> make(
@@ -130,12 +120,29 @@ namespace logid
             }
         }
 
+        class Config
+        {
+        public:
+            Config(const std::shared_ptr<Configuration>& config, Device*
+                device);
+            libconfig::Setting& getSetting(const std::string& path);
+            const std::map<std::string, std::string>& getProfiles() const;
+            void setProfile(const std::string& name);
+        private:
+            Device* _device;
+            std::string _root_setting;
+            std::string _profile_root;
+            std::string _profile_name;
+            std::map<std::string, std::string> _profiles;
+            std::shared_ptr<Configuration> _config;
+        };
+
         backend::hidpp20::Device _hidpp20;
         std::string _path;
         backend::hidpp::DeviceIndex _index;
         std::map<std::string, std::shared_ptr<features::DeviceFeature>>
             _features;
-        DeviceConfig _config;
+        Config _config;
 
         Receiver* _receiver;
         const std::weak_ptr<DeviceManager> _manager;
