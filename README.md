@@ -12,7 +12,7 @@ You may also refer to logid.example.cfg for an example.
 Default location for the configuration file is /etc/logid.cfg.
 
 ## Install
-Run the included ```install.sh``` executable, or follow the below build instructions.
+Run the included ```install.sh``` executable as root, or follow the below build instructions.
 
 ## Dependencies
 

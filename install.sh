@@ -9,6 +9,7 @@ if [ `id | sed -e 's/(.*//'` != "uid=0" ]; then
 fi
 
 # Install dependencies:
+echo "Installing dependencies..."
 if [ -d "/etc/apt" ]; then
   apt install -y g++ cmake libevdev-dev libudev-dev libconfig++-dev
 elif [ -f "/etc/arch-release" ]; then
@@ -44,6 +45,7 @@ fi
 systemctl enable logid
 systemctl start logid
 
+# Config file
 touch /etc/logid.cfg
 
 # Finish up
@@ -54,4 +56,4 @@ echo "Go to /etc/logid.cfg to configure your mouse settings. Examples here: http
 # Print device name
 echo "Your mouse name: "
 logid -v
-exit 0
+exec bash
