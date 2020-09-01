@@ -7,13 +7,13 @@ This is currently only compatible with HID++ \>2.0 devices.
 ## Configuration
 [Refer to the wiki for details.](https://github.com/PixlOne/logiops/wiki/Configuration)
 
-You may also refer to logid.example.cfg for an example.
+You may also refer to [logid.example.cfg](./logid.example.cfg) for an example.
 
-Default location for the configuration file is /etc/logid.cfg.
+Default location for the configuration file is /etc/logid.cfg, but another can be specified using the `-c` flag.
 
 ## Dependencies
 
-This project requires a C++14 compiler, cmake, libevdev, libudev, and libconfig. For popular distributions, I've included commands below.
+This project requires a C++14 compiler, `cmake`, `libevdev`, `libudev`, and `libconfig`. For popular distributions, I've included commands below.
 
 **Debian/Ubuntu:** `sudo apt install cmake libevdev-dev libudev-dev libconfig++-dev`
 
@@ -23,14 +23,14 @@ This project requires a C++14 compiler, cmake, libevdev, libudev, and libconfig.
 
 To build this project, run:
 
-```
+```bash
 mkdir build
 cd build
 cmake ..
 make
 ```
 
-To install, run `sudo make install` after building. You can set the daemon to start at boot by running `sudo systemctl start logid`.
+To install, run `sudo make install` after building. You can set the daemon to start at boot by running `sudo systemctl enable logid` or `sudo systemctl enable --now logid` if you want to enable and start the daemon.
 
 ## Donate
 This program is (and will always be) provided free of charge. If you would like to support the development of this project by donating, you can donate to my Ko-Fi below.
