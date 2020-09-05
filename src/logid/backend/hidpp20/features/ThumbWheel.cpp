@@ -59,8 +59,8 @@ ThumbWheel::ThumbwheelStatus ThumbWheel::setStatus(bool divert, bool invert)
 {
     std::vector<uint8_t> params(2), response;
     ThumbwheelStatus status{};
-    params[1] = divert;
-    params[2] = invert;
+    params[0] = divert;
+    params[1] = invert;
 
     response = callFunction(SetReporting, params);
     status.diverted = response[0];
