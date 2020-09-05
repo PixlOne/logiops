@@ -228,6 +228,28 @@ GestureAction::Config::Config(Device* device, libconfig::Setting &root) :
 
             if(d == None) {
                 try {
+                    auto& mode = gestures[i].lookup("mode");
+                    if(mode.getType() == libconfig::Setting::TypeString) {
+                        std::string mode_str = mode;
+                        std::transform(mode_str.begin(), mode_str.end(),
+                                       mode_str.begin(), ::tolower);
+                        if(mode_str == "nopress") // No action
+                            continue;
+                        else if(mode_str != "onrelease")
+                            logPrintf(WARN, "Line %d: Only NoPress and "
+                                            "OnRelease are supported for the "
+                                            "None direction, defaulting to "
+                                            "OnRelease.", mode.getSourceLine());
+                    } else {
+                        logPrintf(WARN, "Line %d: mode must be a string, "
+                                        "defaulting to OnRelease",
+                                        mode.getSourceLine());
+                    }
+                } catch(libconfig::SettingNotFoundException& e) {
+                    // Default to OnRelease
+                }
+
+                try {
                     _none_action = Action::makeAction(_device,
                             gestures[i].lookup("action"));
                 } catch (InvalidAction& e) {
