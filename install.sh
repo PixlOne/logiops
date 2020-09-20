@@ -1,59 +1,56 @@
 #!/bin/sh
 echo "Installing logiops by PixlOne..."
-
-# Check sudo privileges:
-if [ `id | sed -e 's/(.*//'` != "uid=0" ]; then
-  echo "You need superuser privileges to run this install script, please run as superuser."
-  echo "Exiting..."
-  exit 1
-fi
+echo "\n-------------------------\n"
 
 # Install dependencies:
 echo "Installing dependencies..."
 if [ -d "/etc/apt" ]; then
-  apt install -y g++ cmake libevdev-dev libudev-dev libconfig++-dev
+  sudo apt install -y g++ cmake libevdev-dev libudev-dev libconfig++-dev
 elif [ -f "/etc/arch-release" ]; then
-  pacman -S g++ cmake libevdev libconfig pkgconf
+  sudo pacman -S g++ cmake libevdev libconfig pkgconf
 else
-  echo "Install failed: System is not Debian or Arch."
-  echo "Exiting..."
+  echo "Install failed: System is not Debian or Arch. Exiting..."
   exit 1
 fi
 
 # Build
+echo "\n-------------------------\n"
 echo "Building program..."
 if [ `echo $?` = "0" ]; then
   mkdir -p build
 else
-  echo "Dependencies installation failed."
-  echo "Exiting..."
+  echo "Dependencies installation failed. Exiting..."
   exit 1
 fi
 
 cd build
 cmake ..
 make
+
 if [ `echo $?` = "0" ]; then
-  make install
+  sudo make install
 else
-  echo "Make failed."
-  echo "Exiting..."
+  echo "Make failed. Exiting..."
   exit 1
 fi
 
 # Start, autostart
-systemctl enable logid
-systemctl start logid
+echo "\n-------------------------\n"
+echo "Setting up logid to autostart on boot..."
+sudo systemctl enable logid
+sudo systemctl start logid
 
 # Config file
-touch /etc/logid.cfg
+echo "\n-------------------------\n"
+echo "Creating config file..."
+sudo touch /etc/logid.cfg
 
 # Finish up
-echo "-------------------------"
+echo "\n-------------------------\n"
 echo "Install complete!"
-echo "-------------------------"
-echo "Go to /etc/logid.cfg to configure your mouse settings. Examples here: https://wiki.archlinux.org/index.php/Logitech_MX_Master"
-# Print device name
-echo "Your mouse name: "
-logid -v
-exec bash
+echo "Run logid -v to check your device name, then go to /etc/logid.cfg to configure your mouse settings."
+echo "Detailed instructions and examples here: https://wiki.archlinux.org/index.php/Logitech_MX_Master"
+echo "\n-------------------------\n"
+echo "Press enter to finish..."
+read nothing
+exit 0
