@@ -4,18 +4,21 @@ echo "\n-------------------------\n"
 
 # Install dependencies:
 echo "Installing dependencies..."
-if [ -d "/etc/apt" ]; then
+if [ -x "$(command -v apt)" ]; then
   sudo apt install -y g++ cmake libevdev-dev libudev-dev libconfig++-dev
-elif [ -f "/etc/arch-release" ]; then
+elif [ -x "$(command -v pacman)" ]; then
   sudo pacman -S g++ cmake libevdev libconfig pkgconf
+elif [ -x "$(command -v yum)" ]; then
+  sudo yum -y install cmake libevdev-devel libudev-devel libconfig-devel
 else
-  echo "Install failed: System is not Debian or Arch. Exiting..."
+  echo "Install failed: Package manager not supported."
+  echo "Please build logiops manually. Exiting..."
   exit 1
 fi
 
 # Build
 echo "\n-------------------------\n"
-echo "Building program..."
+echo "Building logiops..."
 if [ `echo $?` = "0" ]; then
   mkdir -p build
 else
