@@ -11,11 +11,13 @@ You may also refer to logid.example.cfg for an example.
 
 ## Dependencies
 
-This project requires a C++14 compiler, cmake, libevdev, libudev, and libconfig. For popular distributions, I've included commands below. 
+This project requires a C++14 compiler, cmake, libevdev, libudev, and libconfig. For popular distributions, I've included commands below.
 
 **Debian/Ubuntu:** `sudo apt install cmake libevdev-dev libudev-dev libconfig++-dev`
 
 **Arch Linux:** `sudo pacman -S cmake libevdev libconfig libudev`
+
+**Fedora:** `sudo dnf install cmake libevdev-devel libconfig`
 
 ## Building
 
