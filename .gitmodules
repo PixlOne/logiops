@@ -1,4 +1,0 @@
-[submodule "src/logid/hidpp"]
-	path = src/logid/hidpp
-	url = https://github.com/PixlOne/hidpp.git
-	branch = master
