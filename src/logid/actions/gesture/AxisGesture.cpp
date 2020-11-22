@@ -101,7 +101,7 @@ AxisGesture::Config::Config(Device *device, libconfig::Setting &setting) :
     Gesture::Config(device, setting, false)
 {
     try {
-        auto& axis = setting.lookup("axis");
+        auto& axis = setting["axis"];
         if(axis.isNumber()) {
             _axis = axis;
         } else if(axis.getType() == libconfig::Setting::TypeString) {
@@ -123,7 +123,7 @@ AxisGesture::Config::Config(Device *device, libconfig::Setting &setting) :
     }
 
     try {
-        auto& multiplier = setting.lookup("axis_multiplier");
+        auto& multiplier = setting["axis_multiplier"];
         if(multiplier.isNumber()) {
             if(multiplier.getType() == libconfig::Setting::TypeFloat)
                 _multiplier = multiplier;
