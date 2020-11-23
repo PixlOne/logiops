@@ -157,7 +157,7 @@ HiresScroll::Config::Config(Device *dev) : DeviceFeature::Config(dev)
         _mode = 0;
         _mask = 0;
         try {
-            auto& hires = config_root.lookup("hires");
+            auto& hires = config_root["hires"];
             if(hires.getType() == libconfig::Setting::TypeBoolean) {
                 _mask |= hidpp20::HiresScroll::Mode::HiRes;
                 if(hires)
@@ -169,7 +169,7 @@ HiresScroll::Config::Config(Device *dev) : DeviceFeature::Config(dev)
         } catch(libconfig::SettingNotFoundException& e) { }
 
         try {
-            auto& invert = config_root.lookup("invert");
+            auto& invert = config_root["invert"];
             if(invert.getType() == libconfig::Setting::TypeBoolean) {
                 _mask |= hidpp20::HiresScroll::Mode::Inverted;
                 if(invert)
@@ -181,7 +181,7 @@ HiresScroll::Config::Config(Device *dev) : DeviceFeature::Config(dev)
         } catch(libconfig::SettingNotFoundException& e) { }
 
         try {
-            auto& target = config_root.lookup("target");
+            auto& target = config_root["target"];
             if(target.getType() == libconfig::Setting::TypeBoolean) {
                 _mask |= hidpp20::HiresScroll::Mode::Target;
                 if(target)
@@ -194,7 +194,7 @@ HiresScroll::Config::Config(Device *dev) : DeviceFeature::Config(dev)
 
         if(_mode & hidpp20::HiresScroll::Mode::Target) {
             try {
-                auto& up = config_root.lookup("up");
+                auto& up = config_root["up"];
                 try {
                     auto g = actions::Gesture::makeGesture(dev, up);
                     if(g->wheelCompatibility()) {
@@ -214,7 +214,7 @@ HiresScroll::Config::Config(Device *dev) : DeviceFeature::Config(dev)
             }
 
             try {
-                auto& down = config_root.lookup("down");
+                auto& down = config_root["down"];
                 try {
                     auto g = actions::Gesture::makeGesture(dev, down);
                     if(g->wheelCompatibility()) {
