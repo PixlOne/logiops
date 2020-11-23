@@ -77,7 +77,7 @@ CycleDPI::Config::Config(Device *device, libconfig::Setting &config) :
     }
 
     try {
-        auto& sensor = config["sensor"];
+        auto& sensor = config.lookup("sensor");
         if(sensor.getType() != Setting::TypeInt)
             logPrintf(WARN, "Line %d: sensor must be an integer",
                     sensor.getSourceLine());
@@ -87,7 +87,7 @@ CycleDPI::Config::Config(Device *device, libconfig::Setting &config) :
     }
 
     try {
-        auto& dpis = config["dpis"];
+        auto& dpis = config.lookup("dpis");
         if(!dpis.isList() && !dpis.isArray()) {
             logPrintf(WARN, "Line %d: dpis must be a list or array, skipping.",
                     dpis.getSourceLine());

@@ -180,7 +180,7 @@ GestureAction::Config::Config(Device* device, libconfig::Setting &root) :
     Action::Config(device)
 {
     try {
-        auto& gestures = root["gestures"];
+        auto& gestures = root.lookup("gestures");
 
         if(!gestures.isList()) {
             logPrintf(WARN, "Line %d: gestures must be a list, ignoring.",
@@ -199,7 +199,7 @@ GestureAction::Config::Config(Device* device, libconfig::Setting &root) :
 
             Direction d;
             try {
-                auto& direction = gestures[i]["direction"];
+                auto& direction = gestures[i].lookup("direction");
                 if(direction.getType() != libconfig::Setting::TypeString) {
                     logPrintf(WARN, "Line %d: direction must be a string, "
                                     "skipping.", direction.getSourceLine());
@@ -228,7 +228,7 @@ GestureAction::Config::Config(Device* device, libconfig::Setting &root) :
 
             if(d == None) {
                 try {
-                    auto& mode = gestures[i]["mode"];
+                    auto& mode = gestures[i].lookup("mode");
                     if(mode.getType() == libconfig::Setting::TypeString) {
                         std::string mode_str = mode;
                         std::transform(mode_str.begin(), mode_str.end(),
@@ -251,10 +251,10 @@ GestureAction::Config::Config(Device* device, libconfig::Setting &root) :
 
                 try {
                     _none_action = Action::makeAction(_device,
-                            gestures[i]["action"]);
+                            gestures[i].lookup("action"));
                 } catch (InvalidAction& e) {
                     logPrintf(WARN, "Line %d: %s is not a valid action, "
-                                    "skipping.", gestures[i]["action"]
+                                    "skipping.", gestures[i].lookup("action")
                                     .getSourceLine(), e.what());
                 } catch (libconfig::SettingNotFoundException& e) {
                     logPrintf(WARN, "Line %d: action is a required field, "
