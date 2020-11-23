@@ -57,7 +57,7 @@ KeypressAction::Config::Config(Device* device, libconfig::Setting& config) :
     }
 
     try {
-        auto &keys = config["keys"];
+        auto &keys = config.lookup("keys");
         if(keys.isArray() || keys.isList()) {
             int key_count = keys.getLength();
             for(int i = 0; i < key_count; i++) {

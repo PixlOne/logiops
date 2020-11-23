@@ -77,7 +77,7 @@ ChangeDPI::Config::Config(Device *device, libconfig::Setting &config) :
     }
 
     try {
-        auto& inc = config["inc"];
+        auto& inc = config.lookup("inc");
         if(inc.getType() != libconfig::Setting::TypeInt)
             logPrintf(WARN, "Line %d: inc must be an integer",
                       inc.getSourceLine());
@@ -88,7 +88,7 @@ ChangeDPI::Config::Config(Device *device, libconfig::Setting &config) :
     }
 
     try {
-        auto& sensor = config["sensor"];
+        auto& sensor = config.lookup("sensor");
         if(sensor.getType() != libconfig::Setting::TypeInt)
             logPrintf(WARN, "Line %d: sensor must be an integer",
                       sensor.getSourceLine());
