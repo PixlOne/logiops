@@ -35,6 +35,7 @@ void IntervalGesture::release(bool primary)
 {
     // Do nothing
     (void)primary; // Suppress unused warning
+    _config.action()->release();
 }
 
 void IntervalGesture::move(int16_t axis)
@@ -47,7 +48,7 @@ void IntervalGesture::move(int16_t axis)
             _config.interval();
     if(new_interval_count > _interval_pass_count) {
         _config.action()->press();
-        _config.action()->release();
+        _config.action()->secondaryRelease();
     }
     _interval_pass_count = new_interval_count;
 }

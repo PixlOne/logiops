@@ -35,6 +35,18 @@ void KeypressAction::press()
         virtual_input->pressKey(key);
 }
 
+void KeypressAction::secondaryRelease()
+{
+    bool skippedFirst = false;
+    for(auto& key : _config.keys()) {
+        if (!skippedFirst) {
+            skippedFirst = true;
+            continue;
+        }
+        virtual_input->releaseKey(key);
+    }
+}
+
 void KeypressAction::release()
 {
     _pressed = false;
