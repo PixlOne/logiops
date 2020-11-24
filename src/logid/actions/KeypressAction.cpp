@@ -37,10 +37,10 @@ void KeypressAction::press()
 
 void KeypressAction::halfRelease()
 {
-    bool skippedFirst = false;
+    bool skipFirst = _config.keys().size() > 1;
     for(auto& key : _config.keys()) {
-        if (!skippedFirst) {
-            skippedFirst = true;
+        if (skipFirst) {
+            skipFirst = false;
             continue;
         }
         virtual_input->releaseKey(key);
