@@ -106,6 +106,8 @@ void HiresScroll::setMode(uint8_t mode)
 
 void HiresScroll::_handleScroll(hidpp20::HiresScroll::WheelStatus event)
 {
+    if (_device->getFeature<features::RemapButton>("remapbutton")->onHiresScroll(event.deltaV)) return;
+
     auto now = std::chrono::system_clock::now();
     if(std::chrono::duration_cast<std::chrono::seconds>(
             now - _last_scroll).count() >= 1) {
@@ -120,8 +122,6 @@ void HiresScroll::_handleScroll(hidpp20::HiresScroll::WheelStatus event)
 
         _last_direction = 0;
     }
-
-    _device->getFeature<features::RemapButton>("remapbutton")->onScroll(event.deltaV);
 
     if(event.deltaV > 0) {
         if(_last_direction == -1) {

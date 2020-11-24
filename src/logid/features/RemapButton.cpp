@@ -124,6 +124,17 @@ void RemapButton::listen()
     }
 }
 
+bool RemapButton::onHiresScroll(int16_t deltaV)
+{
+    bool handled = false;
+    for(const auto& button : this->_config.buttons())
+        if(button.second->pressed()) {
+            button.second->scroll(deltaV);
+                handled = true;
+        }
+    return handled;
+}
+
 void RemapButton::_buttonEvent(const std::set<uint16_t>& new_state)
 {
     // Ensure I/O doesn't occur while updating button state

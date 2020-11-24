@@ -32,7 +32,7 @@ namespace features
         ~RemapButton();
         virtual void configure();
         virtual void listen();
-        virtual void onScroll(int16_t);
+        bool onHiresScroll(int16_t);
 
         class Config : public DeviceFeature::Config
         {
