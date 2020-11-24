@@ -16,6 +16,7 @@
  *
  */
 #include <features/HiresScroll.h>
+#include <features/RemapButton.h>
 #include <actions/gesture/AxisGesture.h>
 #include <Device.h>
 #include <InputDevice.h>
@@ -152,6 +153,9 @@ void HiresScroll::_fixGesture(const std::shared_ptr<actions::Gesture>& gesture) 
 }
 
 void HiresScroll::_handleScroll(hidpp20::HiresScroll::WheelStatus event) {
+    auto remapbutton = _device->getFeature<features::RemapButton>("remapbutton");
+    if (remapbutton && remapbutton->onHiresScroll(event.deltaV)) return;
+
     std::shared_lock lock(_config_mutex);
     auto now = std::chrono::system_clock::now();
     if (std::chrono::duration_cast<std::chrono::seconds>(now - _last_scroll).count() >= 1) {

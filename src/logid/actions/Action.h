@@ -71,6 +71,11 @@ namespace logid::actions {
 
         virtual void move([[maybe_unused]] int16_t x, [[maybe_unused]] int16_t y) { }
 
+        virtual void scroll(int16_t s) {
+            // Suppress unused warning
+            (void)s;
+        };
+
         virtual bool pressed() {
             return _pressed;
         }

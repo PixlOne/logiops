@@ -32,14 +32,16 @@ namespace logid::actions {
             Up,
             Down,
             Left,
-            Right
+            Right,
+            ScrollUp,
+            ScrollDown,
         };
 
         static Direction toDirection(std::string direction);
 
         static std::string fromDirection(Direction direction);
 
-        static Direction toDirection(int32_t x, int32_t y);
+        Direction toDirection(int32_t x, int32_t y, int16_t s);
 
         GestureAction(Device* dev, config::GestureAction& config,
                       const std::shared_ptr<ipcgull::node>& parent);
@@ -48,7 +50,13 @@ namespace logid::actions {
 
         void release() final;
 
-        void move(int16_t x, int16_t y) final;
+        void move(int16_t x, int16_t y) final {
+            move3D(x, y, 0);
+        };
+
+        void scroll(int16_t s) {
+            move3D(0, 0, s);
+        };
 
         uint8_t reprogFlags() const final;
 
@@ -56,10 +64,19 @@ namespace logid::actions {
                         const std::string& type);
 
     protected:
-        int32_t _x{}, _y{};
+        int32_t _x{}, _y{}, _s{};
         std::shared_ptr<ipcgull::node> _node;
         std::map<Direction, std::shared_ptr<Gesture>> _gestures;
         config::GestureAction& _config;
+
+        bool isScroll();
+
+        bool isVertical();
+
+        bool isHorizontal();
+
+    private:
+        void move3D(int16_t, int16_t, int16_t);
     };
 }
 
