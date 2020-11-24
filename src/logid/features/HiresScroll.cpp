@@ -106,7 +106,8 @@ void HiresScroll::setMode(uint8_t mode)
 
 void HiresScroll::_handleScroll(hidpp20::HiresScroll::WheelStatus event)
 {
-    if (_device->getFeature<features::RemapButton>("remapbutton")->onHiresScroll(event.deltaV)) return;
+    auto remapbutton = _device->getFeature<features::RemapButton>("remapbutton");
+    if (remapbutton && remapbutton->onHiresScroll(event.deltaV)) return;
 
     auto now = std::chrono::system_clock::now();
     if(std::chrono::duration_cast<std::chrono::seconds>(
