@@ -34,16 +34,25 @@ namespace actions {
             Up,
             Down,
             Left,
-            Right
+            Right,
+            ScrollUp,
+            ScrollDown,
         };
         static Direction toDirection(std::string direction);
-        static Direction toDirection(int16_t x, int16_t y);
+        static Direction toDirection(int16_t x, int16_t y, int16_t s);
 
         GestureAction(Device* dev, libconfig::Setting& config);
 
         virtual void press();
         virtual void release();
-        virtual void move(int16_t x, int16_t y);
+        virtual void move(int16_t x, int16_t y) {
+          move3D(x, y, 0);
+        };
+        virtual void scroll(int16_t s) {
+          move3D(0, 0, s);
+        };
+
+        void move3D(int16_t, int16_t, int16_t);
 
         virtual uint8_t reprogFlags() const;
 
@@ -59,7 +68,7 @@ namespace actions {
         };
 
     protected:
-        int16_t _x, _y;
+        int16_t _x, _y, _s;
         Config _config;
     };
 }}

@@ -36,15 +36,21 @@ GestureAction::Direction GestureAction::toDirection(std::string direction)
         return Left;
     else if(direction == "right")
         return Right;
+    else if(direction == "scrollup")
+        return ScrollUp;
+    else if(direction == "scrolldown")
+        return ScrollDown;
     else if(direction == "none")
         return None;
     else
         throw std::invalid_argument("direction");
 }
 
-GestureAction::Direction GestureAction::toDirection(int16_t x, int16_t y)
+GestureAction::Direction GestureAction::toDirection(int16_t x, int16_t y, int16_t s)
 {
-    if(x >= 0 && y >= 0)
+    if(s != 0)
+        return s > 0 ? ScrollUp : ScrollDown;
+    else if(x >= 0 && y >= 0)
         return x >= y ? Right : Down;
     else if(x < 0 && y >= 0)
         return -x <= y ? Down : Left;
@@ -72,7 +78,7 @@ void GestureAction::release()
     _pressed = false;
     bool threshold_met = false;
 
-    auto d = toDirection(_x, _y);
+    auto d = toDirection(_x, _y, _s);
     auto primary_gesture = _config.gestures().find(d);
     if(primary_gesture != _config.gestures().end()) {
         threshold_met = primary_gesture->second->metThreshold();
@@ -103,9 +109,9 @@ void GestureAction::release()
     }
 }
 
-void GestureAction::move(int16_t x, int16_t y)
+void GestureAction::move3D(int16_t x, int16_t y, int16_t s)
 {
-    auto new_x = _x + x, new_y = _y + y;
+    auto new_x = _x + x, new_y = _y + y, new_s = _s + s;
 
     if(abs(x) > 0) {
         if(_x < 0 && new_x >= 0) { // Left -> Origin/Right
@@ -167,7 +173,37 @@ void GestureAction::move(int16_t x, int16_t y)
         }
     }
 
-    _x = new_x; _y = new_y;
+    if(abs(s) > 0) {
+        if(_s > 0 && new_s <= 0) { // ScrollDown -> Origin/ScrollUp
+            auto down = _config.gestures().find(ScrollDown);
+            if(down != _config.gestures().end())
+                down->second->move(_s);
+            if(new_s) { // Ignore to origin
+                auto up = _config.gestures().find(ScrollUp);
+                if(up != _config.gestures().end())
+                    up->second->move(new_s);
+            }
+        } else if(_s < 0 && new_s >= 0) { // ScrollUp -> Origin/ScrollDown
+            auto up = _config.gestures().find(ScrollUp);
+            if(up != _config.gestures().end())
+                up->second->move(-_s);
+            if(new_s) { // Ignore to origin
+                auto down = _config.gestures().find(ScrollDown);
+                if(down != _config.gestures().end())
+                    down->second->move(-new_s);
+            }
+        } else if(new_s < 0) { // Origin/ScrollDown to ScrollDown
+            auto down = _config.gestures().find(ScrollDown);
+            if(down != _config.gestures().end())
+                down->second->move(-s);
+        } else if(new_s > 0) {// Origin/ScrollUp to ScrollUp
+            auto up = _config.gestures().find(ScrollUp);
+            if(up != _config.gestures().end())
+                up->second->move(s);
+        }
+    }
+
+    _x = new_x; _y = new_y; _s = new_s;
 }
 
 uint8_t GestureAction::reprogFlags() const
