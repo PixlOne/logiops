@@ -30,7 +30,7 @@ namespace actions {
         KeypressAction(Device* dev, libconfig::Setting& config);
 
         virtual void press();
-        virtual void secondaryRelease();
+        virtual void halfRelease();
         virtual void release();
 
         virtual uint8_t reprogFlags() const;

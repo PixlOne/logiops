@@ -48,7 +48,7 @@ void IntervalGesture::move(int16_t axis)
             _config.interval() + 1;
     if(new_interval_count > _interval_pass_count) {
         _config.action()->press();
-        _config.action()->secondaryRelease();
+        _config.action()->halfRelease();
     }
     _interval_pass_count = new_interval_count;
 }

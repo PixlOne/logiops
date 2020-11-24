@@ -35,7 +35,7 @@ void KeypressAction::press()
         virtual_input->pressKey(key);
 }
 
-void KeypressAction::secondaryRelease()
+void KeypressAction::halfRelease()
 {
     bool skippedFirst = false;
     for(auto& key : _config.keys()) {

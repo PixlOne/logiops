@@ -49,7 +49,7 @@ namespace actions {
                 libconfig::Setting& setting);
 
         virtual void press() = 0;
-        virtual void secondaryRelease() {};
+        virtual void halfRelease() {};
         virtual void release() = 0;
         virtual void move(int16_t x, int16_t y)
         {
