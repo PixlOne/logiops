@@ -39,7 +39,7 @@ namespace actions {
             ScrollDown,
         };
         static Direction toDirection(std::string direction);
-        static Direction toDirection(int16_t x, int16_t y, int16_t s);
+        Direction toDirection(int16_t x, int16_t y, int16_t s);
 
         GestureAction(Device* dev, libconfig::Setting& config);
 
@@ -68,6 +68,10 @@ namespace actions {
         };
 
     protected:
+        bool isScroll();
+        bool isVertical();
+        bool isHorizontal();
+
         int16_t _x, _y, _s;
         Config _config;
     };
