@@ -45,7 +45,7 @@ void IntervalGesture::move(int16_t axis)
         return;
 
     int16_t new_interval_count = (_axis - _config.threshold())/
-            _config.interval();
+            _config.interval() + 1;
     if(new_interval_count > _interval_pass_count) {
         _config.action()->press();
         _config.action()->secondaryRelease();
