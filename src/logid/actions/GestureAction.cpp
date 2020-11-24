@@ -105,25 +105,33 @@ void GestureAction::release()
 
 void GestureAction::move(int16_t x, int16_t y)
 {
-    std::map<Direction, std::shared_ptr<Gesture>>::iterator gesture;
+    auto gesture = _config.gestures().end();
     int16_t axis = 0;
 
-    if (x < 0) {
+    bool isUp = _config.gestures().find(Up)->second->metThreshold();
+    bool isDown = _config.gestures().find(Down)->second->metThreshold();
+    bool isVertical = isUp || isDown;
+
+    bool isLeft = _config.gestures().find(Left)->second->metThreshold();
+    bool isRight = _config.gestures().find(Right)->second->metThreshold();
+    bool isHorizontal = isLeft || isRight;
+
+    if (!isVertical && x < 0) {
         gesture = _config.gestures().find(Left);
         axis = -x;
     }
 
-    if (x > 0) {
+    if (!isVertical && x > 0) {
         gesture = _config.gestures().find(Right);
         axis = x;
     }
 
-    if (y < 0) {
+    if (!isHorizontal && y < 0) {
         gesture = _config.gestures().find(Up);
         axis = -y;
     }
 
-    if (y > 0) {
+    if (!isHorizontal && y > 0) {
         gesture = _config.gestures().find(Down);
         axis = y;
     }
