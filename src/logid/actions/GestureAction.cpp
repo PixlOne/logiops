@@ -111,99 +111,55 @@ void GestureAction::release()
 
 void GestureAction::move3D(int16_t x, int16_t y, int16_t s)
 {
-    auto new_x = _x + x, new_y = _y + y, new_s = _s + s;
+    auto gesture = _config.gestures().end();
+    int16_t axis = 0;
 
-    if(abs(x) > 0) {
-        if(_x < 0 && new_x >= 0) { // Left -> Origin/Right
-            auto left = _config.gestures().find(Left);
-            if(left != _config.gestures().end())
-                left->second->move(_x);
-            if(new_x) { // Ignore to origin
-                auto right = _config.gestures().find(Right);
-                if(right != _config.gestures().end())
-                    right->second->move(new_x);
-            }
-        } else if(_x > 0 && new_x <= 0) { // Right -> Origin/Left
-            auto right = _config.gestures().find(Right);
-            if(right != _config.gestures().end())
-                right->second->move(-_x);
-            if(new_x) { // Ignore to origin
-                auto left = _config.gestures().find(Left);
-                if(left != _config.gestures().end())
-                    left->second->move(-new_x);
-            }
-        } else if(new_x < 0) { // Origin/Left to Left
-            auto left = _config.gestures().find(Left);
-            if(left != _config.gestures().end())
-                left->second->move(-x);
-        } else if(new_x > 0) { // Origin/Right to Right
-            auto right = _config.gestures().find(Right);
-            if(right != _config.gestures().end())
-                right->second->move(x);
-        }
+    bool isScrollUp = _config.gestures().find(ScrollUp)->second->metThreshold();
+    bool isScrollDown = _config.gestures().find(ScrollDown)->second->metThreshold();
+    bool isScroll = isScrollUp || isScrollDown;
+
+    bool isUp = _config.gestures().find(Up)->second->metThreshold();
+    bool isDown = _config.gestures().find(Down)->second->metThreshold();
+    bool isVertical = isUp || isDown;
+
+    bool isLeft = _config.gestures().find(Left)->second->metThreshold();
+    bool isRight = _config.gestures().find(Right)->second->metThreshold();
+    bool isHorizontal = isLeft || isRight;
+
+    if (!isScroll && !isVertical && x < 0) {
+        gesture = _config.gestures().find(Left);
+        axis = -x;
     }
 
-    if(abs(y) > 0) {
-        if(_y > 0 && new_y <= 0) { // Up -> Origin/Down
-            auto up = _config.gestures().find(Up);
-            if(up != _config.gestures().end())
-                up->second->move(_y);
-            if(new_y) { // Ignore to origin
-                auto down = _config.gestures().find(Down);
-                if(down != _config.gestures().end())
-                    down->second->move(new_y);
-            }
-        } else if(_y < 0 && new_y >= 0) { // Down -> Origin/Up
-            auto down = _config.gestures().find(Down);
-            if(down != _config.gestures().end())
-                down->second->move(-_y);
-            if(new_y) { // Ignore to origin
-                auto up = _config.gestures().find(Up);
-                if(up != _config.gestures().end())
-                    up->second->move(-new_y);
-            }
-        } else if(new_y < 0) { // Origin/Up to Up
-            auto up = _config.gestures().find(Up);
-            if(up != _config.gestures().end())
-                up->second->move(-y);
-        } else if(new_y > 0) {// Origin/Down to Down
-            auto down = _config.gestures().find(Down);
-            if(down != _config.gestures().end())
-                down->second->move(y);
-        }
+    if (!isScroll && !isVertical && x > 0) {
+        gesture = _config.gestures().find(Right);
+        axis = x;
     }
 
-    if(abs(s) > 0) {
-        if(_s > 0 && new_s <= 0) { // ScrollDown -> Origin/ScrollUp
-            auto down = _config.gestures().find(ScrollDown);
-            if(down != _config.gestures().end())
-                down->second->move(_s);
-            if(new_s) { // Ignore to origin
-                auto up = _config.gestures().find(ScrollUp);
-                if(up != _config.gestures().end())
-                    up->second->move(new_s);
-            }
-        } else if(_s < 0 && new_s >= 0) { // ScrollUp -> Origin/ScrollDown
-            auto up = _config.gestures().find(ScrollUp);
-            if(up != _config.gestures().end())
-                up->second->move(-_s);
-            if(new_s) { // Ignore to origin
-                auto down = _config.gestures().find(ScrollDown);
-                if(down != _config.gestures().end())
-                    down->second->move(-new_s);
-            }
-        } else if(new_s < 0) { // Origin/ScrollDown to ScrollDown
-            auto down = _config.gestures().find(ScrollDown);
-            if(down != _config.gestures().end())
-                down->second->move(-s);
-        } else if(new_s > 0) {// Origin/ScrollUp to ScrollUp
-            auto up = _config.gestures().find(ScrollUp);
-            if(up != _config.gestures().end())
-                up->second->move(s);
-        }
+    if (!isScroll && !isHorizontal && y < 0) {
+        gesture = _config.gestures().find(Up);
+        axis = -y;
     }
 
-    _x = new_x; _y = new_y; _s = new_s;
+    if (!isScroll && !isHorizontal && y > 0) {
+        gesture = _config.gestures().find(Down);
+        axis = y;
+    }
+
+    if (!isVertical && !isHorizontal && s > 0) {
+        gesture = _config.gestures().find(ScrollUp);
+        axis = s;
+    }
+
+    if (!isVertical && !isHorizontal && s < 0) {
+        gesture = _config.gestures().find(ScrollDown);
+        axis = -s;
+    }
+
+    if (gesture != _config.gestures().end())
+        gesture->second->move(axis);
+
+    _x += x; _y += y; _s += s;
 }
 
 uint8_t GestureAction::reprogFlags() const
