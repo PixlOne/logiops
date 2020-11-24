@@ -16,6 +16,7 @@
  *
  */
 #include "HiresScroll.h"
+#include "RemapButton.h"
 #include "../Device.h"
 #include "../InputDevice.h"
 #include "../actions/gesture/Gesture.h"
@@ -119,6 +120,8 @@ void HiresScroll::_handleScroll(hidpp20::HiresScroll::WheelStatus event)
 
         _last_direction = 0;
     }
+
+    _device->getFeature<features::RemapButton>("remapbutton")->onScroll(event.deltaV);
 
     if(event.deltaV > 0) {
         if(_last_direction == -1) {
