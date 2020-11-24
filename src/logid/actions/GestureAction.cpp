@@ -44,14 +44,12 @@ GestureAction::Direction GestureAction::toDirection(std::string direction)
 
 GestureAction::Direction GestureAction::toDirection(int16_t x, int16_t y)
 {
-    if(x >= 0 && y >= 0)
-        return x >= y ? Right : Down;
-    else if(x < 0 && y >= 0)
-        return -x <= y ? Down : Left;
-    else if(x <= 0 && y < 0)
-        return x <= y ? Left : Up;
+    if(isVertical())
+        return y < 0 ? Up : Down;
+    else if(isHorizontal())
+        return x < 0 ? Left : Right;
     else
-        return x <= -y ? Up : Right;
+        return None;
 }
 
 GestureAction::GestureAction(Device* dev, libconfig::Setting& config) :
@@ -70,37 +68,35 @@ void GestureAction::press()
 void GestureAction::release()
 {
     _pressed = false;
-    bool threshold_met = false;
 
-    auto d = toDirection(_x, _y);
-    auto primary_gesture = _config.gestures().find(d);
-    if(primary_gesture != _config.gestures().end()) {
-        threshold_met = primary_gesture->second->metThreshold();
-        primary_gesture->second->release(true);
-    }
+    Direction d = toDirection(_x, _y);
 
     for(auto& gesture : _config.gestures()) {
-        if(gesture.first == d)
-            continue;
-        if(!threshold_met) {
-            if(gesture.second->metThreshold()) {
-                // If the primary gesture did not meet its threshold, use the
-                // secondary one.
-                threshold_met = true;
-                gesture.second->release(true);
-                break;
-            }
-        } else {
-            gesture.second->release(false);
-        }
+        gesture.second->release(gesture.first == d);
     }
 
-    if(!threshold_met) {
-        if(_config.noneAction()) {
-            _config.noneAction()->press();
-            _config.noneAction()->release();
-        }
+    if(d == None && _config.noneAction()) {
+        _config.noneAction()->press();
+        _config.noneAction()->release();
     }
+}
+
+bool GestureAction::isVertical()
+{
+    auto up = _config.gestures().find(Up);
+    bool isUp = up == _config.gestures().end() ? false : up->second->metThreshold();
+    auto down = _config.gestures().find(Down);
+    bool isDown = down == _config.gestures().end() ? false : down->second->metThreshold();
+    return isUp || isDown;
+}
+
+bool GestureAction::isHorizontal()
+{
+    auto left = _config.gestures().find(Left);
+    bool isLeft = left == _config.gestures().end() ? false : left->second->metThreshold();
+    auto right = _config.gestures().find(Right);
+    bool isRight = right == _config.gestures().end() ? false : right->second->metThreshold();
+    return isLeft || isRight;
 }
 
 void GestureAction::move(int16_t x, int16_t y)
@@ -108,30 +104,25 @@ void GestureAction::move(int16_t x, int16_t y)
     auto gesture = _config.gestures().end();
     int16_t axis = 0;
 
-    bool isUp = _config.gestures().find(Up)->second->metThreshold();
-    bool isDown = _config.gestures().find(Down)->second->metThreshold();
-    bool isVertical = isUp || isDown;
+    bool isV = isVertical();
+    bool isH = isHorizontal();
 
-    bool isLeft = _config.gestures().find(Left)->second->metThreshold();
-    bool isRight = _config.gestures().find(Right)->second->metThreshold();
-    bool isHorizontal = isLeft || isRight;
-
-    if (!isVertical && x < 0) {
+    if (!isV && x < 0) {
         gesture = _config.gestures().find(Left);
         axis = -x;
     }
 
-    if (!isVertical && x > 0) {
+    if (!isV && x > 0) {
         gesture = _config.gestures().find(Right);
         axis = x;
     }
 
-    if (!isHorizontal && y < 0) {
+    if (!isH && y < 0) {
         gesture = _config.gestures().find(Up);
         axis = -y;
     }
 
-    if (!isHorizontal && y > 0) {
+    if (!isH && y > 0) {
         gesture = _config.gestures().find(Down);
         axis = y;
     }
