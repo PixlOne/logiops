@@ -21,6 +21,8 @@ This project requires a C++14 compiler, `cmake`, `libevdev`, `libudev`, and `lib
 
 **Solus:** `sudo eopkg install libevdev-devel libconfig-devel libgudev-devel`
 
+**Fedora/CentOS** `sudo dnf install -y libevdev systemd-devel libconfig libevdev-devel libconfig-devel gcc g++ make cmake && sudo echo /usr/local/lib >> /etc/ld.so.conf.d/lidhidpp.conf && sudo ldconfig`
+
 ## Building
 
 To build this project, run:
