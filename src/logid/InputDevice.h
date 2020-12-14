@@ -20,6 +20,7 @@
 #define LOGID_INPUTDEVICE_H
 
 #include <memory>
+#include <string>
 
 extern "C"
 {

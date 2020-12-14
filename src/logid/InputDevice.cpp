@@ -54,8 +54,10 @@ InputDevice::InputDevice(const char* name)
     int err = libevdev_uinput_create_from_device(device,
             LIBEVDEV_UINPUT_OPEN_MANAGED, &ui_device);
 
-    if(err != 0)
+    if(err != 0) {
+        libevdev_free(device);
         throw std::system_error(-err, std::generic_category());
+    }
 }
 
 InputDevice::~InputDevice()
