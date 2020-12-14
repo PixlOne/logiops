@@ -58,6 +58,7 @@ namespace logid
 
         static uint _toEventCode(uint type, const std::string& name);
 
+        bool registered_keys[KEY_CNT];
         libevdev* device;
         libevdev_uinput* ui_device{};
     };

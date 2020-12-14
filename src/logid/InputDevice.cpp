@@ -44,6 +44,18 @@ InputDevice::InputDevice(const char* name)
     libevdev_set_name(device, name);
 
     libevdev_enable_event_type(device, EV_KEY);
+    for (unsigned int i = 0; i < KEY_CNT; i++) {
+        // Enable some keys which a normal keyboard should have
+        // by default, i.e. a-z, modifier keys and so on, see:
+        // /usr/include/linux/input-event-codes.h
+        if (i < 128) {
+            registered_keys[i] = true;
+            libevdev_enable_event_code(device, EV_KEY, i, nullptr);
+        } else {
+            registered_keys[i] = false;
+        }
+    }
+
     libevdev_enable_event_type(device, EV_REL);
     for(unsigned int i = 0; i < REL_CNT; i++)
         libevdev_enable_event_code(device, EV_REL, i, nullptr);
@@ -65,6 +77,12 @@ InputDevice::~InputDevice()
 
 void InputDevice::registerKey(uint code)
 {
+    if (registered_keys[code]) {
+        return;
+    }
+
+    libevdev_uinput_destroy(ui_device);
+
     libevdev_enable_event_code(device, EV_KEY, code, nullptr);
     int err = libevdev_uinput_create_from_device(device,
             LIBEVDEV_UINPUT_OPEN_MANAGED, &ui_device);
@@ -73,6 +91,8 @@ void InputDevice::registerKey(uint code)
         libevdev_free(device);
         throw std::system_error(-err, std::generic_category());
     }
+
+    registered_keys[code] = true;
 }
 
 void InputDevice::moveAxis(uint axis, int movement)
