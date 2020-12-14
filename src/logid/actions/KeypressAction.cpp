@@ -64,9 +64,11 @@ KeypressAction::Config::Config(Device* device, libconfig::Setting& config) :
                 auto& key = keys[i];
                 if(key.isNumber()) {
                     _keys.push_back(key);
+                    virtual_input->registerKey(key);
                 } else if(key.getType() == libconfig::Setting::TypeString) {
                     try {
                         _keys.push_back(virtual_input->toKeyCode(key));
+                        virtual_input->registerKey(virtual_input->toKeyCode(key));
                     } catch(InputDevice::InvalidEventCode& e) {
                         logPrintf(WARN, "Line %d: Invalid keycode %s, skipping."
                             , key.getSourceLine(), key.c_str());

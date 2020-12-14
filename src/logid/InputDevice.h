@@ -44,6 +44,7 @@ namespace logid
         explicit InputDevice(const char *name);
         ~InputDevice();
 
+        void registerKey(uint code);
         void moveAxis(uint axis, int movement);
         void pressKey(uint code);
         void releaseKey(uint code);

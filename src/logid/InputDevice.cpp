@@ -43,12 +43,7 @@ InputDevice::InputDevice(const char* name)
     device = libevdev_new();
     libevdev_set_name(device, name);
 
-    ///TODO: Is it really a good idea to enable all events?
     libevdev_enable_event_type(device, EV_KEY);
-    // KEY_ROTATE_LOCK_TOGGLE is the highest key mapped by
-    // /usr/share/X11/xkb/keycodes/evdev
-    for(unsigned int i = 0; i <= KEY_ROTATE_LOCK_TOGGLE; i++)
-        libevdev_enable_event_code(device, EV_KEY, i, nullptr);
     libevdev_enable_event_type(device, EV_REL);
     for(unsigned int i = 0; i < REL_CNT; i++)
         libevdev_enable_event_code(device, EV_REL, i, nullptr);
@@ -66,6 +61,18 @@ InputDevice::~InputDevice()
 {
     libevdev_uinput_destroy(ui_device);
     libevdev_free(device);
+}
+
+void InputDevice::registerKey(uint code)
+{
+    libevdev_enable_event_code(device, EV_KEY, code, nullptr);
+    int err = libevdev_uinput_create_from_device(device,
+            LIBEVDEV_UINPUT_OPEN_MANAGED, &ui_device);
+
+    if(err != 0) {
+        libevdev_free(device);
+        throw std::system_error(-err, std::generic_category());
+    }
 }
 
 void InputDevice::moveAxis(uint axis, int movement)
