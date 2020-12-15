@@ -89,6 +89,8 @@ void InputDevice::registerKey(uint code)
 
     if(err != 0) {
         libevdev_free(device);
+        device = nullptr;
+        ui_device = nullptr;
         throw std::system_error(-err, std::generic_category());
     }
 
