@@ -20,6 +20,7 @@
 #define LOGID_INPUTDEVICE_H
 
 #include <memory>
+#include <string>
 
 extern "C"
 {
@@ -43,6 +44,7 @@ namespace logid
         explicit InputDevice(const char *name);
         ~InputDevice();
 
+        void registerKey(uint code);
         void moveAxis(uint axis, int movement);
         void pressKey(uint code);
         void releaseKey(uint code);
@@ -56,6 +58,7 @@ namespace logid
 
         static uint _toEventCode(uint type, const std::string& name);
 
+        bool registered_keys[KEY_CNT];
         libevdev* device;
         libevdev_uinput* ui_device{};
     };
