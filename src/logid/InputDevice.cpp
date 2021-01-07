@@ -77,24 +77,26 @@ InputDevice::~InputDevice()
 
 void InputDevice::registerKey(uint code)
 {
-    if (registered_keys[code]) {
+    // TODO: Maybe print error message, if wrong code is passed?
+    if(registered_keys[code] || code > KEY_CNT) {
         return;
     }
 
-    libevdev_uinput_destroy(ui_device);
-
-    libevdev_enable_event_code(device, EV_KEY, code, nullptr);
-    int err = libevdev_uinput_create_from_device(device,
-            LIBEVDEV_UINPUT_OPEN_MANAGED, &ui_device);
-
-    if(err != 0) {
-        libevdev_free(device);
-        device = nullptr;
-        ui_device = nullptr;
-        throw std::system_error(-err, std::generic_category());
-    }
+    _enableEvent(EV_KEY, code);
 
     registered_keys[code] = true;
+}
+
+void InputDevice::registerAxis(uint axis)
+{
+    // TODO: Maybe print error message, if wrong code is passed?
+    if(registered_axis[axis] || axis > REL_CNT) {
+        return;
+    }
+
+    _enableEvent(EV_REL, axis);
+
+    registered_axis[axis] = true;
 }
 
 void InputDevice::moveAxis(uint axis, int movement)
@@ -146,6 +148,23 @@ uint InputDevice::_toEventCode(uint type, const std::string& name)
         throw InvalidEventCode(name);
 
     return code;
+}
+
+void InputDevice::_enableEvent(const uint type, const uint code)
+{
+    libevdev_uinput_destroy(ui_device);
+
+    libevdev_enable_event_code(device, type, code, nullptr);
+
+    int err = libevdev_uinput_create_from_device(device,
+            LIBEVDEV_UINPUT_OPEN_MANAGED, &ui_device);
+
+    if(err != 0) {
+        libevdev_free(device);
+        device = nullptr;
+        ui_device = nullptr;
+        throw std::system_error(-err, std::generic_category());
+    }
 }
 
 void InputDevice::_sendEvent(uint type, uint code, int value)

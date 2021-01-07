@@ -104,9 +104,11 @@ AxisGesture::Config::Config(Device *device, libconfig::Setting &setting) :
         auto& axis = setting.lookup("axis");
         if(axis.isNumber()) {
             _axis = axis;
+            virtual_input->registerAxis(_axis);
         } else if(axis.getType() == libconfig::Setting::TypeString) {
             try {
                 _axis = virtual_input->toAxisCode(axis);
+                virtual_input->registerAxis(_axis);
             } catch(InputDevice::InvalidEventCode& e) {
                 logPrintf(WARN, "Line %d: Invalid axis %s, skipping."
                         , axis.getSourceLine(), axis.c_str());
@@ -138,8 +140,11 @@ AxisGesture::Config::Config(Device *device, libconfig::Setting &setting) :
         // Ignore
     }
 
-    if(InputDevice::getLowResAxis(_axis) != -1)
+    int low_res_axis = InputDevice::getLowResAxis(_axis);
+    if(low_res_axis != -1) {
         _multiplier *= 120;
+        virtual_input->registerAxis(low_res_axis);
+    }
 }
 
 unsigned int AxisGesture::Config::axis() const
