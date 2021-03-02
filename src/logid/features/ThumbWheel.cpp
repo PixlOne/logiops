@@ -120,7 +120,7 @@ void ThumbWheel::_handleEvent(hidpp20::ThumbWheel::ThumbwheelEvent event)
         _last_touch = !_last_touch;
         auto action = _config.touchAction();
         if(action) {
-            if(_last_proxy)
+            if(_last_touch)
                 action->press();
             else
                 action->release();
