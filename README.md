@@ -31,6 +31,7 @@ To build this project, run:
 mkdir build
 cd build
 cmake ..
+cd ..
 make
 ```
 
