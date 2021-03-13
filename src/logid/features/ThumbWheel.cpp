@@ -142,23 +142,15 @@ void ThumbWheel::_handleEvent(hidpp20::ThumbWheel::ThumbwheelEvent event)
         if(event.rotation) {
             int8_t direction = event.rotation > 0 ? 1 : -1;
             std::shared_ptr<actions::Gesture> scroll_action;
-            std::shared_ptr<actions::Gesture> opposite_scroll;
 
-            if(event.rotation > 0) {
+            if(direction > 0)
                 scroll_action = _config.rightAction();
-                opposite_scroll = _config.leftAction();
-            } else {
+            else
                 scroll_action = _config.leftAction();
-                opposite_scroll = _config.rightAction();
-            }
 
-            if(direction != _last_direction) {
-                if(opposite_scroll)
-                    opposite_scroll->release();
-                if(scroll_action) {
-                    scroll_action->press(true);
-                    scroll_action->move(direction * event.rotation);
-                }
+            if(scroll_action) {
+                scroll_action->press(true);
+                scroll_action->move(direction * event.rotation);
             }
 
             _last_direction = direction;
