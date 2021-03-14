@@ -16,6 +16,7 @@
  *
  */
 
+#include <thread>
 #include "util/log.h"
 #include "features/DPI.h"
 #include "Device.h"
