@@ -23,7 +23,7 @@ This project requires a C++14 compiler, `cmake`, `libevdev`, `libudev`, and `lib
 
 **Fedora:** `sudo dnf install cmake libevdev-devel systemd-devel libconfig-devel gcc-c++`
 
-**Suse:** `sudo zypper install cmake libevdev-devel libconfig-devel libudev-devel gcc-c++`
+**Suse:** `sudo zypper install cmake libevdev-devel libconfig-devel libudev-devel libconfig++-devel gcc-c++`
 
 ## Building
 
