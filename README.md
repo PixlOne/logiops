@@ -4,13 +4,6 @@ This is an unofficial driver for Logitech mice and keyboard.
 
 This is currently only compatible with HID++ \>2.0 devices.
 
-## Configuration
-[Refer to the wiki for details.](https://github.com/PixlOne/logiops/wiki/Configuration)
-
-You may also refer to [logid.example.cfg](./logid.example.cfg) for an example.
-
-Default location for the configuration file is /etc/logid.cfg, but another can be specified using the `-c` flag.
-
 ## Dependencies
 
 This project requires a C++14 compiler, `cmake`, `libevdev`, `libudev`, and `libconfig`. For popular distributions, I've included commands below.
@@ -25,7 +18,7 @@ This project requires a C++14 compiler, `cmake`, `libevdev`, `libudev`, and `lib
 
 **Solus:** `sudo eopkg install libevdev-devel libconfig-devel libgudev-devel`
 
-## Building
+## How to build
 
 To build this project, run:
 
@@ -36,7 +29,43 @@ cmake ..
 make
 ```
 
-To install, run `sudo make install` after building. You can set the daemon to start at boot by running `sudo systemctl enable logid` or `sudo systemctl enable --now logid` if you want to enable and start the daemon.
+## How to install
+
+To install after building, run:
+
+```bash
+sudo make install
+```
+
+Finally, enable and start the daemon:
+
+```bash
+sudo systemctl enable --now logid
+```
+
+## How to configure
+
+Default location for the configuration file is /etc/logid.cfg, but another can be specified using the `-c` flag.
+
+[Refer to the wiki for details.](https://github.com/PixlOne/logiops/wiki/Configuration)
+
+You may also refer to [logid.example.cfg](./logid.example.cfg) for an example.
+
+
+## How to uninstall
+
+First, disable the daemon:
+```bash
+sudo systemctl disable --now logid
+```
+
+Then remove the few files that were installed:
+```bash
+sudo rm /usr/local/bin/logid
+sudo rm /lib/systemd/system/logid.service
+sudo rm /etc/logid.cfg
+```
+
 
 ## Donate
 This program is (and will always be) provided free of charge. If you would like to support the development of this project by donating, you can donate to my Ko-Fi below.
