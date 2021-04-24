@@ -21,7 +21,7 @@ This project requires a C++14 compiler, `cmake`, `libevdev`, `libudev`, and `lib
 
 **Fedora:** `sudo dnf install cmake libevdev-devel systemd-devel libconfig-devel gcc-c++`
 
-**Gentoo Linux** `sudo emerge dev-libs/libconfig dev-libs/libevdev dev-util/cmake virtual/libudev`
+**Gentoo Linux:** `sudo emerge dev-libs/libconfig dev-libs/libevdev dev-util/cmake virtual/libudev`
 
 **Solus:** `sudo eopkg install libevdev-devel libconfig-devel libgudev-devel`
 
