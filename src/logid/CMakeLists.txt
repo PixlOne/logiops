@@ -23,6 +23,7 @@ add_executable(logid
         features/DeviceStatus.cpp
         features/ThumbWheel.cpp
         actions/Action.cpp
+        actions/AxisAction.cpp
         actions/NullAction.cpp
         actions/KeypressAction.cpp
         actions/ToggleHiresScroll.cpp
