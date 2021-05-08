@@ -103,7 +103,9 @@ void DPI::setDPI(uint16_t dpi, uint8_t sensor)
     hidpp20::AdjustableDPI::SensorDPIList dpi_list;
     if(_dpi_lists.size() <= sensor) {
         dpi_list = _adjustable_dpi->getSensorDPIList(sensor);
-        for(std::size_t i = _dpi_lists.size()-1; i <= sensor; i++) {
+        std::ptrdiff_t start = _dpi_lists.size()-1;
+        if(start < 0) start = 0;
+        for(std::size_t i = start; i <= sensor; i++) {
             _dpi_lists.push_back(_adjustable_dpi->getSensorDPIList(i));
         }
     }
