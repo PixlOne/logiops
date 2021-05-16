@@ -1,6 +1,8 @@
 [Unit]
 Description=Logitech Configuration Daemon
 StartLimitIntervalSec=0
+After=multi-user.target
+Wants=multi-user.target
 
 [Service]
 Type=simple
@@ -10,4 +12,4 @@ ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-failure
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=graphical.target
