@@ -58,7 +58,10 @@ InputDevice::InputDevice(const char* name)
 
     libevdev_enable_event_type(device, EV_REL);
     for(unsigned int i = 0; i < REL_CNT; i++)
-        libevdev_enable_event_code(device, EV_REL, i, nullptr);
+        if (i != REL_DIAL)
+            // REL_DIAL conflicts with REL_HWHEEL or REL_HWHEEL_HI_RES:
+            // Horizontal scroll events not handled by OS if device has REL_DIAL
+            libevdev_enable_event_code(device, EV_REL, i, nullptr);
 
     int err = libevdev_uinput_create_from_device(device,
             LIBEVDEV_UINPUT_OPEN_MANAGED, &ui_device);
