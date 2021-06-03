@@ -11,6 +11,9 @@ You may also refer to [logid.example.cfg](./logid.example.cfg) for an example.
 
 Default location for the configuration file is /etc/logid.cfg, but another can be specified using the `-c` flag.
 
+## Install
+Run the included ```install.sh``` executable from terminal, or follow the below build instructions.
+
 ## Dependencies
 
 This project requires a C++14 compiler, `cmake`, `libevdev`, `libudev`, and `libconfig`. For popular distributions, I've included commands below.
