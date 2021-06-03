@@ -151,6 +151,29 @@ void RemapButton::_buttonEvent(const std::set<uint16_t>& new_state)
     _pressed_buttons = new_state;
 }
 
+void RemapButton::nextProfile() {
+    int current = _config.getCurrentProfile();
+    int total = _config.getProfileCount();
+    setProfile((current+1)%total); // little effective snippet to make a looping increment
+}
+
+void RemapButton::prevProfile() {
+    int current = _config.getCurrentProfile();
+    int total = _config.getProfileCount();
+    int newprofile = 0;
+    if(current == 0){
+        newprofile = total-1;
+    }
+    else{
+        newprofile = current-1;
+    }
+    setProfile(newprofile);
+}
+
+void RemapButton::setProfile(int profileIndex) {
+    _config.setProfile(profileIndex);
+}
+
 RemapButton::Config::Config(Device *dev) : DeviceFeature::Config(dev)
 {
     try {
@@ -160,15 +183,34 @@ RemapButton::Config::Config(Device *dev) : DeviceFeature::Config(dev)
                     config_root.getSourceLine());
             return;
         }
-        int button_count = config_root.getLength();
-        for(int i = 0; i < button_count; i++)
-            _parseButton(config_root[i]);
+        int profile_count = config_root.getLength();
+        if(profile_count > 0){
+            bool NewProfileMode = config_root[0].isList();
+            if(NewProfileMode){
+                //if the buttons paramater is filled with lists
+                _buttons.resize(profile_count);
+                for(int a = 0; a<profile_count; a++){
+                    auto &profile = config_root[a];
+                    int button_count = profile.getLength();
+                    for(int i = 0; i < button_count; i++){
+                        _parseButton(profile[i], a);
+                    }
+                }
+            } else{
+                //here to provide compatibility with old configs
+                _buttons.resize(1);
+                int button_count = profile_count;
+                for(int i = 0; i < button_count; i++){
+                    _parseButton(config_root[i], 0);
+                }
+            }
+        }
     } catch(libconfig::SettingNotFoundException& e) {
         // buttons not configured, use default
     }
 }
 
-void RemapButton::Config::_parseButton(libconfig::Setting &setting)
+void RemapButton::Config::_parseButton(libconfig::Setting &setting, int profileind)
 {
     if(!setting.isGroup()) {
         logPrintf(WARN, "Line %d: button must be an object, ignoring.",
@@ -192,7 +234,7 @@ void RemapButton::Config::_parseButton(libconfig::Setting &setting)
     }
 
     try {
-        _buttons.emplace(cid, Action::makeAction(_device,
+        _buttons[profileind].emplace(cid, Action::makeAction(_device,
                 setting.lookup("action")));
     } catch(libconfig::SettingNotFoundException& e) {
         logPrintf(WARN, "Line %d: action is required, ignoring.",
@@ -205,5 +247,22 @@ void RemapButton::Config::_parseButton(libconfig::Setting &setting)
 
 const std::map<uint8_t, std::shared_ptr<Action>>& RemapButton::Config::buttons()
 {
-    return _buttons;
+    return _buttons[_currentProfile];
+}
+
+int RemapButton::Config::getProfileCount() {
+    return _buttons.size();
+}
+
+void RemapButton::Config::setProfile(int profileIndex) {
+    if(profileIndex >= _buttons.size() || profileIndex < 0){
+        logPrintf(WARN, "%d is an invalid profile index, ignoring.",
+                  profileIndex);
+        return;
+    }
+    _currentProfile = profileIndex;
+}
+
+int RemapButton::Config::getCurrentProfile() const {
+    return _currentProfile;
 }

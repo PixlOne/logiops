@@ -33,15 +33,24 @@ namespace features
         virtual void configure();
         virtual void listen();
 
+        void nextProfile();
+        void prevProfile();
+        void setProfile(int profileIndex);
         class Config : public DeviceFeature::Config
         {
         public:
             explicit Config(Device* dev);
             const std::map<uint8_t, std::shared_ptr<actions::Action>>&
                 buttons();
+            int getProfileCount();
+            void setProfile(int profileIndex);
+
+            int getCurrentProfile() const;
+
         protected:
-            void _parseButton(libconfig::Setting& setting);
-            std::map<uint8_t, std::shared_ptr<actions::Action>> _buttons;
+            void _parseButton(libconfig::Setting& setting, int profileind);
+            std::vector<std::map<uint8_t, std::shared_ptr<actions::Action>>> _buttons;
+            int _currentProfile = 0;
         };
     private:
         void _buttonEvent(const std::set<uint16_t>& new_state);
