@@ -37,7 +37,7 @@ namespace actions {
             Right
         };
         static Direction toDirection(std::string direction);
-        static Direction toDirection(int16_t x, int16_t y);
+        Direction toDirection(int16_t x, int16_t y);
 
         GestureAction(Device* dev, libconfig::Setting& config);
 
@@ -59,6 +59,9 @@ namespace actions {
         };
 
     protected:
+        bool isVertical();
+        bool isHorizontal();
+
         int16_t _x, _y;
         Config _config;
     };

@@ -44,14 +44,12 @@ GestureAction::Direction GestureAction::toDirection(std::string direction)
 
 GestureAction::Direction GestureAction::toDirection(int16_t x, int16_t y)
 {
-    if(x >= 0 && y >= 0)
-        return x >= y ? Right : Down;
-    else if(x < 0 && y >= 0)
-        return -x <= y ? Down : Left;
-    else if(x <= 0 && y < 0)
-        return x <= y ? Left : Up;
+    if(isVertical())
+        return y < 0 ? Up : Down;
+    else if(isHorizontal())
+        return x < 0 ? Left : Right;
     else
-        return x <= -y ? Up : Right;
+        return None;
 }
 
 GestureAction::GestureAction(Device* dev, libconfig::Setting& config) :
@@ -70,104 +68,69 @@ void GestureAction::press()
 void GestureAction::release()
 {
     _pressed = false;
-    bool threshold_met = false;
 
-    auto d = toDirection(_x, _y);
-    auto primary_gesture = _config.gestures().find(d);
-    if(primary_gesture != _config.gestures().end()) {
-        threshold_met = primary_gesture->second->metThreshold();
-        primary_gesture->second->release(true);
-    }
+    Direction d = toDirection(_x, _y);
 
     for(auto& gesture : _config.gestures()) {
-        if(gesture.first == d)
-            continue;
-        if(!threshold_met) {
-            if(gesture.second->metThreshold()) {
-                // If the primary gesture did not meet its threshold, use the
-                // secondary one.
-                threshold_met = true;
-                gesture.second->release(true);
-                break;
-            }
-        } else {
-            gesture.second->release(false);
-        }
+        gesture.second->release(gesture.first == d);
     }
 
-    if(!threshold_met) {
-        if(_config.noneAction()) {
-            _config.noneAction()->press();
-            _config.noneAction()->release();
-        }
+    if(d == None && _config.noneAction()) {
+        _config.noneAction()->press();
+        _config.noneAction()->release();
     }
+}
+
+bool GestureAction::isVertical()
+{
+    auto up = _config.gestures().find(Up);
+    bool isUp = up == _config.gestures().end() ? false : up->second->metThreshold();
+    auto down = _config.gestures().find(Down);
+    bool isDown = down == _config.gestures().end() ? false : down->second->metThreshold();
+    return isUp || isDown;
+}
+
+bool GestureAction::isHorizontal()
+{
+    auto left = _config.gestures().find(Left);
+    bool isLeft = left == _config.gestures().end() ? false : left->second->metThreshold();
+    auto right = _config.gestures().find(Right);
+    bool isRight = right == _config.gestures().end() ? false : right->second->metThreshold();
+    return isLeft || isRight;
 }
 
 void GestureAction::move(int16_t x, int16_t y)
 {
-    auto new_x = _x + x, new_y = _y + y;
+    auto gesture = _config.gestures().end();
+    int16_t axis = 0;
 
-    if(abs(x) > 0) {
-        if(_x < 0 && new_x >= 0) { // Left -> Origin/Right
-            auto left = _config.gestures().find(Left);
-            if(left != _config.gestures().end())
-                left->second->move(_x);
-            if(new_x) { // Ignore to origin
-                auto right = _config.gestures().find(Right);
-                if(right != _config.gestures().end())
-                    right->second->move(new_x);
-            }
-        } else if(_x > 0 && new_x <= 0) { // Right -> Origin/Left
-            auto right = _config.gestures().find(Right);
-            if(right != _config.gestures().end())
-                right->second->move(-_x);
-            if(new_x) { // Ignore to origin
-                auto left = _config.gestures().find(Left);
-                if(left != _config.gestures().end())
-                    left->second->move(-new_x);
-            }
-        } else if(new_x < 0) { // Origin/Left to Left
-            auto left = _config.gestures().find(Left);
-            if(left != _config.gestures().end())
-                left->second->move(-x);
-        } else if(new_x > 0) { // Origin/Right to Right
-            auto right = _config.gestures().find(Right);
-            if(right != _config.gestures().end())
-                right->second->move(x);
-        }
+    bool isV = isVertical();
+    bool isH = isHorizontal();
+
+    if (!isV && x < 0) {
+        gesture = _config.gestures().find(Left);
+        axis = -x;
     }
 
-    if(abs(y) > 0) {
-        if(_y > 0 && new_y <= 0) { // Up -> Origin/Down
-            auto up = _config.gestures().find(Up);
-            if(up != _config.gestures().end())
-                up->second->move(_y);
-            if(new_y) { // Ignore to origin
-                auto down = _config.gestures().find(Down);
-                if(down != _config.gestures().end())
-                    down->second->move(new_y);
-            }
-        } else if(_y < 0 && new_y >= 0) { // Down -> Origin/Up
-            auto down = _config.gestures().find(Down);
-            if(down != _config.gestures().end())
-                down->second->move(-_y);
-            if(new_y) { // Ignore to origin
-                auto up = _config.gestures().find(Up);
-                if(up != _config.gestures().end())
-                    up->second->move(-new_y);
-            }
-        } else if(new_y < 0) { // Origin/Up to Up
-            auto up = _config.gestures().find(Up);
-            if(up != _config.gestures().end())
-                up->second->move(-y);
-        } else if(new_y > 0) {// Origin/Down to Down
-            auto down = _config.gestures().find(Down);
-            if(down != _config.gestures().end())
-                down->second->move(y);
-        }
+    if (!isV && x > 0) {
+        gesture = _config.gestures().find(Right);
+        axis = x;
     }
 
-    _x = new_x; _y = new_y;
+    if (!isH && y < 0) {
+        gesture = _config.gestures().find(Up);
+        axis = -y;
+    }
+
+    if (!isH && y > 0) {
+        gesture = _config.gestures().find(Down);
+        axis = y;
+    }
+
+    if (gesture != _config.gestures().end())
+        gesture->second->move(axis);
+
+    _x += x; _y += y;
 }
 
 uint8_t GestureAction::reprogFlags() const
@@ -180,7 +143,7 @@ GestureAction::Config::Config(Device* device, libconfig::Setting &root) :
     Action::Config(device)
 {
     try {
-        auto& gestures = root.lookup("gestures");
+        auto& gestures = root["gestures"];
 
         if(!gestures.isList()) {
             logPrintf(WARN, "Line %d: gestures must be a list, ignoring.",
@@ -199,7 +162,7 @@ GestureAction::Config::Config(Device* device, libconfig::Setting &root) :
 
             Direction d;
             try {
-                auto& direction = gestures[i].lookup("direction");
+                auto& direction = gestures[i]["direction"];
                 if(direction.getType() != libconfig::Setting::TypeString) {
                     logPrintf(WARN, "Line %d: direction must be a string, "
                                     "skipping.", direction.getSourceLine());
@@ -228,7 +191,7 @@ GestureAction::Config::Config(Device* device, libconfig::Setting &root) :
 
             if(d == None) {
                 try {
-                    auto& mode = gestures[i].lookup("mode");
+                    auto& mode = gestures[i]["mode"];
                     if(mode.getType() == libconfig::Setting::TypeString) {
                         std::string mode_str = mode;
                         std::transform(mode_str.begin(), mode_str.end(),
@@ -251,10 +214,10 @@ GestureAction::Config::Config(Device* device, libconfig::Setting &root) :
 
                 try {
                     _none_action = Action::makeAction(_device,
-                            gestures[i].lookup("action"));
+                            gestures[i]["action"]);
                 } catch (InvalidAction& e) {
                     logPrintf(WARN, "Line %d: %s is not a valid action, "
-                                    "skipping.", gestures[i].lookup("action")
+                                    "skipping.", gestures[i]["action"]
                                     .getSourceLine(), e.what());
                 } catch (libconfig::SettingNotFoundException& e) {
                     logPrintf(WARN, "Line %d: action is a required field, "

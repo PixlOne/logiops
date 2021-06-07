@@ -62,7 +62,7 @@ ChangeHostAction::Config::Config(Device *device, libconfig::Setting& config)
     : Action::Config(device)
 {
     try {
-        auto& host = config.lookup("host");
+        auto& host = config["host"];
         if(host.getType() == libconfig::Setting::TypeInt) {
             _offset = false;
             _host = host;

@@ -98,7 +98,7 @@ Configuration::Configuration(const std::string& config_file)
     }
 
     try {
-        auto& ignore = root.lookup("ignore");
+        auto& ignore = root["ignore"];
         if(ignore.getType() == libconfig::Setting::TypeInt) {
             _ignore_list.insert((int)ignore);
         } else if(ignore.isList() || ignore.isArray()) {
@@ -116,7 +116,7 @@ Configuration::Configuration(const std::string& config_file)
     } catch(const SettingNotFoundException& e) {
         // May be called blacklist
         try {
-            auto& ignore = root.lookup("blacklist");
+            auto& ignore = root["blacklist"];
             if(ignore.getType() == libconfig::Setting::TypeInt) {
                 _ignore_list.insert((int)ignore);
             } else if(ignore.isList() || ignore.isArray()) {

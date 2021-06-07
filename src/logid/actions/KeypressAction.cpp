@@ -35,6 +35,18 @@ void KeypressAction::press()
         virtual_input->pressKey(key);
 }
 
+void KeypressAction::halfRelease()
+{
+    bool skipFirst = _config.keys().size() > 1;
+    for(auto& key : _config.keys()) {
+        if (skipFirst) {
+            skipFirst = false;
+            continue;
+        }
+        virtual_input->releaseKey(key);
+    }
+}
+
 void KeypressAction::release()
 {
     _pressed = false;
@@ -57,7 +69,7 @@ KeypressAction::Config::Config(Device* device, libconfig::Setting& config) :
     }
 
     try {
-        auto &keys = config.lookup("keys");
+        auto &keys = config["keys"];
         if(keys.isArray() || keys.isList()) {
             int key_count = keys.getLength();
             for(int i = 0; i < key_count; i++) {
