@@ -66,7 +66,7 @@ IntervalGesture::Config::Config(Device *device, libconfig::Setting &setting) :
     Gesture::Config(device, setting)
 {
     try {
-        auto& interval = setting.lookup("interval");
+        auto& interval = setting["interval"];
         if(interval.getType() != libconfig::Setting::TypeInt) {
             logPrintf(WARN, "Line %d: interval must be an integer, skipping.",
                     interval.getSourceLine());
@@ -76,7 +76,7 @@ IntervalGesture::Config::Config(Device *device, libconfig::Setting &setting) :
     } catch(libconfig::SettingNotFoundException& e) {
         try {
             // pixels is an alias for interval
-            auto& interval = setting.lookup("pixels");
+            auto& interval = setting["pixels"];
             if(interval.getType() != libconfig::Setting::TypeInt) {
                 logPrintf(WARN, "Line %d: pixels must be an integer, skipping.",
                           interval.getSourceLine());

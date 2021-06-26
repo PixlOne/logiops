@@ -16,6 +16,7 @@
  *
  */
 #include "HiresScroll.h"
+#include "RemapButton.h"
 #include "../Device.h"
 #include "../InputDevice.h"
 #include "../actions/gesture/Gesture.h"
@@ -105,6 +106,9 @@ void HiresScroll::setMode(uint8_t mode)
 
 void HiresScroll::_handleScroll(hidpp20::HiresScroll::WheelStatus event)
 {
+    auto remapbutton = _device->getFeature<features::RemapButton>("remapbutton");
+    if (remapbutton && remapbutton->onHiresScroll(event.deltaV)) return;
+
     auto now = std::chrono::system_clock::now();
     if(std::chrono::duration_cast<std::chrono::seconds>(
             now - _last_scroll).count() >= 1) {
@@ -157,7 +161,7 @@ HiresScroll::Config::Config(Device *dev) : DeviceFeature::Config(dev)
         _mode = 0;
         _mask = 0;
         try {
-            auto& hires = config_root.lookup("hires");
+            auto& hires = config_root["hires"];
             if(hires.getType() == libconfig::Setting::TypeBoolean) {
                 _mask |= hidpp20::HiresScroll::Mode::HiRes;
                 if(hires)
@@ -169,7 +173,7 @@ HiresScroll::Config::Config(Device *dev) : DeviceFeature::Config(dev)
         } catch(libconfig::SettingNotFoundException& e) { }
 
         try {
-            auto& invert = config_root.lookup("invert");
+            auto& invert = config_root["invert"];
             if(invert.getType() == libconfig::Setting::TypeBoolean) {
                 _mask |= hidpp20::HiresScroll::Mode::Inverted;
                 if(invert)
@@ -181,7 +185,7 @@ HiresScroll::Config::Config(Device *dev) : DeviceFeature::Config(dev)
         } catch(libconfig::SettingNotFoundException& e) { }
 
         try {
-            auto& target = config_root.lookup("target");
+            auto& target = config_root["target"];
             if(target.getType() == libconfig::Setting::TypeBoolean) {
                 _mask |= hidpp20::HiresScroll::Mode::Target;
                 if(target)
@@ -194,7 +198,7 @@ HiresScroll::Config::Config(Device *dev) : DeviceFeature::Config(dev)
 
         if(_mode & hidpp20::HiresScroll::Mode::Target) {
             try {
-                auto& up = config_root.lookup("up");
+                auto& up = config_root["up"];
                 try {
                     auto g = actions::Gesture::makeGesture(dev, up);
                     if(g->wheelCompatibility()) {
@@ -210,11 +214,17 @@ HiresScroll::Config::Config(Device *dev) : DeviceFeature::Config(dev)
                 }
             } catch(libconfig::SettingNotFoundException&) {
                 logPrintf(WARN, "Line %d: target is true but no up action was"
-                                " set", config_root.getSourceLine());
+                                " set, using default", config_root.getSourceLine());
+                libconfig::Config c;
+                c.getRoot().add("axis", libconfig::Setting::TypeString);
+                c.getRoot()["axis"] = "REL_WHEEL";
+                c.getRoot().add("axis_multiplier", libconfig::Setting::TypeInt);
+                c.getRoot()["axis_multiplier"] = 1;
+                _up_action = std::make_shared<actions::AxisGesture>(dev, c.getRoot());
             }
 
             try {
-                auto& down = config_root.lookup("down");
+                auto& down = config_root["down"];
                 try {
                     auto g = actions::Gesture::makeGesture(dev, down);
                     if(g->wheelCompatibility()) {
@@ -230,7 +240,13 @@ HiresScroll::Config::Config(Device *dev) : DeviceFeature::Config(dev)
                 }
             } catch(libconfig::SettingNotFoundException&) {
                 logPrintf(WARN, "Line %d: target is true but no down action was"
-                                " set", config_root.getSourceLine());
+                                " set, using default", config_root.getSourceLine());
+                libconfig::Config c;
+                c.getRoot().add("axis", libconfig::Setting::TypeString);
+                c.getRoot()["axis"] = "REL_WHEEL";
+                c.getRoot().add("axis_multiplier", libconfig::Setting::TypeInt);
+                c.getRoot()["axis_multiplier"] = -1;
+                _down_action = std::make_shared<actions::AxisGesture>(dev, c.getRoot());
             }
         }
     } catch(libconfig::SettingNotFoundException& e) {
