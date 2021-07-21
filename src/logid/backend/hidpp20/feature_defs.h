@@ -74,6 +74,7 @@ namespace logid::backend::hidpp20 {
             POINTER_AXES_ORIENTATION = 0x2006,
             VERTICAL_SCROLLING = 0x2100,
             SMART_SHIFT = 0x2110,
+            SMART_SHIFT_V2 = 0x2111,
             HIRES_SCROLLING = 0x2120,
             HIRES_SCROLLING_V2 = 0x2121, // Referred to as Hi-res wheel in cvuchener/hidpp, seems to be V2?
             LORES_SCROLLING = 0x2130,

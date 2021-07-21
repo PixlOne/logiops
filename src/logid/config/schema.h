@@ -249,9 +249,10 @@ namespace logid::config {
     struct SmartShift : public group {
         std::optional<bool> on;
         std::optional<unsigned int> threshold;
+        std::optional<unsigned int> torque;
 
-        SmartShift() : group({"on", "threshold"},
-                             &SmartShift::on, &SmartShift::threshold) {}
+        SmartShift() : group({"on", "threshold", "torque"},
+                             &SmartShift::on, &SmartShift::threshold, &SmartShift::torque) {}
     };
 
 
