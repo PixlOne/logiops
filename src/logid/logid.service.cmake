@@ -1,7 +1,7 @@
 [Unit]
 Description=Logitech Configuration Daemon
 StartLimitIntervalSec=0
-After=multi-user.target
+After=multi-user.target bluetooth.target
 Wants=multi-user.target
 
 [Service]
