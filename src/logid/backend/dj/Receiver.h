@@ -49,7 +49,7 @@ namespace dj
         Reason _reason;
     };
 
-    class Receiver
+    class Receiver final
     {
     public:
         explicit Receiver(std::string path);

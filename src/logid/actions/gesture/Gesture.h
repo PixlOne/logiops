@@ -31,7 +31,7 @@ namespace actions
         explicit InvalidGesture(std::string what="") : _what (what)
         {
         }
-        virtual const char* what()
+        virtual const char* what() const noexcept
         {
             return _what.c_str();
         }
@@ -48,6 +48,8 @@ namespace actions
 
         virtual bool wheelCompatibility() const = 0;
         virtual bool metThreshold() const = 0;
+
+        virtual ~Gesture() = default;
 
         class Config
         {
