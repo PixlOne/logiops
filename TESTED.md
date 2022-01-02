@@ -15,3 +15,4 @@ This is not by any means an exhaustive list. Many more devices are supported but
 |      M590      |     Yes     |     `M585/M590 Multi-Device Mouse`     |
 |      T400      |     Yes     |        `Zone Touch Mouse T400`         |
 |    MX Keys     |     Yes     |      `MX Keys Wireless Keyboard`       |
+|      M500s     |     Yes     |     `Advanced Corded Mouse M500s`      |
