@@ -57,8 +57,6 @@ InputDevice::InputDevice(const char* name)
     }
 
     libevdev_enable_event_type(device, EV_REL);
-    for(unsigned int i = 0; i < REL_CNT; i++)
-        libevdev_enable_event_code(device, EV_REL, i, nullptr);
 
     int err = libevdev_uinput_create_from_device(device,
             LIBEVDEV_UINPUT_OPEN_MANAGED, &ui_device);
