@@ -1,0 +1,25 @@
+# top-most EditorConfig file
+root = true
+
+# Unix-style newlines with a newline ending every file
+[*.{h,cpp}]
+end_of_line = lf
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+
+# Matches multiple files with brace expansion notation
+# Set default charset
+[*.json]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+
+# 4 space indentation
+[CMakeLists.txt]
+end_of_line = lf
+indent_style = space
+indent_size = 4
+insert_final_newline = true
