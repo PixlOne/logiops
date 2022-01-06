@@ -63,6 +63,8 @@ namespace actions {
 
         virtual uint8_t reprogFlags() const = 0;
 
+        virtual ~Action() = default;
+
         class Config
         {
         protected:

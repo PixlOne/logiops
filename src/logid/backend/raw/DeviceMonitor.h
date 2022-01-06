@@ -40,7 +40,7 @@ namespace raw
         void stop();
     protected:
         DeviceMonitor();
-        ~DeviceMonitor();
+        virtual ~DeviceMonitor();
         virtual void addDevice(std::string device) = 0;
         virtual void removeDevice(std::string device) = 0;
     private:

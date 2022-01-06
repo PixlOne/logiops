@@ -122,7 +122,7 @@ namespace hidpp20
     {
     public:
         static const uint16_t ID = FeatureID::REPROG_CONTROLS_V2;
-        virtual uint16_t getID() { return ID; }
+        virtual uint16_t getID() override { return ID; }
 
         explicit ReprogControlsV2(Device* dev);
     protected:
@@ -133,7 +133,7 @@ namespace hidpp20
     {
     public:
         static const uint16_t ID = FeatureID::REPROG_CONTROLS_V2_2;
-        virtual uint16_t getID() { return ID; }
+        virtual uint16_t getID() override { return ID; }
 
         explicit ReprogControlsV2_2(Device* dev);
     protected:
@@ -144,7 +144,7 @@ namespace hidpp20
     {
     public:
         static const uint16_t ID = FeatureID::REPROG_CONTROLS_V3;
-        virtual uint16_t getID() { return ID; }
+        virtual uint16_t getID() override { return ID; }
 
         explicit ReprogControlsV3(Device* dev);
     protected:
@@ -155,7 +155,7 @@ namespace hidpp20
     {
     public:
         static const uint16_t ID = FeatureID::REPROG_CONTROLS_V4;
-        virtual uint16_t getID() { return ID; }
+        virtual uint16_t getID() override { return ID; }
 
         bool supportsRawXY() override { return true; }
 

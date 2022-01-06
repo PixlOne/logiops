@@ -41,6 +41,7 @@ namespace hidpp20 {
         static const uint16_t ID;
         virtual uint16_t getID() = 0;
         uint8_t featureIndex();
+        virtual ~Feature() = default;
     protected:
         explicit Feature(Device* dev, uint16_t _id);
         std::vector<uint8_t> callFunction(uint8_t function_id,

@@ -43,6 +43,7 @@ namespace features
         }
         virtual void configure() = 0;
         virtual void listen() = 0;
+        virtual ~DeviceFeature() = default;
         class Config
         {
         public:
