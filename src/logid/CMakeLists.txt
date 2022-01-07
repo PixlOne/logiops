@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(logid)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/../CMake")
 
@@ -82,10 +82,13 @@ find_path(EVDEV_INCLUDE_DIR libevdev/libevdev.h
 find_library(EVDEV_LIBRARY
         NAMES evdev libevdev)
 
-include_directories(${EVDEV_INCLUDE_DIR} ${LIBUDEV_INCLUDE_DIRECTORIES})
+set(IPCGULL_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../ipcgull/src/include)
+message(${IPCGULL_INCLUDE_DIRS})
+
+include_directories(${EVDEV_INCLUDE_DIR} ${LIBUDEV_INCLUDE_DIRECTORIES} ${IPCGULL_INCLUDE_DIRS})
 
 target_link_libraries(logid ${CMAKE_THREAD_LIBS_INIT} ${EVDEV_LIBRARY} config++
-        ${LIBUDEV_LIBRARIES})
+        ${LIBUDEV_LIBRARIES} ipcgull)
 
 install(TARGETS logid DESTINATION bin)
 

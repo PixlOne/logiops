@@ -13,17 +13,18 @@ Default location for the configuration file is /etc/logid.cfg, but another can b
 
 ## Dependencies
 
-This project requires a C++14 compiler, `cmake`, `libevdev`, `libudev`, and `libconfig`. For popular distributions, I've included commands below.
+This project requires a C++17 compiler, `cmake`, `libevdev`, `libudev`, `glib`, and `libconfig`.
+For popular distributions, I've included commands below.
 
-**Arch Linux:** `sudo pacman -S cmake libevdev libconfig pkgconf`
+**Arch Linux:** `sudo pacman -S cmake libevdev libconfig pkgconf glib2`
 
-**Debian/Ubuntu:** `sudo apt install cmake libevdev-dev libudev-dev libconfig++-dev`
+**Debian/Ubuntu:** `sudo apt install cmake libevdev-dev libudev-dev libconfig++-dev libglib2.0`
 
-**Fedora:** `sudo dnf install cmake libevdev-devel systemd-devel libconfig-devel gcc-c++`
+**Fedora:** `sudo dnf install cmake libevdev-devel systemd-devel libconfig-devel gcc-c++ glib2`
 
-**Gentoo Linux:** `sudo emerge dev-libs/libconfig dev-libs/libevdev dev-util/cmake virtual/libudev`
+**Gentoo Linux:** `sudo emerge dev-libs/libconfig dev-libs/libevdev dev-libs/glib dev-util/cmake virtual/libudev`
 
-**Solus:** `sudo eopkg install libevdev-devel libconfig-devel libgudev-devel`
+**Solus:** `sudo eopkg install libevdev-devel libconfig-devel libgudev-devel glib2`
 
 ## Building
 

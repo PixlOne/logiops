@@ -8,13 +8,13 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -Wall -Wextra")
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Git)
+find_package(Git REQUIRED)
 
-# Set version number
-if(GIT_FOUND AND EXISTS ${CMAKE_SOURCE_DIR}/.git)
+# Set version number and update submodules
+if(EXISTS ${CMAKE_SOURCE_DIR}/.git)
     execute_process(COMMAND ${GIT_EXECUTABLE} describe
          OUTPUT_VARIABLE LOGIOPS_VERSION
          RESULT_VARIABLE LOGIOPS_VERSION_RET
@@ -25,10 +25,18 @@ if(GIT_FOUND AND EXISTS ${CMAKE_SOURCE_DIR}/.git)
             OUTPUT_VARIABLE LOGIOPS_COMMIT_HASH)
         set(LOGIOPS_VERSION git-${LOGIOPS_COMMIT_HASH})
     endif()
+
+    execute_process(COMMAND ${GIT_EXECUTABLE}
+            submodule update --init --recursive)
+
     string(REGEX REPLACE "\n$" "" LOGIOPS_VERSION ${LOGIOPS_VERSION})
 elseif(EXISTS ${CMAKE_SOURCE_DIR}/version.txt)
     file(READ version.txt LOGIOPS_VERSION)
     string(REGEX REPLACE "\n$" "" LOGIOPS_VERSION ${LOGIOPS_VERSION})
+
+    IF(NOT EXISTS src/ipcgull)
+        message(FATAL_ERROR "Missing ipcgull submodule")
+    endif()
 endif()
 
 if(NOT LOGIOPS_VERSION)
@@ -38,4 +46,5 @@ message("LogiOps Version Number: ${LOGIOPS_VERSION}")
 
 add_definitions( -DLOGIOPS_VERSION="${LOGIOPS_VERSION}")
 
+add_subdirectory(src/ipcgull)
 add_subdirectory(src/logid)
