@@ -17,6 +17,7 @@
  */
 #include <cassert>
 #include "workqueue.h"
+#include "worker_thread.h"
 #include "log.h"
 
 using namespace logid;
@@ -47,7 +48,7 @@ workqueue::~workqueue()
     }
 }
 
-void workqueue::queue(std::shared_ptr<task> t)
+void workqueue::queue(const std::shared_ptr<task>& t)
 {
     assert(t != nullptr);
     _queue.push(t);
@@ -70,6 +71,11 @@ std::size_t workqueue::threadCount() const
     return _workers.size();
 }
 
+void workqueue::notifyFree()
+{
+    _busy_cv.notify_all();
+}
+
 void workqueue::_run()
 {
     using namespace std::chrono_literals;
@@ -77,6 +83,7 @@ void workqueue::_run()
     std::unique_lock<std::mutex> lock(_run_lock);
     _continue_run = true;
     while(_continue_run) {
+        bool queued = false;
         _queue_cv.wait(lock, [this]{ return !(_queue.empty()); });
         while(!_queue.empty()) {
             if(_workers.empty()) {
@@ -88,33 +95,29 @@ void workqueue::_run()
                 continue;
             }
 
-            auto worker = _workers.begin();
-            for(; worker != _workers.end(); worker++) {
-                if(!(*worker)->busy())
+            for(auto& worker : _workers) {
+                if(!worker->busy()) {
+                    worker->queue(_queue.front());
+                    queued = true;
                     break;
+                }
             }
-            if(worker != _workers.end())
-                (*worker)->queue(_queue.front());
-            else {
-                _busy_cv.wait_for(lock, 500ms, [this, &worker]{
-                    for(worker = _workers.begin(); worker != _workers.end();
-                        worker++) {
-                        if (!(*worker)->busy()) {
-                            return true;
+            if(!queued) {
+                if(_busy_cv.wait_for(lock, 500ms) == std::cv_status::no_timeout) {
+                    for(auto& worker : _workers) {
+                        if(!worker->busy()) {
+                            worker->queue(_queue.front());
+                            break;
                         }
                     }
-                    return false;
-                });
-
-                if(worker != _workers.end())
-                    (*worker)->queue(_queue.front());
-                else{
+                } else{
                     // Workers busy, launch in new thread
                     logPrintf(DEBUG, "All workers were busy for 500ms, "
                                      "running task in new thread.");
                     thread::spawn([t = _queue.front()]() { t->run(); });
                 }
             }
+
             _queue.pop();
         }
     }

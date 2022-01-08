@@ -43,7 +43,7 @@ worker_thread::~worker_thread()
     }
 }
 
-void worker_thread::queue(std::shared_ptr<task> t)
+void worker_thread::queue(const std::shared_ptr<task>& t)
 {
     _queue.push(t);
     _queue_cv.notify_all();
@@ -74,6 +74,7 @@ void worker_thread::_run()
             _queue.front()->run();
             _queue.pop();
         }
+        _parent->notifyFree();
     }
 }
 

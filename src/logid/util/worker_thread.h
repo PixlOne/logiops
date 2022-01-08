@@ -32,7 +32,7 @@ namespace logid
         worker_thread(workqueue* parent, std::size_t worker_number);
         ~worker_thread();
 
-        void queue(std::shared_ptr<task> t);
+        void queue(const std::shared_ptr<task>& t);
 
         bool busy();
     private:
@@ -40,7 +40,7 @@ namespace logid
         void _exception_handler(std::exception& e);
 
         workqueue* _parent;
-        std::size_t _worker_number;
+        const std::size_t _worker_number;
 
         std::mutex _run_lock;
         std::atomic<bool> _continue_run;

@@ -18,24 +18,30 @@
 #ifndef LOGID_WORKQUEUE_H
 #define LOGID_WORKQUEUE_H
 
-#include "worker_thread.h"
+#include "mutex_queue.h"
+#include "task.h"
 #include "thread.h"
 
 namespace logid
 {
+    class worker_thread;
+
     class workqueue
     {
     public:
         explicit workqueue(std::size_t thread_count);
         ~workqueue();
 
-        void queue(std::shared_ptr<task> t);
+        void queue(const std::shared_ptr<task>& t);
 
         void busyUpdate();
 
         void stop();
 
-        std::size_t threadCount() const;
+        [[nodiscard]] std::size_t threadCount() const;
+
+        friend class worker_thread;
+        void notifyFree();
     private:
         void _run();
 
