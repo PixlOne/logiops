@@ -25,7 +25,7 @@
 #include <chrono>
 #include <set>
 
-#define LOGID_DEFAULT_IO_TIMEOUT std::chrono::seconds(2)
+#define LOGID_DEFAULT_IO_TIMEOUT std::chrono::milliseconds(400)
 #define LOGID_DEFAULT_WORKER_COUNT 4
 
 namespace logid
