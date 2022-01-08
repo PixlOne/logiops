@@ -18,6 +18,7 @@
 
 #include "DeviceMonitor.h"
 #include "../../util/task.h"
+#include "../../util/workqueue.h"
 #include "../../util/log.h"
 #include "RawDevice.h"
 #include "../hidpp/Device.h"
@@ -31,9 +32,11 @@ extern "C"
 #include <libudev.h>
 }
 
+using namespace logid;
 using namespace logid::backend::raw;
 
-DeviceMonitor::DeviceMonitor()
+DeviceMonitor::DeviceMonitor(int worker_count) :
+    _workqueue (std::make_shared<workqueue>(worker_count))
 {
     if(-1 == pipe(_pipe))
         throw std::system_error(errno, std::system_category(),
@@ -100,7 +103,8 @@ void DeviceMonitor::run()
             std::string devnode = udev_device_get_devnode(device);
 
             if (action == "add")
-                task::spawn([this, name=devnode]() {
+                task::spawn(_workqueue,
+                [this, name=devnode]() {
                     // Wait for device to initialise
                     std::this_thread::sleep_for(std::chrono::milliseconds(100));
                     auto supported_reports = backend::hidpp::getSupportedReports(
@@ -115,7 +119,8 @@ void DeviceMonitor::run()
                               name.c_str(), e.what());
                 });
             else if (action == "remove")
-                task::spawn([this, name=devnode]() {
+                task::spawn(_workqueue,
+                [this, name=devnode]() {
                     this->removeDevice(name);
                 }, [name=devnode](std::exception& e){
                     logPrintf(WARN, "Error removing device %s: %s",
@@ -167,7 +172,8 @@ void DeviceMonitor::enumerate()
         std::string devnode = udev_device_get_devnode(device);
         udev_device_unref(device);
 
-        task::spawn([this, name=devnode]() {
+        task::spawn(_workqueue,
+        [this, name=devnode]() {
             auto supported_reports = backend::hidpp::getSupportedReports(
                     RawDevice::getReportDescriptor(name));
             if(supported_reports)
@@ -182,4 +188,8 @@ void DeviceMonitor::enumerate()
     }
 
     udev_enumerate_unref(udev_enum);
+}
+
+std::shared_ptr<workqueue> DeviceMonitor::workQueue() const {
+    return _workqueue;
 }

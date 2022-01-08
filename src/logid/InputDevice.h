@@ -65,8 +65,6 @@ namespace logid
         libevdev* device;
         libevdev_uinput* ui_device{};
     };
-
-    extern std::unique_ptr<InputDevice> virtual_input;
 }
 
 #endif //LOGID_INPUTDEVICE_H

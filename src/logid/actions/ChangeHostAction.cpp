@@ -44,7 +44,8 @@ void ChangeHostAction::press()
 void ChangeHostAction::release()
 {
     if(_change_host) {
-        task::spawn([this] {
+        task::spawn(_device->workQueue(),
+        [this] {
             auto host_info = _change_host->getHostInfo();
             auto next_host = _config.nextHost(host_info);
             if(next_host != host_info.currentHost)

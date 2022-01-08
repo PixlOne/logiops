@@ -52,7 +52,6 @@ namespace logid
         std::size_t _worker_count;
     };
 
-    extern std::shared_ptr<workqueue> global_workqueue;
 }
 
 #endif //LOGID_WORKQUEUE_H

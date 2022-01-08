@@ -31,6 +31,8 @@
 #include "../../util/mutex_queue.h"
 
 namespace logid {
+    class workqueue;
+
 namespace backend {
 namespace raw
 {
@@ -39,7 +41,9 @@ namespace raw
     public:
         static bool supportedReport(uint8_t id, uint8_t length);
 
-        explicit RawDevice(std::string path);
+        explicit RawDevice(std::string path,
+                           const std::chrono::milliseconds& io_timeout,
+                           const std::shared_ptr<workqueue>& wq);
         ~RawDevice();
         std::string hidrawPath() const;
 
@@ -79,6 +83,9 @@ namespace raw
         std::atomic<bool> _continue_listen;
         std::atomic<bool> _continue_respond;
         std::condition_variable _listen_condition;
+
+        const std::chrono::milliseconds _io_timeout;
+        const std::shared_ptr<workqueue> _workqueue;
 
         std::map<std::string, std::shared_ptr<RawEventHandler>>
             _event_handlers;

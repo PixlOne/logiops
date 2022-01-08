@@ -24,8 +24,10 @@
 using namespace logid::backend;
 using namespace logid::backend::hidpp10;
 
-Device::Device(const std::string &path, hidpp::DeviceIndex index) :
-    hidpp::Device(path, index)
+Device::Device(const std::string &path, hidpp::DeviceIndex index,
+               const std::chrono::milliseconds& io_timeout,
+               const std::shared_ptr<workqueue>& wq) :
+    hidpp::Device(path, index, io_timeout, wq)
 {
     assert(version() == std::make_tuple(1, 0));
 }

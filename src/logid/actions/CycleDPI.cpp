@@ -40,7 +40,8 @@ void CycleDPI::press()
 {
     _pressed = true;
     if(_dpi && !_config.empty()) {
-        task::spawn([this](){
+        task::spawn(_device->workQueue(),
+        [this](){
             uint16_t dpi = _config.nextDPI();
             try {
                 _dpi->setDPI(dpi, _config.sensor());

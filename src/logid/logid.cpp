@@ -23,7 +23,6 @@
 
 #include "util/log.h"
 #include "DeviceManager.h"
-#include "logid.h"
 #include "InputDevice.h"
 #include "util/workqueue.h"
 
@@ -43,13 +42,6 @@ struct CmdlineOptions
 };
 
 LogLevel logid::global_loglevel = INFO;
-std::shared_ptr<Configuration> logid::global_config;
-std::unique_ptr<DeviceManager> logid::device_manager;
-std::unique_ptr<InputDevice> logid::virtual_input;
-std::shared_ptr<workqueue> logid::global_workqueue;
-
-bool logid::kill_logid = false;
-std::mutex logid::device_manager_reload;
 
 enum class Option
 {
@@ -162,16 +154,16 @@ int main(int argc, char** argv)
 {
     CmdlineOptions options{};
     readCliOptions(argc, argv, options);
+    std::shared_ptr<Configuration> config;
+    std::shared_ptr<InputDevice> virtual_input;
 
     // Read config
     try {
-        global_config = std::make_shared<Configuration>(options.config_file);
+        config = std::make_shared<Configuration>(options.config_file);
     }
     catch (std::exception &e) {
-        global_config = std::make_shared<Configuration>();
+        config = std::make_shared<Configuration>();
     }
-    global_workqueue = std::make_shared<workqueue>(
-            global_config->workerCount());
 
     //Create a virtual input device
     try {
@@ -182,13 +174,9 @@ int main(int argc, char** argv)
     }
 
     // Scan devices, create listeners, handlers, etc.
-    device_manager = std::make_unique<DeviceManager>();
+    auto device_manager = DeviceManager::make(config, virtual_input);
 
-    while(!kill_logid) {
-        device_manager_reload.lock();
-        device_manager_reload.unlock();
-        device_manager->run();
-    }
+    device_manager->run();
 
     return EXIT_SUCCESS;
 }

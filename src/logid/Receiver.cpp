@@ -17,6 +17,7 @@
  */
 
 #include "Receiver.h"
+#include "DeviceManager.h"
 #include "util/log.h"
 #include "backend/hidpp10/Error.h"
 #include "backend/hidpp20/Error.h"
@@ -25,17 +26,30 @@
 using namespace logid;
 using namespace logid::backend;
 
-Receiver::Receiver(const std::string& path) :
-    dj::ReceiverMonitor(path), _path (path)
+Receiver::Receiver(const std::string& path,
+                   const std::shared_ptr<DeviceManager>& manager) :
+    dj::ReceiverMonitor(path,
+                        manager->config()->ioTimeout(),
+                        manager->workQueue()),
+    _path (path), _manager (manager)
 {
 }
 
 void Receiver::addDevice(hidpp::DeviceConnectionEvent event)
 {
     std::unique_lock<std::mutex> lock(_devices_change);
+
+    auto manager = _manager.lock();
+    if(!manager) {
+        logPrintf(ERROR, "Orphan Receiver, missing DeviceManager");
+        logPrintf(ERROR,
+                  "Fatal error, file a bug report. Program will now exit.");
+        std::terminate();
+    }
+
     try {
         // Check if device is ignored before continuing
-        if(global_config->isIgnored(event.pid)) {
+        if(manager->config()->isIgnored(event.pid)) {
             logPrintf(DEBUG, "%s:%d: Device 0x%04x ignored.",
                       _path.c_str(), event.index, event.pid);
             return;
@@ -64,7 +78,7 @@ void Receiver::addDevice(hidpp::DeviceConnectionEvent event)
         }
 
         std::shared_ptr<Device> device = std::make_shared<Device>(this,
-                event.index);
+                event.index, manager);
 
         _devices.emplace(event.index, device);
 

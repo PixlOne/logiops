@@ -17,6 +17,7 @@
  */
 #include <cmath>
 #include "AxisGesture.h"
+#include "../../Device.h"
 #include "../../InputDevice.h"
 #include "../../util/log.h"
 
@@ -69,19 +70,19 @@ void AxisGesture::move(int16_t axis)
 
         if(low_res_axis != -1) {
             int lowres_movement = 0, hires_movement = move_floor;
-            virtual_input->moveAxis(_config.axis(), hires_movement);
+            _device->virtualInput()->moveAxis(_config.axis(), hires_movement);
             hires_remainder += hires_movement;
             if(abs(hires_remainder) >= 60) {
                 lowres_movement = hires_remainder/120;
                 if(lowres_movement == 0)
                     lowres_movement = hires_remainder > 0 ? 1 : -1;
                 hires_remainder -= lowres_movement*120;
-                virtual_input->moveAxis(low_res_axis, lowres_movement);
+                _device->virtualInput()->moveAxis(low_res_axis, lowres_movement);
             }
 
             _hires_remainder = hires_remainder;
         } else {
-            virtual_input->moveAxis(_config.axis(), move_floor);
+            _device->virtualInput()->moveAxis(_config.axis(), move_floor);
         }
     }
     _axis = new_axis;
@@ -104,11 +105,11 @@ AxisGesture::Config::Config(Device *device, libconfig::Setting &setting) :
         auto& axis = setting.lookup("axis");
         if(axis.isNumber()) {
             _axis = axis;
-            virtual_input->registerAxis(_axis);
+            _device->virtualInput()->registerAxis(_axis);
         } else if(axis.getType() == libconfig::Setting::TypeString) {
             try {
-                _axis = virtual_input->toAxisCode(axis);
-                virtual_input->registerAxis(_axis);
+                _axis = _device->virtualInput()->toAxisCode(axis);
+                _device->virtualInput()->registerAxis(_axis);
             } catch(InputDevice::InvalidEventCode& e) {
                 logPrintf(WARN, "Line %d: Invalid axis %s, skipping."
                         , axis.getSourceLine(), axis.c_str());
@@ -143,7 +144,7 @@ AxisGesture::Config::Config(Device *device, libconfig::Setting &setting) :
     int low_res_axis = InputDevice::getLowResAxis(_axis);
     if(low_res_axis != -1) {
         _multiplier *= 120;
-        virtual_input->registerAxis(low_res_axis);
+        _device->virtualInput()->registerAxis(low_res_axis);
     }
 }
 

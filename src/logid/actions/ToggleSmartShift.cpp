@@ -37,7 +37,8 @@ void ToggleSmartShift::press()
 {
     _pressed = true;
     if(_smartshift) {
-        task::spawn([ss=this->_smartshift](){
+        task::spawn(_device->workQueue(),
+        [ss=this->_smartshift](){
             auto status = ss->getStatus();
             status.setActive = true;
             status.active = !status.active;

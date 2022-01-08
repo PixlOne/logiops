@@ -64,8 +64,13 @@ bool RawDevice::supportedReport(uint8_t id, uint8_t length)
     }
 }
 
-RawDevice::RawDevice(std::string path) : _path (std::move(path)),
-    _continue_listen (false), _continue_respond (false)
+RawDevice::RawDevice(std::string path,
+                     const milliseconds& io_timeout,
+                     const std::shared_ptr<workqueue>& wq) :
+                     _path (std::move(path)),
+                     _continue_listen (false), _continue_respond (false),
+                     _io_timeout (io_timeout),
+                     _workqueue (wq)
 {
     int ret;
 
@@ -189,7 +194,7 @@ std::vector<uint8_t> RawDevice::sendReport(const std::vector<uint8_t>& report)
         _io_queue.push(task);
         interruptRead(false); // Alert listener to prioritise
         cv.wait(lock, [&top_of_queue]{ return top_of_queue; });
-        auto status = f.wait_for(global_config->ioTimeout());
+        auto status = f.wait_for(_io_timeout);
         if(status == std::future_status::timeout) {
             _continue_respond = false;
             interruptRead();
@@ -210,9 +215,9 @@ std::vector<uint8_t> RawDevice::sendReport(const std::vector<uint8_t>& report)
                         _exception = std::make_exception_ptr(e);
                     }
                 });
-        global_workqueue->queue(t);
+        _workqueue->queue(t);
         t->waitStart();
-        auto status = t->waitFor(global_config->ioTimeout());
+        auto status = t->waitFor(_io_timeout);
         if(_exception)
             std::rethrow_exception(_exception);
         if(status == std::future_status::timeout) {
@@ -257,7 +262,7 @@ std::vector<uint8_t> RawDevice::_respondToReport
     while(_continue_respond) {
         std::vector<uint8_t> response;
         auto current_point = std::chrono::steady_clock::now();
-        auto timeout = global_config->ioTimeout() - std::chrono::duration_cast
+        auto timeout = _io_timeout - std::chrono::duration_cast
                 <std::chrono::milliseconds>(current_point - start_point);
         if(timeout.count() <= 0)
             throw TimeoutError();
@@ -337,7 +342,7 @@ int RawDevice::_sendReport(const std::vector<uint8_t>& report)
 int RawDevice::_readReport(std::vector<uint8_t> &report,
                            std::size_t maxDataLength)
 {
-    return _readReport(report, maxDataLength, global_config->ioTimeout());
+    return _readReport(report, maxDataLength, _io_timeout);
 }
 
 int RawDevice::_readReport(std::vector<uint8_t> &report,
@@ -348,10 +353,10 @@ int RawDevice::_readReport(std::vector<uint8_t> &report,
     report.resize(maxDataLength);
 
     timeval timeout_tv{};
-    timeout_tv.tv_sec = duration_cast<seconds>(global_config->ioTimeout())
+    timeout_tv.tv_sec = duration_cast<seconds>(_io_timeout)
             .count();
     timeout_tv.tv_usec = duration_cast<microseconds>(
-            global_config->ioTimeout()).count() %
+            _io_timeout).count() %
             duration_cast<microseconds>(seconds(1)).count();
 
     auto timeout_ms = duration_cast<milliseconds>(timeout).count();

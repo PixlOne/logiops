@@ -23,13 +23,16 @@
 
 using namespace logid::backend::hidpp20;
 
-Device::Device(std::string path, hidpp::DeviceIndex index)
-    : hidpp::Device(path, index)
+Device::Device(std::string path, hidpp::DeviceIndex index,
+               const std::chrono::milliseconds& io_timeout,
+               const std::shared_ptr<workqueue>& wq) :
+               hidpp::Device(path, index, io_timeout, wq)
 {
     assert(std::get<0>(version()) >= 2);
 }
 
-Device::Device(std::shared_ptr<raw::RawDevice> raw_device, hidpp::DeviceIndex index)
+Device::Device(std::shared_ptr<raw::RawDevice> raw_device,
+               hidpp::DeviceIndex index)
         : hidpp::Device(raw_device, index)
 {
     assert(std::get<0>(version()) >= 2);

@@ -61,7 +61,9 @@ namespace hidpp
             Reason _reason;
         };
 
-        explicit Device(const std::string& path, DeviceIndex index);
+        Device(const std::string& path, DeviceIndex index,
+               const std::chrono::milliseconds& io_timeout,
+               const std::shared_ptr<workqueue>& wq);
         Device(std::shared_ptr<raw::RawDevice> raw_device,
                 DeviceIndex index);
         Device(std::shared_ptr<dj::Receiver> receiver,

@@ -22,6 +22,8 @@
 
 namespace logid
 {
+    /// TODO: Replace with a safer object-oriented logger
+
     enum LogLevel
     {
         RAWREPORT,

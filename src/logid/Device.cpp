@@ -20,6 +20,7 @@
 #include "util/log.h"
 #include "features/DPI.h"
 #include "Device.h"
+#include "DeviceManager.h"
 #include "Receiver.h"
 #include "features/SmartShift.h"
 #include "features/RemapButton.h"
@@ -31,24 +32,37 @@
 using namespace logid;
 using namespace logid::backend;
 
-Device::Device(std::string path, backend::hidpp::DeviceIndex index) :
-    _hidpp20 (path, index), _path (std::move(path)), _index (index),
-    _config (global_config, this), _receiver (nullptr)
+Device::Device(std::string path, backend::hidpp::DeviceIndex index,
+               const std::shared_ptr<DeviceManager>& manager) :
+    _hidpp20 (path, index,
+              manager->config()->ioTimeout(), manager->workQueue()),
+    _path (std::move(path)), _index (index),
+    _config (manager->config(), this),
+    _receiver (nullptr),
+    _manager (manager)
 {
     _init();
 }
 
 Device::Device(const std::shared_ptr<backend::raw::RawDevice>& raw_device,
-        hidpp::DeviceIndex index) : _hidpp20(raw_device, index), _path
-        (raw_device->hidrawPath()), _index (index),
-        _config (global_config, this), _receiver (nullptr)
+               hidpp::DeviceIndex index,
+               const std::shared_ptr<DeviceManager>& manager) :
+               _hidpp20(raw_device, index),
+               _path (raw_device->hidrawPath()), _index (index),
+               _config (manager->config(), this),
+               _receiver (nullptr),
+               _manager (manager)
 {
     _init();
 }
 
-Device::Device(Receiver* receiver, hidpp::DeviceIndex index) : _hidpp20
-    (receiver->rawReceiver(), index), _path (receiver->path()), _index (index),
-        _config (global_config, this), _receiver (receiver)
+Device::Device(Receiver* receiver, hidpp::DeviceIndex index,
+               const std::shared_ptr<DeviceManager>& manager) :
+               _hidpp20 (receiver->rawReceiver(), index),
+               _path (receiver->path()), _index (index),
+               _config (manager->config(), this),
+               _receiver (receiver),
+               _manager (manager)
 {
     _init();
 }
@@ -109,6 +123,30 @@ void Device::reset()
     else
         logPrintf(DEBUG, "%s:%d tried to reset, but no reset mechanism was "
                          "available.", _path.c_str(), _index);
+}
+
+std::shared_ptr<workqueue> Device::workQueue() const {
+    if(auto manager = _manager.lock()) {
+        return manager->workQueue();
+    } else {
+        logPrintf(ERROR, "Device manager lost");
+        logPrintf(ERROR,
+                  "Fatal error occurred, file a bug report,"
+                  " the program will now exit.");
+        std::terminate();
+    }
+}
+
+std::shared_ptr<InputDevice> Device::virtualInput() const {
+    if(auto manager = _manager.lock()) {
+        return manager->virtualInput();
+    } else {
+        logPrintf(ERROR, "Device manager lost");
+        logPrintf(ERROR,
+                  "Fatal error occurred, file a bug report,"
+                  " the program will now exit.");
+        std::terminate();
+    }
 }
 
 DeviceConfig& Device::config()

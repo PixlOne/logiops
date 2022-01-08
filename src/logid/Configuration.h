@@ -58,7 +58,6 @@ namespace logid
         libconfig::Config _config;
     };
 
-    extern std::shared_ptr<Configuration> global_config;
 }
 
 #endif //LOGID_CONFIGURATION_H

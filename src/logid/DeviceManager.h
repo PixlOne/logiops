@@ -30,21 +30,31 @@
 
 namespace logid
 {
+    class workqueue;
+    class InputDevice;
 
     class DeviceManager : public backend::raw::DeviceMonitor
     {
     public:
-        DeviceManager() = default;
+        static std::shared_ptr<DeviceManager> make(
+                const std::shared_ptr<Configuration>& config,
+                const std::shared_ptr<InputDevice>& virtual_input);
+        [[nodiscard]] std::shared_ptr<Configuration> config() const;
+        [[nodiscard]] std::shared_ptr<InputDevice> virtualInput() const;
     protected:
-        void addDevice(std::string path) override;
-        void removeDevice(std::string path) override;
+        void addDevice(std::string path) final;
+        void removeDevice(std::string path) final;
     private:
-
+        friend class _DeviceManager;
+        DeviceManager(std::shared_ptr<Configuration> config,
+                      std::shared_ptr<InputDevice> virtual_input);
+        std::weak_ptr<DeviceManager> _self;
+        std::shared_ptr<Configuration> _config;
+        std::shared_ptr<InputDevice> _virtual_input;
         std::map<std::string, std::shared_ptr<Device>> _devices;
         std::map<std::string, std::shared_ptr<Receiver>> _receivers;
     };
 
-    extern std::unique_ptr<DeviceManager> device_manager;
 }
 
 #endif //LOGID_DEVICEMANAGER_H

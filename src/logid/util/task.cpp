@@ -72,9 +72,10 @@ std::future_status task::waitFor(std::chrono::milliseconds ms)
     return _future.wait_for(ms);
 }
 
-void task::spawn(const std::function<void ()>& function,
-        const std::function<void (std::exception &)>& exception_handler)
+void task::spawn(std::shared_ptr<workqueue> wq,
+                 const std::function<void ()>& function,
+                 const std::function<void (std::exception&)>& exception_handler)
 {
     auto t = std::make_shared<task>(function, exception_handler);
-    global_workqueue->queue(t);
+    wq->queue(t);
 }

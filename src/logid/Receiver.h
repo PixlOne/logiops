@@ -28,7 +28,8 @@ namespace logid
     class Receiver : public backend::dj::ReceiverMonitor
     {
     public:
-        explicit Receiver(const std::string& path);
+        explicit Receiver(const std::string& path,
+                          const std::shared_ptr<DeviceManager>& manager);
         const std::string& path() const;
         std::shared_ptr<backend::dj::Receiver> rawReceiver();
     protected:
@@ -38,6 +39,7 @@ namespace logid
         std::mutex _devices_change;
         std::map<backend::hidpp::DeviceIndex, std::shared_ptr<Device>> _devices;
         std::string _path;
+        std::weak_ptr<DeviceManager> _manager;
     };
 }
 

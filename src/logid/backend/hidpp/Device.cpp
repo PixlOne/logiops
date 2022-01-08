@@ -49,9 +49,11 @@ Device::InvalidDevice::Reason Device::InvalidDevice::code() const noexcept
     return _reason;
 }
 
-Device::Device(const std::string& path, DeviceIndex index):
-    _raw_device (std::make_shared<raw::RawDevice>(path)),  _receiver (nullptr),
-    _path (path), _index (index)
+Device::Device(const std::string& path, DeviceIndex index,
+               const std::chrono::milliseconds& io_timeout,
+               const std::shared_ptr<workqueue>& wq):
+    _raw_device (std::make_shared<raw::RawDevice>(path, io_timeout, wq)),
+    _receiver (nullptr), _path (path), _index (index)
 {
     _init();
 }

@@ -16,6 +16,7 @@
  *
  */
 #include "KeypressAction.h"
+#include "../Device.h"
 #include "../util/log.h"
 #include "../InputDevice.h"
 #include "../backend/hidpp20/features/ReprogControls.h"
@@ -32,14 +33,14 @@ void KeypressAction::press()
 {
     _pressed = true;
     for(auto& key : _config.keys())
-        virtual_input->pressKey(key);
+        _device->virtualInput()->pressKey(key);
 }
 
 void KeypressAction::release()
 {
     _pressed = false;
     for(auto& key : _config.keys())
-        virtual_input->releaseKey(key);
+        _device->virtualInput()->releaseKey(key);
 }
 
 uint8_t KeypressAction::reprogFlags() const
@@ -64,11 +65,13 @@ KeypressAction::Config::Config(Device* device, libconfig::Setting& config) :
                 auto& key = keys[i];
                 if(key.isNumber()) {
                     _keys.push_back(key);
-                    virtual_input->registerKey(key);
+                    _device->virtualInput()->registerKey(key);
                 } else if(key.getType() == libconfig::Setting::TypeString) {
                     try {
-                        _keys.push_back(virtual_input->toKeyCode(key));
-                        virtual_input->registerKey(virtual_input->toKeyCode(key));
+                        _keys.push_back(
+                                _device->virtualInput()->toKeyCode(key));
+                        _device->virtualInput()->registerKey(
+                                _device->virtualInput()->toKeyCode(key));
                     } catch(InputDevice::InvalidEventCode& e) {
                         logPrintf(WARN, "Line %d: Invalid keycode %s, skipping."
                             , key.getSourceLine(), key.c_str());

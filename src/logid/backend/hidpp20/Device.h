@@ -28,7 +28,9 @@ namespace hidpp20 {
     class Device : public hidpp::Device
     {
     public:
-        Device(std::string path, hidpp::DeviceIndex index);
+        Device(std::string path, hidpp::DeviceIndex index,
+               const std::chrono::milliseconds& io_timeout,
+               const std::shared_ptr<workqueue>& wq);
         Device(std::shared_ptr<raw::RawDevice> raw_device, hidpp::DeviceIndex index);
         Device(std::shared_ptr<dj::Receiver> receiver, hidpp::DeviceIndex
             index);

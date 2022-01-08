@@ -25,6 +25,8 @@
 
 namespace logid
 {
+    class workqueue;
+
     class task
     {
     public:
@@ -50,7 +52,8 @@ namespace logid
         /* This function spawns a new task into the least used worker queue
          * and forgets about it.
          */
-        static void spawn(const std::function<void()>& function,
+        static void spawn(std::shared_ptr<workqueue> wq,
+                          const std::function<void()>& function,
                           const std::function<void(std::exception&)>&
                           exception_handler={[](std::exception& e)
                                              {ExceptionHandler::Default(e);}});

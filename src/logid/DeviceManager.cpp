@@ -18,15 +18,54 @@
 
 #include <thread>
 #include <sstream>
+#include <utility>
 
 #include "DeviceManager.h"
 #include "Receiver.h"
 #include "util/log.h"
+#include "util/workqueue.h"
 #include "backend/hidpp10/Error.h"
 #include "backend/Error.h"
 
 using namespace logid;
 using namespace logid::backend;
+
+namespace logid {
+    class _DeviceManager : public logid::DeviceManager
+    {
+    public:
+        template <typename... Args>
+        explicit _DeviceManager(Args... args) :
+            DeviceManager(std::forward<Args>(args)...) { }
+    };
+}
+
+DeviceManager::DeviceManager(std::shared_ptr<Configuration> config,
+                             std::shared_ptr<InputDevice> virtual_input) :
+    backend::raw::DeviceMonitor(config->workerCount()),
+    _config (std::move(config)),
+    _virtual_input (std::move(virtual_input))
+{
+}
+
+std::shared_ptr<DeviceManager> DeviceManager::make(
+        const std::shared_ptr<Configuration>& config,
+        const std::shared_ptr<InputDevice>& virtual_input)
+{
+    auto ret = std::make_shared<_DeviceManager>(config, virtual_input);
+    ret->_self = ret;
+    return ret;
+}
+
+std::shared_ptr<Configuration> DeviceManager::config() const
+{
+    return _config;
+}
+
+std::shared_ptr<InputDevice> DeviceManager::virtualInput() const
+{
+    return _virtual_input;
+}
 
 void DeviceManager::addDevice(std::string path)
 {
@@ -35,8 +74,8 @@ void DeviceManager::addDevice(std::string path)
 
     // Check if device is ignored before continuing
     {
-        raw::RawDevice raw_dev(path);
-        if(global_config->isIgnored(raw_dev.productId())) {
+        raw::RawDevice raw_dev(path, config()->ioTimeout(), workQueue());
+        if(config()->isIgnored(raw_dev.productId())) {
             logPrintf(DEBUG, "%s: Device 0x%04x ignored.",
                   path.c_str(), raw_dev.productId());
             return;
@@ -44,7 +83,8 @@ void DeviceManager::addDevice(std::string path)
     }
 
     try {
-        hidpp::Device device(path, hidpp::DefaultDevice);
+        hidpp::Device device(path, hidpp::DefaultDevice,
+                             config()->ioTimeout(), workQueue());
         isReceiver = device.version() == std::make_tuple(1, 0);
     } catch(hidpp10::Error &e) {
         if(e.code() != hidpp10::Error::UnknownDevice)
@@ -62,19 +102,20 @@ void DeviceManager::addDevice(std::string path)
 
     if(isReceiver) {
         logPrintf(INFO, "Detected receiver at %s", path.c_str());
-        auto receiver = std::make_shared<Receiver>(path);
+        auto receiver = std::make_shared<Receiver>(path, _self.lock());
         receiver->run();
         _receivers.emplace(path, receiver);
     } else {
          /* TODO: Can non-receivers only contain 1 device?
          * If the device exists, it is guaranteed to be an HID++ 2.0 device */
         if(defaultExists) {
-            auto device = std::make_shared<Device>(path, hidpp::DefaultDevice);
+            auto device = std::make_shared<Device>(path, hidpp::DefaultDevice,
+                                                   _self.lock());
             _devices.emplace(path,  device);
         } else {
             try {
                 auto device = std::make_shared<Device>(path,
-                        hidpp::CordedDevice);
+                        hidpp::CordedDevice, _self.lock());
                 _devices.emplace(path, device);
             } catch(hidpp10::Error &e) {
                 if(e.code() != hidpp10::Error::UnknownDevice)

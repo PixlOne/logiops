@@ -38,7 +38,8 @@ void ToggleHiresScroll::press()
     _pressed = true;
     if(_hires_scroll)
     {
-        task::spawn([hires=this->_hires_scroll](){
+        task::spawn(_device->workQueue(),
+        [hires=this->_hires_scroll](){
             auto mode = hires->getMode();
             mode ^= backend::hidpp20::HiresScroll::HiRes;
             hires->setMode(mode);

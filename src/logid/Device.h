@@ -27,8 +27,10 @@
 
 namespace logid
 {
+    class DeviceManager;
     class Device;
     class Receiver;
+    class InputDevice;
 
     class DeviceConfig
     {
@@ -49,10 +51,13 @@ namespace logid
     class Device
     {
     public:
-        Device(std::string path, backend::hidpp::DeviceIndex index);
+        Device(std::string path, backend::hidpp::DeviceIndex index,
+               const std::shared_ptr<DeviceManager>& manager);
         Device(const std::shared_ptr<backend::raw::RawDevice>& raw_device,
-                backend::hidpp::DeviceIndex index);
-        Device(Receiver* receiver, backend::hidpp::DeviceIndex index);
+                backend::hidpp::DeviceIndex index,
+                const std::shared_ptr<DeviceManager>& manager);
+        Device(Receiver* receiver, backend::hidpp::DeviceIndex index,
+               const std::shared_ptr<DeviceManager>& manager);
 
         std::string name();
         uint16_t pid();
@@ -64,6 +69,10 @@ namespace logid
         void sleep();
 
         void reset();
+
+        [[nodiscard]] std::shared_ptr<workqueue> workQueue() const;
+
+        [[nodiscard]] std::shared_ptr<InputDevice> virtualInput() const;
 
         template<typename T>
         std::shared_ptr<T> getFeature(std::string name) {
@@ -100,6 +109,7 @@ namespace logid
         DeviceConfig _config;
 
         Receiver* _receiver;
+        const std::weak_ptr<DeviceManager> _manager;
 
         void _makeResetMechanism();
         std::unique_ptr<std::function<void()>> _reset_mechanism;

@@ -22,13 +22,12 @@
 #include <string>
 #include <mutex>
 #include <atomic>
+#include <memory>
 
-extern "C"
-{
-#include <libudev.h>
-}
+struct udev;
 
 namespace logid {
+    class workqueue;
 namespace backend {
 namespace raw
 {
@@ -38,8 +37,10 @@ namespace raw
         void enumerate();
         void run();
         void stop();
+
+        std::shared_ptr<workqueue> workQueue() const;
     protected:
-        DeviceMonitor();
+        explicit DeviceMonitor(int worker_count);
         virtual ~DeviceMonitor();
         virtual void addDevice(std::string device) = 0;
         virtual void removeDevice(std::string device) = 0;
@@ -48,6 +49,7 @@ namespace raw
         int _pipe[2];
         std::atomic<bool> _run_monitor;
         std::mutex _running;
+        std::shared_ptr<workqueue> _workqueue;
     };
 }}}
 

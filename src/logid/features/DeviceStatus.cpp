@@ -62,7 +62,7 @@ void DeviceStatus::listen()
             auto event = hidpp20::WirelessDeviceStatus::statusBroadcastEvent(
                     report);
             if(event.reconfNeeded)
-                task::spawn([dev](){ dev->wakeup(); });
+                task::spawn(dev->workQueue(), [dev](){ dev->wakeup(); });
         };
 
         _device->hidpp20().addEventHandler(EVENTHANDLER_NAME, handler);
