@@ -56,6 +56,9 @@ InputDevice::InputDevice(const char* name)
         }
     }
 
+    for (unsigned int i = 0; i < REL_CNT; i++)
+        registered_axis[i] = false;
+
     libevdev_enable_event_type(device, EV_REL);
 
     int err = libevdev_uinput_create_from_device(device,
@@ -76,7 +79,7 @@ InputDevice::~InputDevice()
 void InputDevice::registerKey(uint code)
 {
     // TODO: Maybe print error message, if wrong code is passed?
-    if(registered_keys[code] || code > KEY_CNT) {
+    if(code >= KEY_CNT || registered_keys[code]) {
         return;
     }
 
@@ -88,7 +91,7 @@ void InputDevice::registerKey(uint code)
 void InputDevice::registerAxis(uint axis)
 {
     // TODO: Maybe print error message, if wrong code is passed?
-    if(registered_axis[axis] || axis > REL_CNT) {
+    if(axis >= REL_CNT || registered_axis[axis]) {
         return;
     }
 

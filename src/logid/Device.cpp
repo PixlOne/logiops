@@ -32,37 +32,106 @@
 using namespace logid;
 using namespace logid::backend;
 
+DeviceNickname::DeviceNickname(const std::shared_ptr<DeviceManager>& manager) :
+        _nickname (manager->newDeviceNickname()), _manager (manager)
+{
+}
+
+DeviceNickname::operator std::string() const {
+    return std::to_string(_nickname);
+}
+
+DeviceNickname::~DeviceNickname()
+{
+    if(auto manager = _manager.lock()) {
+        std::lock_guard<std::mutex> lock(manager->_nick_lock);
+        manager->_device_nicknames.erase(_nickname);
+    }
+}
+
+namespace logid {
+    class _Device : public Device {
+    public:
+        template <typename... Args>
+        _Device(Args... args) : Device(std::forward<Args>(args)...) { }
+    };
+}
+
+std::shared_ptr<Device> Device::make(
+        std::string path, backend::hidpp::DeviceIndex index,
+        std::shared_ptr<DeviceManager> manager)
+{
+    auto ret = std::make_shared<_Device>(std::move(path),
+                                         index,
+                                         std::move(manager));
+    ret->_self = ret;
+    ret->_ipc_node->manage(ret);
+    ret->_ipc_interface = ret->_ipc_node->make_interface<DeviceIPC>(ret.get());
+    return ret;
+}
+
+std::shared_ptr<Device> Device::make(
+        std::shared_ptr<backend::raw::RawDevice> raw_device,
+        backend::hidpp::DeviceIndex index,
+        std::shared_ptr<DeviceManager> manager)
+{
+    auto ret = std::make_shared<_Device>(std::move(raw_device),
+                                         index,
+                                         std::move(manager));
+    ret->_self = ret;
+    ret->_ipc_node->manage(ret);
+    ret->_ipc_interface = ret->_ipc_node->make_interface<DeviceIPC>(ret.get());
+    return ret;
+}
+
+std::shared_ptr<Device> Device::make(
+        Receiver* receiver, backend::hidpp::DeviceIndex index,
+        std::shared_ptr<DeviceManager> manager)
+{
+    auto ret = std::make_shared<_Device>(receiver, index, std::move(manager));
+    ret->_self = ret;
+    ret->_ipc_node->manage(ret);
+    ret->_ipc_interface = ret->_ipc_node->make_interface<DeviceIPC>(ret.get());
+    return ret;
+}
+
 Device::Device(std::string path, backend::hidpp::DeviceIndex index,
-               const std::shared_ptr<DeviceManager>& manager) :
+               std::shared_ptr<DeviceManager> manager) :
     _hidpp20 (path, index,
               manager->config()->ioTimeout(), manager->workQueue()),
     _path (std::move(path)), _index (index),
     _config (manager->config(), this),
     _receiver (nullptr),
-    _manager (manager)
+    _manager (manager),
+    _nickname (manager),
+    _ipc_node(manager->devicesNode()->make_child(_nickname))
 {
     _init();
 }
 
-Device::Device(const std::shared_ptr<backend::raw::RawDevice>& raw_device,
+Device::Device(std::shared_ptr<backend::raw::RawDevice> raw_device,
                hidpp::DeviceIndex index,
-               const std::shared_ptr<DeviceManager>& manager) :
+               std::shared_ptr<DeviceManager> manager) :
                _hidpp20(raw_device, index),
                _path (raw_device->hidrawPath()), _index (index),
                _config (manager->config(), this),
                _receiver (nullptr),
-               _manager (manager)
+               _manager (manager),
+               _nickname (manager),
+               _ipc_node (manager->devicesNode()->make_child(_nickname))
 {
     _init();
 }
 
 Device::Device(Receiver* receiver, hidpp::DeviceIndex index,
-               const std::shared_ptr<DeviceManager>& manager) :
+               std::shared_ptr<DeviceManager> manager) :
                _hidpp20 (receiver->rawReceiver(), index),
                _path (receiver->path()), _index (index),
                _config (manager->config(), this),
                _receiver (receiver),
-               _manager (manager)
+               _manager (manager),
+               _nickname (manager),
+               _ipc_node (manager->devicesNode()->make_child(_nickname))
 {
     _init();
 }
@@ -171,6 +240,12 @@ void Device::_makeResetMechanism()
     } catch(hidpp20::UnsupportedFeature& e) {
         // Reset unsupported, ignore.
     }
+}
+
+Device::DeviceIPC::DeviceIPC(Device* device) :
+        ipcgull::interface("pizza.pixl.LogiOps.Device", {}, {}, {})
+{
+
 }
 
 DeviceConfig::DeviceConfig(const std::shared_ptr<Configuration>& config, Device*

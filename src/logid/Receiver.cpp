@@ -26,13 +26,59 @@
 using namespace logid;
 using namespace logid::backend;
 
+ReceiverNickname::ReceiverNickname(
+        const std::shared_ptr<DeviceManager>& manager) :
+        _nickname (manager->newReceiverNickname()), _manager (manager)
+{
+}
+
+ReceiverNickname::operator std::string() const {
+    return std::to_string(_nickname);
+}
+
+ReceiverNickname::~ReceiverNickname()
+{
+    if(auto manager = _manager.lock()) {
+        std::lock_guard<std::mutex> lock(manager->_nick_lock);
+        manager->_receiver_nicknames.erase(_nickname);
+    }
+}
+
+namespace logid {
+    class _Receiver : public Receiver {
+    public:
+        template <typename... Args>
+        _Receiver(Args... args) : Receiver(std::forward<Args>(args)...) { }
+    };
+}
+
+std::shared_ptr<Receiver> Receiver::make(
+        const std::string &path,
+        const std::shared_ptr<DeviceManager> &manager) {
+    auto ret = std::make_shared<_Receiver>(path, manager);
+    ret->_self = ret;
+    ret->_ipc_node->manage(ret);
+    return ret;
+}
+
+
 Receiver::Receiver(const std::string& path,
                    const std::shared_ptr<DeviceManager>& manager) :
     dj::ReceiverMonitor(path,
                         manager->config()->ioTimeout(),
                         manager->workQueue()),
-    _path (path), _manager (manager)
+    _path (path), _manager (manager), _nickname (manager),
+    _ipc_node (manager->receiversNode()->make_child(_nickname)),
+    _ipc_interface (_ipc_node->make_interface<ReceiverIPC>(this))
 {
+}
+
+Receiver::~Receiver()
+{
+    if(auto manager = _manager.lock()) {
+        for(auto& d : _devices)
+            manager->removeExternalDevice(d.second);
+    }
 }
 
 void Receiver::addDevice(hidpp::DeviceConnectionEvent event)
@@ -77,10 +123,9 @@ void Receiver::addDevice(hidpp::DeviceConnectionEvent event)
             return;
         }
 
-        std::shared_ptr<Device> device = std::make_shared<Device>(this,
-                event.index, manager);
-
+        auto device = Device::make(this, event.index, manager);
         _devices.emplace(event.index, device);
+        manager->addExternalDevice(device);
 
     } catch(hidpp10::Error &e) {
         logPrintf(ERROR,
@@ -100,7 +145,12 @@ void Receiver::addDevice(hidpp::DeviceConnectionEvent event)
 void Receiver::removeDevice(hidpp::DeviceIndex index)
 {
     std::unique_lock<std::mutex> lock(_devices_change);
-    _devices.erase(index);
+    auto device = _devices.find(index);
+    if(device != _devices.end()) {
+        if(auto manager = _manager.lock())
+            manager->removeExternalDevice(device->second);
+        _devices.erase(device);
+    }
 }
 
 const std::string& Receiver::path() const
@@ -111,4 +161,9 @@ const std::string& Receiver::path() const
 std::shared_ptr<dj::Receiver> Receiver::rawReceiver()
 {
     return receiver();
+}
+
+Receiver::ReceiverIPC::ReceiverIPC(Receiver *receiver) :
+        ipcgull::interface("pizza.pixl.LogiOps.Receiver", {}, {}, {})
+{
 }

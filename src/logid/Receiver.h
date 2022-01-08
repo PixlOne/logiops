@@ -25,21 +25,55 @@
 
 namespace logid
 {
-    class Receiver : public backend::dj::ReceiverMonitor
+    class ReceiverNickname {
+    public:
+        explicit ReceiverNickname(const std::shared_ptr<DeviceManager>& manager);
+        ReceiverNickname() = delete;
+        ReceiverNickname(const ReceiverNickname&) = delete;
+        ~ReceiverNickname();
+
+        operator std::string() const;
+    private:
+        const int _nickname;
+        const std::weak_ptr<DeviceManager> _manager;
+    };
+
+    class Receiver : public backend::dj::ReceiverMonitor,
+        public ipcgull::object
     {
     public:
-        explicit Receiver(const std::string& path,
-                          const std::shared_ptr<DeviceManager>& manager);
+        ~Receiver();
+
+        static std::shared_ptr<Receiver> make(
+                const std::string& path,
+                const std::shared_ptr<DeviceManager>& manager);
         const std::string& path() const;
         std::shared_ptr<backend::dj::Receiver> rawReceiver();
     protected:
         void addDevice(backend::hidpp::DeviceConnectionEvent event) override;
         void removeDevice(backend::hidpp::DeviceIndex index) override;
     private:
+        friend class _Receiver;
+
+        Receiver(const std::string& path,
+                 const std::shared_ptr<DeviceManager>& manager);
+
         std::mutex _devices_change;
         std::map<backend::hidpp::DeviceIndex, std::shared_ptr<Device>> _devices;
         std::string _path;
         std::weak_ptr<DeviceManager> _manager;
+
+        const ReceiverNickname _nickname;
+        std::shared_ptr<ipcgull::node> _ipc_node;
+
+        class ReceiverIPC : public ipcgull::interface {
+        public:
+            ReceiverIPC(Receiver* receiver);
+        };
+
+        std::shared_ptr<ipcgull::interface> _ipc_interface;
+
+        std::weak_ptr<Receiver> _self;
     };
 }
 

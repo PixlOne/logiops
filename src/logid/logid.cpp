@@ -20,6 +20,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <mutex>
+#include <ipcgull/exception.h>
 
 #include "util/log.h"
 #include "DeviceManager.h"
@@ -157,6 +158,19 @@ int main(int argc, char** argv)
     std::shared_ptr<Configuration> config;
     std::shared_ptr<InputDevice> virtual_input;
 
+    auto server = ipcgull::make_server("pizza.pixl.LogiOps",
+                                      "/pizza/pixl/logiops",
+                                      ipcgull::IPCGULL_USER);
+
+    std::thread( [server]() {
+        try {
+            server->start();
+        } catch(ipcgull::connection_failed& e) {
+            logPrintf(ERROR, "Lost IPC connection, terminating.");
+            std::terminate();
+        }
+    } ).detach();
+
     // Read config
     try {
         config = std::make_shared<Configuration>(options.config_file);
@@ -174,9 +188,11 @@ int main(int argc, char** argv)
     }
 
     // Scan devices, create listeners, handlers, etc.
-    auto device_manager = DeviceManager::make(config, virtual_input);
+    auto device_manager = DeviceManager::make(config, virtual_input, server);
 
     device_manager->run();
+
+    server->stop_sync();
 
     return EXIT_SUCCESS;
 }

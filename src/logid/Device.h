@@ -19,6 +19,8 @@
 #ifndef LOGID_DEVICE_H
 #define LOGID_DEVICE_H
 
+#include <ipcgull/node.h>
+#include <ipcgull/interface.h>
 #include "backend/hidpp/defs.h"
 #include "backend/hidpp20/Device.h"
 #include "features/DeviceFeature.h"
@@ -31,6 +33,19 @@ namespace logid
     class Device;
     class Receiver;
     class InputDevice;
+
+    class DeviceNickname {
+    public:
+        explicit DeviceNickname(const std::shared_ptr<DeviceManager>& manager);
+        DeviceNickname() = delete;
+        DeviceNickname(const DeviceNickname&) = delete;
+        ~DeviceNickname();
+
+        operator std::string() const;
+    private:
+        const int _nickname;
+        const std::weak_ptr<DeviceManager> _manager;
+    };
 
     class DeviceConfig
     {
@@ -48,22 +63,27 @@ namespace logid
      * Currently, the logid::Device class has a hardcoded requirement
      * for an HID++ 2.0 device.
      */
-    class Device
+    class Device : public ipcgull::object
     {
     public:
-        Device(std::string path, backend::hidpp::DeviceIndex index,
-               const std::shared_ptr<DeviceManager>& manager);
-        Device(const std::shared_ptr<backend::raw::RawDevice>& raw_device,
-                backend::hidpp::DeviceIndex index,
-                const std::shared_ptr<DeviceManager>& manager);
-        Device(Receiver* receiver, backend::hidpp::DeviceIndex index,
-               const std::shared_ptr<DeviceManager>& manager);
-
         std::string name();
         uint16_t pid();
 
         DeviceConfig& config();
         backend::hidpp20::Device& hidpp20();
+
+        static std::shared_ptr<Device> make(
+                std::string path,
+                backend::hidpp::DeviceIndex index,
+                std::shared_ptr<DeviceManager> manager);
+        static std::shared_ptr<Device> make(
+                std::shared_ptr<backend::raw::RawDevice> raw_device,
+                backend::hidpp::DeviceIndex index,
+                std::shared_ptr<DeviceManager> manager);
+        static std::shared_ptr<Device> make(
+                Receiver* receiver,
+                backend::hidpp::DeviceIndex index,
+                std::shared_ptr<DeviceManager> manager);
 
         void wakeup();
         void sleep();
@@ -89,6 +109,15 @@ namespace logid
         }
 
     private:
+        friend class _Device;
+        Device(std::string path, backend::hidpp::DeviceIndex index,
+               std::shared_ptr<DeviceManager> manager);
+        Device(std::shared_ptr<backend::raw::RawDevice> raw_device,
+               backend::hidpp::DeviceIndex index,
+               std::shared_ptr<DeviceManager> manager);
+        Device(Receiver* receiver, backend::hidpp::DeviceIndex index,
+               std::shared_ptr<DeviceManager> manager);
+
         void _init();
 
         /* Adds a feature without calling an error if unsupported */
@@ -113,6 +142,18 @@ namespace logid
 
         void _makeResetMechanism();
         std::unique_ptr<std::function<void()>> _reset_mechanism;
+
+        const DeviceNickname _nickname;
+        std::shared_ptr<ipcgull::node> _ipc_node;
+
+        class DeviceIPC : public ipcgull::interface {
+        public:
+            DeviceIPC(Device* device);
+        };
+
+        std::shared_ptr<ipcgull::interface> _ipc_interface;
+
+        std::weak_ptr<Device> _self;
     };
 }
 
