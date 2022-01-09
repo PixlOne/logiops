@@ -73,6 +73,10 @@ Receiver::Receiver(const std::string& path,
 {
 }
 
+const Receiver::DeviceList& Receiver::devices() const {
+    return _devices;
+}
+
 Receiver::~Receiver()
 {
     if(auto manager = _manager.lock()) {
@@ -124,6 +128,7 @@ void Receiver::addDevice(hidpp::DeviceConnectionEvent event)
         }
 
         auto device = Device::make(this, event.index, manager);
+        std::lock_guard<std::mutex> manager_lock(manager->mutex());
         _devices.emplace(event.index, device);
         manager->addExternalDevice(device);
 
@@ -145,6 +150,9 @@ void Receiver::addDevice(hidpp::DeviceConnectionEvent event)
 void Receiver::removeDevice(hidpp::DeviceIndex index)
 {
     std::unique_lock<std::mutex> lock(_devices_change);
+    std::unique_lock<std::mutex> manager_lock;
+    if(auto manager = _manager.lock())
+        manager_lock = std::unique_lock<std::mutex>(manager->mutex());
     auto device = _devices.find(index);
     if(device != _devices.end()) {
         if(auto manager = _manager.lock())

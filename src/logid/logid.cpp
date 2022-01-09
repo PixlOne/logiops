@@ -159,7 +159,7 @@ int main(int argc, char** argv)
     std::shared_ptr<InputDevice> virtual_input;
 
     auto server = ipcgull::make_server("pizza.pixl.LogiOps",
-                                      "/pizza/pixl/logiops",
+                                      "/pizza/pixl/LogiOps",
                                       ipcgull::IPCGULL_USER);
 
     std::thread( [server]() {

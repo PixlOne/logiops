@@ -19,6 +19,7 @@
 #include <thread>
 #include <sstream>
 #include <utility>
+#include <ipcgull/function.h>
 
 #include "DeviceManager.h"
 #include "Receiver.h"
@@ -50,8 +51,8 @@ DeviceManager::DeviceManager(std::shared_ptr<Configuration> config,
     _device_node (ipcgull::node::make_root("devices")),
     _receiver_node (ipcgull::node::make_root("receivers"))
 {
-    _ipc_devices = _root_node->make_interface<DevicesIPC>();
-    _ipc_receivers = _root_node->make_interface<ReceiversIPC>();
+    _ipc_devices = _root_node->make_interface<DevicesIPC>(this);
+    _ipc_receivers = _root_node->make_interface<ReceiversIPC>(this);
     _device_node->add_server(_server);
     _receiver_node->add_server(_server);
     _root_node->add_server(_server);
@@ -124,6 +125,7 @@ void DeviceManager::addDevice(std::string path)
         logPrintf(INFO, "Detected receiver at %s", path.c_str());
         auto receiver = Receiver::make(path, _self.lock());
         receiver->run();
+        std::lock_guard<std::mutex> lock(_map_lock);
         _receivers.emplace(path, receiver);
         _ipc_receivers->receiverAdded(receiver);
     } else {
@@ -132,12 +134,14 @@ void DeviceManager::addDevice(std::string path)
         if(defaultExists) {
             auto device = Device::make(path, hidpp::DefaultDevice,
                                        _self.lock());
+            std::lock_guard<std::mutex> lock(_map_lock);
             _devices.emplace(path,  device);
             _ipc_devices->deviceAdded(device);
         } else {
             try {
                 auto device = Device::make(path,
                         hidpp::CordedDevice, _self.lock());
+                std::lock_guard<std::mutex> lock(_map_lock);
                 _devices.emplace(path, device);
                 _ipc_devices->deviceAdded(device);
             } catch(hidpp10::Error &e) {
@@ -167,8 +171,14 @@ void DeviceManager::removeExternalDevice(const std::shared_ptr<Device> &d)
     _ipc_devices->deviceRemoved(d);
 }
 
+std::mutex& DeviceManager::mutex() const
+{
+    return _map_lock;
+}
+
 void DeviceManager::removeDevice(std::string path)
 {
+    std::lock_guard<std::mutex> lock(_map_lock);
     auto receiver = _receivers.find(path);
 
     if(receiver != _receivers.end()) {
@@ -185,55 +195,84 @@ void DeviceManager::removeDevice(std::string path)
     }
 }
 
-DeviceManager::DevicesIPC::DevicesIPC() : ipcgull::interface(
+DeviceManager::DevicesIPC::DevicesIPC(DeviceManager* manager) :
+ipcgull::interface(
         "pizza.pixl.LogiOps.Devices",
-        {},
+        {
+                {"Enumerate",{manager, &DeviceManager::listDevices,{"devices"}}}
+        },
         {},
         {
-                {"deviceAdded",
+                {"DeviceAdded",
                         ipcgull::make_signal<std::shared_ptr<Device>>(
                                 {"device"})},
-                {"deviceRemoved",
+                {"DeviceRemoved",
                         ipcgull::make_signal<std::shared_ptr<Device>>(
                                 {"device"})}
-        }
-        )
+        })
 {
+}
+
+std::vector<std::shared_ptr<Device>> DeviceManager::listDevices() const
+{
+    std::lock_guard<std::mutex> lock(_map_lock);
+    std::vector<std::shared_ptr<Device>> devices;
+    for(auto& x : _devices)
+        devices.emplace_back(x.second);
+    for(auto& x : _receivers) {
+        for(auto& d : x.second->devices())
+            devices.emplace_back(d.second);
+    }
+
+    return devices;
+}
+
+std::vector<std::shared_ptr<Receiver>> DeviceManager::listReceivers() const
+{
+    std::lock_guard<std::mutex> lock(_map_lock);
+    std::vector<std::shared_ptr<Receiver>> receivers;
+    for(auto& x : _receivers)
+        receivers.emplace_back(x.second);
+    return receivers;
 }
 
 void DeviceManager::DevicesIPC::deviceAdded(
         const std::shared_ptr<Device>& d) {
-    emit_signal("deviceAdded", d);
+    emit_signal("DeviceAdded", d);
 }
 
 void DeviceManager::DevicesIPC::deviceRemoved(
         const std::shared_ptr<Device>& d) {
-    emit_signal("deviceRemoved", d);
+    emit_signal("DeviceRemoved", d);
 }
 
-DeviceManager::ReceiversIPC::ReceiversIPC() : ipcgull::interface(
+DeviceManager::ReceiversIPC::ReceiversIPC(DeviceManager* manager) :
+ipcgull::interface(
         "pizza.pixl.LogiOps.Receivers",
-        {},
+        {
+                {"Enumerate",{manager, &DeviceManager::listReceivers,
+                              {"receivers"}}}
+            },
         {},
         {
-                {"receiverAdded",
+                {"ReceiverAdded",
                         ipcgull::make_signal<std::shared_ptr<Receiver>>(
-                                {"device"})},
-                {"receiverRemoved",
+                                {"receiver"})},
+                {"ReceiverRemoved",
                         ipcgull::make_signal<std::shared_ptr<Receiver>>(
-                                {"device"})}
+                                {"receiver"})}
         })
 {
 }
 
 void DeviceManager::ReceiversIPC::receiverAdded(
         const std::shared_ptr<Receiver>& r) {
-    emit_signal("receiverAdded", r);
+    emit_signal("ReceiverAdded", r);
 }
 
 void DeviceManager::ReceiversIPC::receiverRemoved(
         const std::shared_ptr<Receiver>& r) {
-    emit_signal("receiverRemoved", r);
+    emit_signal("ReceiverRemoved", r);
 }
 
 int DeviceManager::newDeviceNickname()

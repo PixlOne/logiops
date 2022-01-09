@@ -50,23 +50,29 @@ namespace logid
 
         void addExternalDevice(const std::shared_ptr<Device>& d);
         void removeExternalDevice(const std::shared_ptr<Device>& d);
+
+        std::mutex& mutex() const;
     protected:
         void addDevice(std::string path) final;
         void removeDevice(std::string path) final;
     private:
         class DevicesIPC : public ipcgull::interface {
         public:
-            DevicesIPC();
+            explicit DevicesIPC(DeviceManager* manager);
             void deviceAdded(const std::shared_ptr<Device>& d);
             void deviceRemoved(const std::shared_ptr<Device>& d);
         };
+        [[nodiscard]]
+        std::vector<std::shared_ptr<Device>> listDevices() const;
 
         class ReceiversIPC : public ipcgull::interface {
         public:
-            ReceiversIPC();
+            explicit ReceiversIPC(DeviceManager* manager);
             void receiverAdded(const std::shared_ptr<Receiver>& r);
             void receiverRemoved(const std::shared_ptr<Receiver>& r);
         };
+        [[nodiscard]]
+        std::vector<std::shared_ptr<Receiver>> listReceivers() const;
 
         friend class _DeviceManager;
         DeviceManager(std::shared_ptr<Configuration> config,
@@ -88,6 +94,8 @@ namespace logid
 
         std::map<std::string, std::shared_ptr<Device>> _devices;
         std::map<std::string, std::shared_ptr<Receiver>> _receivers;
+
+        mutable std::mutex _map_lock;
 
         friend class DeviceNickname;
         friend class ReceiverNickname;

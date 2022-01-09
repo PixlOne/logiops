@@ -42,6 +42,9 @@ namespace logid
         public ipcgull::object
     {
     public:
+        typedef std::map<backend::hidpp::DeviceIndex, std::shared_ptr<Device>>
+        DeviceList;
+
         ~Receiver();
 
         static std::shared_ptr<Receiver> make(
@@ -49,6 +52,8 @@ namespace logid
                 const std::shared_ptr<DeviceManager>& manager);
         const std::string& path() const;
         std::shared_ptr<backend::dj::Receiver> rawReceiver();
+
+        [[nodiscard]] const DeviceList& devices() const;
     protected:
         void addDevice(backend::hidpp::DeviceConnectionEvent event) override;
         void removeDevice(backend::hidpp::DeviceIndex index) override;
@@ -59,7 +64,7 @@ namespace logid
                  const std::shared_ptr<DeviceManager>& manager);
 
         std::mutex _devices_change;
-        std::map<backend::hidpp::DeviceIndex, std::shared_ptr<Device>> _devices;
+        DeviceList _devices;
         std::string _path;
         std::weak_ptr<DeviceManager> _manager;
 
