@@ -104,7 +104,8 @@ Device::Device(std::string path, backend::hidpp::DeviceIndex index,
     _receiver (nullptr),
     _manager (manager),
     _nickname (manager),
-    _ipc_node(manager->devicesNode()->make_child(_nickname))
+    _ipc_node(manager->devicesNode()->make_child(_nickname)),
+    _awake (ipcgull::property_readable, true)
 {
     _init();
 }
@@ -118,7 +119,8 @@ Device::Device(std::shared_ptr<backend::raw::RawDevice> raw_device,
                _receiver (nullptr),
                _manager (manager),
                _nickname (manager),
-               _ipc_node (manager->devicesNode()->make_child(_nickname))
+               _ipc_node (manager->devicesNode()->make_child(_nickname)),
+               _awake (ipcgull::property_readable, true)
 {
     _init();
 }
@@ -131,7 +133,8 @@ Device::Device(Receiver* receiver, hidpp::DeviceIndex index,
                _receiver (receiver),
                _manager (manager),
                _nickname (manager),
-               _ipc_node (manager->devicesNode()->make_child(_nickname))
+               _ipc_node (manager->devicesNode()->make_child(_nickname)),
+               _awake (ipcgull::property_readable, true)
 {
     _init();
 }
@@ -171,11 +174,17 @@ uint16_t Device::pid()
 
 void Device::sleep()
 {
-    logPrintf(INFO, "%s:%d fell asleep.", _path.c_str(), _index);
+    std::lock_guard<std::mutex> lock(_state_lock);
+    if(_awake) {
+        logPrintf(INFO, "%s:%d fell asleep.", _path.c_str(), _index);
+        _awake = false;
+        _ipc_interface->notifyStatus();
+    }
 }
 
 void Device::wakeup()
 {
+    std::lock_guard<std::mutex> lock(_state_lock);
     logPrintf(INFO, "%s:%d woke up.", _path.c_str(), _index);
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
@@ -183,6 +192,11 @@ void Device::wakeup()
 
     for(auto& feature: _features)
         feature.second->configure();
+
+    if(!_awake) {
+        _awake = true;
+        _ipc_interface->notifyStatus();
+    }
 }
 
 void Device::reset()
@@ -194,7 +208,8 @@ void Device::reset()
                          "available.", _path.c_str(), _index);
 }
 
-std::shared_ptr<workqueue> Device::workQueue() const {
+std::shared_ptr<workqueue> Device::workQueue() const
+{
     if(auto manager = _manager.lock()) {
         return manager->workQueue();
     } else {
@@ -206,7 +221,8 @@ std::shared_ptr<workqueue> Device::workQueue() const {
     }
 }
 
-std::shared_ptr<InputDevice> Device::virtualInput() const {
+std::shared_ptr<InputDevice> Device::virtualInput() const
+{
     if(auto manager = _manager.lock()) {
         return manager->virtualInput();
     } else {
@@ -216,6 +232,11 @@ std::shared_ptr<InputDevice> Device::virtualInput() const {
                   " the program will now exit.");
         std::terminate();
     }
+}
+
+std::shared_ptr<ipcgull::node> Device::ipcNode() const
+{
+    return _ipc_node;
 }
 
 Device::Config& Device::config()
@@ -243,9 +264,25 @@ void Device::_makeResetMechanism()
 }
 
 Device::DeviceIPC::DeviceIPC(Device* device) :
-        ipcgull::interface("pizza.pixl.LogiOps.Device", {}, {}, {})
+        ipcgull::interface(
+                "pizza.pixl.LogiOps.Device",
+                {},
+                {
+                    {"Name", ipcgull::property<std::string>(
+                        ipcgull::property_readable, device->name())},
+                    {"ProductID", ipcgull::property<uint16_t>(
+                            ipcgull::property_readable, device->pid())},
+                    {"Active", device->_awake}
+                }, {
+                        {"StatusChanged",
+                         ipcgull::signal::make_signal<bool>({"active"})}
+                }), _device (*device)
 {
+}
 
+void Device::DeviceIPC::notifyStatus() const
+{
+    emit_signal("StatusChanged", (bool)(_device._awake));
 }
 
 Device::Config::Config(const std::shared_ptr<Configuration>& config, Device*

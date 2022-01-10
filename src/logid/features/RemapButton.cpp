@@ -29,7 +29,8 @@ using namespace logid::actions;
 
 #define EVENTHANDLER_NAME "REMAP_BUTTON"
 
-RemapButton::RemapButton(Device *dev): DeviceFeature(dev), _config (dev)
+RemapButton::RemapButton(Device *dev): DeviceFeature(dev), _config (dev),
+    _ipc_node (dev->ipcNode()->make_child("buttons"))
 {
     try {
         _reprog_controls = hidpp20::ReprogControls::autoVersion(
@@ -57,6 +58,14 @@ RemapButton::RemapButton(Device *dev): DeviceFeature(dev), _config (dev)
                         control.first, FLAG(TemporaryDivertable), FLAG(FKey),
                         FLAG(MouseButton), ADDITIONAL_FLAG(RawXY));
         #undef FLAG
+    }
+
+    for(const auto& control : _reprog_controls->getControls()) {
+        auto i = std::to_string(_button_ipcs.size());
+        auto node = _ipc_node->make_child(i);
+        auto iface = node->make_interface<ButtonIPC>(this,
+                                                         control.second);
+        _button_ipcs.emplace_back(node, iface);
     }
 }
 
@@ -206,4 +215,20 @@ void RemapButton::Config::_parseButton(libconfig::Setting &setting)
 const std::map<uint8_t, std::shared_ptr<Action>>& RemapButton::Config::buttons()
 {
     return _buttons;
+}
+
+
+RemapButton::ButtonIPC::ButtonIPC(
+        RemapButton *parent,
+        backend::hidpp20::ReprogControls::ControlInfo info) :
+        ipcgull::interface("pizza.pixl.LogiOps.Device.Button", {}, {
+                {"ControlID", ipcgull::property<uint16_t>(
+                        ipcgull::property_readable, info.controlID)},
+                {"Remappable", ipcgull::property<bool>(
+                        ipcgull::property_readable, info.flags & hidpp20::ReprogControls::TemporaryDivertable)},
+                {"GestureSupport", ipcgull::property<bool>(
+                        ipcgull::property_readable, (info.additionalFlags & hidpp20::ReprogControls::RawXY)
+                        )}
+            }, {})
+{
 }

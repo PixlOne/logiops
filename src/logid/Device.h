@@ -81,8 +81,8 @@ namespace logid
         void reset();
 
         [[nodiscard]] std::shared_ptr<workqueue> workQueue() const;
-
         [[nodiscard]] std::shared_ptr<InputDevice> virtualInput() const;
+        [[nodiscard]] std::shared_ptr<ipcgull::node> ipcNode() const;
 
         template<typename T>
         std::shared_ptr<T> getFeature(std::string name) {
@@ -154,11 +154,16 @@ namespace logid
         std::shared_ptr<ipcgull::node> _ipc_node;
 
         class DeviceIPC : public ipcgull::interface {
+        private:
+            Device& _device;
         public:
             DeviceIPC(Device* device);
+            void notifyStatus() const;
         };
 
-        std::shared_ptr<ipcgull::interface> _ipc_interface;
+        ipcgull::property<bool> _awake;
+        std::mutex _state_lock;
+        std::shared_ptr<DeviceIPC> _ipc_interface;
 
         std::weak_ptr<Device> _self;
     };

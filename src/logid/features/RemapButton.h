@@ -44,11 +44,23 @@ namespace features
             std::map<uint8_t, std::shared_ptr<actions::Action>> _buttons;
         };
     private:
+        class ButtonIPC : public ipcgull::interface
+        {
+        public:
+            ButtonIPC(RemapButton* parent,
+                      backend::hidpp20::ReprogControls::ControlInfo info);
+        };
+
         void _buttonEvent(const std::set<uint16_t>& new_state);
         Config _config;
         std::shared_ptr<backend::hidpp20::ReprogControls> _reprog_controls;
         std::set<uint16_t> _pressed_buttons;
         std::mutex _button_lock;
+
+        std::shared_ptr<ipcgull::node> _ipc_node;
+        typedef std::pair<std::shared_ptr<ipcgull::node>,
+                std::shared_ptr<ButtonIPC>> ButtonIPCPair;
+        std::vector<ButtonIPCPair> _button_ipcs;
     };
 }}
 
