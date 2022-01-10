@@ -30,6 +30,8 @@ This project requires a C++14 compiler, `cmake`, `libevdev`, `libudev`, and `lib
 To build this project, run:
 
 ```bash
+git clone https://github.com/PixlOne/logiops.git
+cd logiops
 mkdir build
 cd build
 cmake ..
