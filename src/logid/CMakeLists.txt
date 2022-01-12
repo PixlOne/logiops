@@ -89,10 +89,12 @@ target_link_libraries(logid ${CMAKE_THREAD_LIBS_INIT} ${EVDEV_LIBRARY} config++
 
 install(TARGETS logid DESTINATION bin)
 
-if (SYSTEMD_FOUND AND "${SYSTEMD_SERVICES_INSTALL_DIR}" STREQUAL "")
-    execute_process(COMMAND ${PKG_CONFIG_EXECUTABLE}
-        --variable=systemdsystemunitdir systemd
-        OUTPUT_VARIABLE SYSTEMD_SERVICES_INSTALL_DIR)
+if (SYSTEMD_FOUND)
+    if ("${SYSTEMD_SERVICES_INSTALL_DIR}" STREQUAL "")
+         execute_process(COMMAND ${PKG_CONFIG_EXECUTABLE}
+             --variable=systemdsystemunitdir systemd
+             OUTPUT_VARIABLE SYSTEMD_SERVICES_INSTALL_DIR)
+    endif()
     string(REGEX REPLACE "[ \t\n]+" "" SYSTEMD_SERVICES_INSTALL_DIR
            "${SYSTEMD_SERVICES_INSTALL_DIR}")
     configure_file(logid.service.cmake ${CMAKE_BINARY_DIR}/logid.service)
