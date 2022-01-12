@@ -23,6 +23,8 @@ This project requires a C++14 compiler, `cmake`, `libevdev`, `libudev`, and `lib
 
 **Gentoo Linux:** `sudo emerge dev-libs/libconfig dev-libs/libevdev dev-util/cmake virtual/libudev`
 
+**Nix (any distro):** `nix-shell -p pkg-config cmake libconfig libevdev systemd`
+
 **Solus:** `sudo eopkg install libevdev-devel libconfig-devel libgudev-devel`
 
 ## Building
