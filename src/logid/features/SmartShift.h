@@ -20,6 +20,7 @@
 
 #include "../backend/hidpp20/features/SmartShift.h"
 #include "DeviceFeature.h"
+#include "../config/schema.h"
 
 namespace logid {
 namespace features
@@ -34,16 +35,8 @@ namespace features
         backend::hidpp20::SmartShift::SmartshiftStatus getStatus();
         void setStatus(backend::hidpp20::SmartShift::SmartshiftStatus status);
 
-        class Config : public DeviceFeature::Config
-        {
-        public:
-            explicit Config(Device* dev);
-            backend::hidpp20::SmartShift::SmartshiftStatus getSettings();
-        protected:
-            backend::hidpp20::SmartShift::SmartshiftStatus _status;
-        };
     private:
-        Config _config;
+        std::optional<config::SmartShift>& _config;
         std::shared_ptr<backend::hidpp20::SmartShift> _smartshift;
     };
 }}

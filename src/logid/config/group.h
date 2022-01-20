@@ -135,11 +135,11 @@ namespace logid::config {
 
         virtual ~group() = default;
 
-        virtual void save(libconfig::Setting& setting) const {
+        virtual void _save(libconfig::Setting& setting) const {
             _setter(setting, this, _names);
         }
 
-        virtual void load(const libconfig::Setting& setting) {
+        virtual void _load(const libconfig::Setting& setting) {
             _getter(setting, this, _names);
         }
     };
@@ -188,12 +188,12 @@ namespace logid::config {
             return *this;
         }
 
-        void save(libconfig::Setting& setting) const override {
+        void _save(libconfig::Setting& setting) const override {
             set(setting, _signature, _sig_field);
             _setter(setting, this, _names);
         }
 
-        void load(const libconfig::Setting& setting) override {
+        void _load(const libconfig::Setting& setting) override {
             if(normalize_signature<Sign>::make(get<Sign>(setting, _sig_field))
             != _signature)
                 throw libconfig::SettingTypeException(setting);

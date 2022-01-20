@@ -44,15 +44,6 @@ namespace features
         virtual void configure() = 0;
         virtual void listen() = 0;
         virtual ~DeviceFeature() = default;
-        class Config
-        {
-        public:
-            explicit Config(Device* dev) : _device (dev)
-            {
-            }
-        protected:
-            Device* _device;
-        };
 
     protected:
         Device* _device;

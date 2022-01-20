@@ -24,8 +24,8 @@
 
 using namespace logid::actions;
 
-ChangeDPI::ChangeDPI(Device *device, libconfig::Setting &setting) :
-    Action(device), _config(device, setting)
+ChangeDPI::ChangeDPI(Device *device, config::ChangeDPI& config) :
+    Action(device), _config (config)
 {
     _dpi = _device->getFeature<features::DPI>("dpi");
     if(!_dpi)
@@ -42,15 +42,16 @@ void ChangeDPI::press()
         task::spawn(_device->workQueue(),
         [this]{
             try {
-                uint16_t last_dpi = _dpi->getDPI(_config.sensor());
-                _dpi->setDPI(last_dpi + _config.interval(), _config.sensor());
+                uint16_t last_dpi = _dpi->getDPI(_config.sensor.value_or(0));
+                _dpi->setDPI(last_dpi + _config.inc,
+                             _config.sensor.value_or(0));
             } catch (backend::hidpp20::Error& e) {
                 if(e.code() == backend::hidpp20::Error::InvalidArgument)
                     logPrintf(WARN, "%s:%d: Could not get/set DPI for sensor "
                                     "%d",
                               _device->hidpp20().devicePath().c_str(),
                               _device->hidpp20().deviceIndex(),
-                              _config.sensor());
+                              _config.sensor.value_or(0));
                 else
                     throw e;
             }
@@ -66,45 +67,4 @@ void ChangeDPI::release()
 uint8_t ChangeDPI::reprogFlags() const
 {
     return backend::hidpp20::ReprogControls::TemporaryDiverted;
-}
-
-ChangeDPI::Config::Config(Device *device, libconfig::Setting &config) :
-        Action::Config(device),  _interval (0), _sensor (0)
-{
-    if(!config.isGroup()) {
-        logPrintf(WARN, "Line %d: action must be an object, skipping.",
-                  config.getSourceLine());
-        return;
-    }
-
-    try {
-        auto& inc = config.lookup("inc");
-        if(inc.getType() != libconfig::Setting::TypeInt)
-            logPrintf(WARN, "Line %d: inc must be an integer",
-                      inc.getSourceLine());
-        _interval = (int)inc;
-    } catch(libconfig::SettingNotFoundException& e) {
-        logPrintf(WARN, "Line %d: inc is a required field, skipping.",
-            config.getSourceLine());
-    }
-
-    try {
-        auto& sensor = config.lookup("sensor");
-        if(sensor.getType() != libconfig::Setting::TypeInt)
-            logPrintf(WARN, "Line %d: sensor must be an integer",
-                      sensor.getSourceLine());
-        _sensor = (int)sensor;
-    } catch(libconfig::SettingNotFoundException& e) {
-        // Ignore
-    }
-}
-
-uint16_t ChangeDPI::Config::interval() const
-{
-    return _interval;
-}
-
-uint8_t ChangeDPI::Config::sensor() const
-{
-    return _sensor;
 }

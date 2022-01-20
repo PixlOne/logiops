@@ -27,26 +27,15 @@ namespace logid {
         class ChangeDPI : public Action
         {
         public:
-            explicit ChangeDPI(Device* device, libconfig::Setting& setting);
+            explicit ChangeDPI(Device* device, config::ChangeDPI& setting);
 
             virtual void press();
             virtual void release();
 
             virtual uint8_t reprogFlags() const;
 
-            class Config : public Action::Config
-            {
-            public:
-                Config(Device* device, libconfig::Setting& setting);
-                uint16_t interval() const;
-                uint8_t sensor() const;
-            private:
-                uint16_t _interval;
-                uint8_t _sensor;
-            };
-
         protected:
-            Config _config;
+            config::ChangeDPI& _config;
             std::shared_ptr<features::DPI> _dpi;
         };
     }}

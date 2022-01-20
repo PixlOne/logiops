@@ -65,7 +65,8 @@ std::shared_ptr<Receiver> Receiver::make(
 Receiver::Receiver(const std::string& path,
                    const std::shared_ptr<DeviceManager>& manager) :
     dj::ReceiverMonitor(path,
-                        manager->config()->ioTimeout(),
+                        manager->config()->io_timeout.value_or(
+                                defaults::io_timeout),
                         manager->workQueue()),
     _path (path), _manager (manager), _nickname (manager),
     _ipc_node (manager->receiversNode()->make_child(_nickname)),
@@ -99,7 +100,8 @@ void Receiver::addDevice(hidpp::DeviceConnectionEvent event)
 
     try {
         // Check if device is ignored before continuing
-        if(manager->config()->isIgnored(event.pid)) {
+        if(manager->config()->ignore.value_or(
+                std::set<uint16_t>()).contains(event.pid)) {
             logPrintf(DEBUG, "%s:%d: Device 0x%04x ignored.",
                       _path.c_str(), event.index, event.pid);
             return;

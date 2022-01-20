@@ -16,17 +16,27 @@
  *
  */
 #include "ThresholdGesture.h"
+#include "../../Configuration.h"
 
 using namespace logid::actions;
 
-ThresholdGesture::ThresholdGesture(Device *device, libconfig::Setting &root) :
-    Gesture (device), _config (device, root)
+ThresholdGesture::ThresholdGesture(Device *device,
+                                   config::ThresholdGesture& config) :
+    Gesture (device), _config (config)
 {
+    if(config.action) {
+        try {
+            _action = Action::makeAction(device, config.action.value());
+        } catch(InvalidAction& e) {
+            logPrintf(WARN, "Mapping gesture to invalid action");
+        }
+    }
 }
 
 void ThresholdGesture::press(bool init_threshold)
 {
-    _axis = init_threshold ? _config.threshold() : 0;
+    _axis = init_threshold ?
+            _config.threshold.value_or(defaults::gesture_threshold) : 0;
     this->_executed = false;
 }
 
@@ -42,15 +52,17 @@ void ThresholdGesture::move(int16_t axis)
     _axis += axis;
 
     if(!this->_executed && metThreshold()) {
-        _config.action()->press();
-        _config.action()->release();
+        if(_action) {
+            _action->press();
+            _action->release();
+        }
         this->_executed = true;
     }
 }
 
 bool ThresholdGesture::metThreshold() const
 {
-    return _axis >= _config.threshold();
+    return _axis >= _config.threshold.value_or(defaults::gesture_threshold);
 }
 
 bool ThresholdGesture::wheelCompatibility() const

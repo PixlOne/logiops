@@ -26,7 +26,7 @@ namespace actions
     class ReleaseGesture : public Gesture
     {
     public:
-        ReleaseGesture(Device* device, libconfig::Setting& root);
+        ReleaseGesture(Device* device, config::ReleaseGesture& config);
 
         virtual void press(bool init_threshold=false);
         virtual void release(bool primary=false);
@@ -37,7 +37,8 @@ namespace actions
 
     protected:
         int16_t _axis;
-        Gesture::Config _config;
+        std::shared_ptr<Action> _action;
+        config::ReleaseGesture& _config;
     };
 }}
 

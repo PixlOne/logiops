@@ -20,30 +20,54 @@
 
 #include "types.h"
 
+namespace logid::actions {
+    class ChangeDPI;
+    class ChangeHostAction;
+    class CycleDPI;
+    class GestureAction;
+    class KeypressAction;
+    class NullAction;
+    class ToggleHiresScroll;
+    class ToggleSmartShift;
+
+    class AxisGesture;
+    class IntervalGesture;
+    class NullGesture;
+    class ReleaseGesture;
+    class ThresholdGesture;
+}
+
 namespace logid::config {
+
     struct NoAction : public signed_group<std::string> {
+        typedef actions::NullAction action;
         NoAction() : signed_group<std::string>("type", "None") { }
     };
 
     struct KeypressAction : public signed_group<std::string> {
-        std::variant<std::string, std::vector<std::string>> keys;
+        typedef actions::KeypressAction action;
+        std::variant<std::string, uint,
+        std::list<std::variant<uint, std::string>>> keys;
         KeypressAction() : signed_group<std::string>(
                 "type", "Keypress",
                 {"keys"}, &KeypressAction::keys) { }
     };
 
     struct ToggleSmartShift : public signed_group<std::string> {
+        typedef actions::ToggleSmartShift action;
         ToggleSmartShift() :
         signed_group<std::string>("type", "ToggleSmartShift") { }
     };
 
     struct ToggleHiresScroll : public signed_group<std::string> {
+        typedef actions::ToggleHiresScroll action;
         ToggleHiresScroll() :
         signed_group<std::string>("type", "ToggleHiresScroll") { }
     };
 
     struct CycleDPI : public signed_group<std::string> {
-        std::vector<int> dpis;
+        typedef actions::CycleDPI action;
+        std::list<int> dpis;
         std::optional<int> sensor;
         CycleDPI() : signed_group<std::string>(
                 "type", "CycleDPI",
@@ -53,6 +77,7 @@ namespace logid::config {
     };
 
     struct ChangeDPI : public signed_group<std::string> {
+        typedef actions::ChangeDPI action;
         int inc;
         std::optional<int> sensor;
         ChangeDPI() : signed_group<std::string>(
@@ -63,19 +88,11 @@ namespace logid::config {
     };
 
     struct ChangeHost : public signed_group<std::string> {
+        typedef actions::ChangeHostAction action;
         std::variant<int, std::string> host;
         ChangeHost() : signed_group<std::string>(
                 "type", "ChangeHost",
                 {"host"}, &ChangeHost::host) { }
-    };
-
-    struct Gesture;
-
-    struct GestureAction : public signed_group<std::string> {
-        std::optional<map<std::string, Gesture, "direction">> _gestures;
-
-        GestureAction() : signed_group<std::string>(
-                "type", "Gestures") { }
     };
 
     typedef std::variant<
@@ -88,6 +105,89 @@ namespace logid::config {
             ChangeHost
     > BasicAction;
 
+    struct AxisGesture : public signed_group<std::string> {
+        typedef actions::AxisGesture gesture;
+        std::optional<int> threshold;
+        std::variant<std::string, uint> axis;
+        std::optional<double> axis_multiplier;
+
+        AxisGesture() : signed_group("mode", "Axis",
+                                     {"threshold", "axis", "axis_multiplier"},
+                                     &AxisGesture::threshold,
+                                     &AxisGesture::axis,
+                                     &AxisGesture::axis_multiplier) { }
+    };
+
+    struct IntervalGesture : public signed_group<std::string> {
+        typedef actions::IntervalGesture gesture;
+        std::optional<int> threshold;
+        std::optional<BasicAction> action;
+        int interval;
+    protected:
+        IntervalGesture(const std::string& name) : signed_group(
+                "mode", name,
+                {"threshold", "action", "interval"},
+                &IntervalGesture::threshold,
+                &IntervalGesture::action,
+                &IntervalGesture::interval) { }
+    public:
+        IntervalGesture() : IntervalGesture("OnInterval") { }
+    };
+
+    struct FewPixelsGesture : public IntervalGesture {
+        FewPixelsGesture() : IntervalGesture("OnFewPixels") { }
+    };
+
+    struct ReleaseGesture : public signed_group<std::string> {
+        typedef actions::ReleaseGesture gesture;
+        std::optional<int> threshold;
+        std::optional<BasicAction> action;
+
+        ReleaseGesture() : signed_group("mode", "OnRelease",
+                                        {"threshold", "action"},
+                                        &ReleaseGesture::threshold,
+                                        &ReleaseGesture::action) { }
+    };
+
+    struct ThresholdGesture : public signed_group<std::string> {
+        typedef actions::ThresholdGesture gesture;
+        std::optional<int> threshold;
+        std::optional<BasicAction> action;
+
+        ThresholdGesture() : signed_group("mode", "OnThreshold",
+                                          {"threshold", "action"},
+                                          &ThresholdGesture::threshold,
+                                          &ThresholdGesture::action) { }
+    };
+
+    struct NoGesture : public signed_group<std::string> {
+        typedef actions::NullGesture gesture;
+        std::optional<int> threshold;
+        NoGesture() : signed_group("mode", "NoPress",
+                                   {"threshold"},
+                                   &NoGesture::threshold) { }
+    };
+
+    typedef std::variant<
+            NoGesture,
+            AxisGesture,
+            IntervalGesture,
+            FewPixelsGesture,
+            ReleaseGesture,
+            ThresholdGesture
+    > Gesture;
+
+
+    struct GestureAction : public signed_group<std::string> {
+        typedef actions::GestureAction action;
+        std::optional<map<std::string, Gesture, "direction">> gestures;
+
+        GestureAction() : signed_group<std::string>(
+                "type", "Gestures",
+                {"gestures"},
+                &GestureAction::gestures) { }
+    };
+
     typedef std::variant<
         NoAction,
         KeypressAction,
@@ -99,60 +199,67 @@ namespace logid::config {
         GestureAction
     > Action;
 
-    struct Gesture : public group {
-        std::optional<int> threshold;
-        std::optional<std::string> mode;
-        std::optional<std::string> axis;
-        std::optional<double> axis_multiplier;
-        Action action;
-
-        Gesture() : group(
-                {"threshold", "mode", "axis", "axis_multiplier"},
-                &Gesture::threshold,
-                &Gesture::mode,
-                &Gesture::axis,
-                &Gesture::axis_multiplier
-        ) { }
-    };
-
     struct Button : public group {
-        std::optional<BasicAction> action;
+        std::optional<Action> action;
         Button() : group({"action"},
                          &Button::action) { }
     };
 
-    struct Smartshift : public group {
+    struct SmartShift : public group {
         std::optional<bool> on;
         std::optional<unsigned int> threshold;
-        Smartshift() : group({"on", "threshold"},
-                &Smartshift::on, &Smartshift::threshold) { }
+        SmartShift() : group({"on", "threshold"},
+                             &SmartShift::on, &SmartShift::threshold) { }
     };
 
 
-    struct Hiresscroll : public group {
+    struct HiresScroll : public group {
         std::optional<bool> hires;
         std::optional<bool> invert;
         std::optional<bool> target;
-        Hiresscroll() : group({"hires", "invert", "target"},
-                &Hiresscroll::hires,
-                &Hiresscroll::invert,
-                &Hiresscroll::target) { }
+        std::optional<Gesture> up;
+        std::optional<Gesture> down;
+        HiresScroll() : group({"hires", "invert", "target", "up", "down"},
+                              &HiresScroll::hires,
+                              &HiresScroll::invert,
+                              &HiresScroll::target,
+                              &HiresScroll::up,
+                              &HiresScroll::down) { }
     };
 
-    using DPI = std::variant<int, std::vector<int>>;
+    typedef std::variant<int, std::list<int>> DPI;
 
+    struct ThumbWheel : public group {
+        std::optional<bool> divert;
+        std::optional<bool> invert;
+        std::optional<Gesture> left;
+        std::optional<Gesture> right;
+        std::optional<BasicAction> proxy;
+        std::optional<BasicAction> touch;
+        std::optional<BasicAction> tap;
+
+        ThumbWheel() : group({"divert", "invert", "left", "right",
+                              "proxy", "touch", "tap" },
+                             &ThumbWheel::divert, &ThumbWheel::invert,
+                             &ThumbWheel::left, &ThumbWheel::right,
+                             &ThumbWheel::proxy, &ThumbWheel::touch,
+                             &ThumbWheel::tap) { }
+    };
+
+    typedef map<uint16_t, Button, "cid"> RemapButton;
 
     struct Profile : public group {
         std::optional<DPI> dpi;
-        std::optional<Smartshift> smartshift;
-        std::optional<std::variant<bool, Hiresscroll>> hiresscroll;
-        std::optional<map<uint16_t, Button, "cid">> buttons;
+        std::optional<SmartShift> smartshift;
+        std::optional<std::variant<bool, HiresScroll>> hiresscroll;
+        std::optional<ThumbWheel> thumbwheel;
+        std::optional<RemapButton> buttons;
 
-        Profile() : group({"dpi", "smartshift", "hiresscroll", "buttons"},
-                          &Profile::dpi,
-                          &Profile::smartshift,
-                          &Profile::hiresscroll,
-                          &Profile::buttons) { }
+        Profile() : group({"dpi", "smartshift", "hiresscroll",
+                           "buttons", "thumbwheel"},
+                          &Profile::dpi, &Profile::smartshift,
+                          &Profile::hiresscroll, &Profile::buttons,
+                          &Profile::thumbwheel) { }
     };
 
     struct Device : public group {
@@ -166,8 +273,8 @@ namespace logid::config {
 
     struct Config : public group {
         std::optional<map<std::string,
-        std::variant<Device, Profile>, "name">> devices;
-        std::optional<std::vector<std::string>> ignore;
+            std::variant<Device, Profile>, "name">> devices;
+        std::optional<std::set<uint16_t>> ignore;
         std::optional<double> io_timeout;
         std::optional<int> workers;
         Config() : group({"devices", "ignore", "io_timeout", "workers"},

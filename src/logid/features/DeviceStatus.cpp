@@ -34,7 +34,7 @@ DeviceStatus::DeviceStatus(logid::Device *dev) : DeviceFeature(dev)
         throw UnsupportedFeature();
 
     try {
-        _wireless_device_status =std::make_shared<
+        _wireless_device_status = std::make_shared<
                 hidpp20::WirelessDeviceStatus>(&dev->hidpp20());
     } catch(hidpp20::UnsupportedFeature& e) {
         throw UnsupportedFeature();

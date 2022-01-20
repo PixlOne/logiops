@@ -45,7 +45,7 @@ InvalidReceiver::Reason InvalidReceiver::code() const noexcept
 }
 
 Receiver::Receiver(std::string path,
-                   const std::chrono::milliseconds& io_timeout,
+                   double io_timeout,
                    const std::shared_ptr<workqueue>& wq) :
     _raw_device (std::make_shared<raw::RawDevice>(
             std::move(path), io_timeout, wq)),

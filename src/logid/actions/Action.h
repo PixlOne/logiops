@@ -21,6 +21,7 @@
 #include <atomic>
 #include <libconfig.h++>
 #include <memory>
+#include "../config/schema.h"
 
 namespace logid {
     class Device;
@@ -46,7 +47,10 @@ namespace actions {
     {
     public:
         static std::shared_ptr<Action> makeAction(Device* device,
-                libconfig::Setting& setting);
+                                                  config::BasicAction& action);
+
+        static std::shared_ptr<Action> makeAction(Device* device,
+                                                  config::Action& action);
 
         virtual void press() = 0;
         virtual void release() = 0;
@@ -65,14 +69,6 @@ namespace actions {
 
         virtual ~Action() = default;
 
-        class Config
-        {
-        protected:
-            explicit Config(Device* device) : _device (device)
-            {
-            }
-            Device* _device;
-        };
     protected:
         explicit Action(Device* device) : _device (device), _pressed (false)
         {

@@ -25,7 +25,7 @@ using namespace logid::backend;
 using namespace logid::backend::hidpp10;
 
 Device::Device(const std::string &path, hidpp::DeviceIndex index,
-               const std::chrono::milliseconds& io_timeout,
+               double io_timeout,
                const std::shared_ptr<workqueue>& wq) :
     hidpp::Device(path, index, io_timeout, wq)
 {

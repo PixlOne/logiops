@@ -26,7 +26,8 @@ namespace actions
     class NullGesture : public Gesture
     {
     public:
-        NullGesture(Device* device, libconfig::Setting& setting);
+        NullGesture(Device* device,
+                    config::NoGesture& config);
 
         virtual void press(bool init_threshold=false);
         virtual void release(bool primary=false);
@@ -36,7 +37,7 @@ namespace actions
         virtual bool metThreshold() const;
     protected:
         int16_t _axis;
-        Gesture::Config _config;
+        config::NoGesture& _config;
     };
 }}
 

@@ -22,8 +22,8 @@
 using namespace logid::features;
 using namespace logid::backend;
 
-SmartShift::SmartShift(Device* device) : DeviceFeature(device), _config
-    (device)
+SmartShift::SmartShift(Device* device) : DeviceFeature(device),
+    _config (device->activeProfile().smartshift)
 {
     try {
         _smartshift = std::make_shared<hidpp20::SmartShift>(&device->hidpp20());
@@ -34,7 +34,18 @@ SmartShift::SmartShift(Device* device) : DeviceFeature(device), _config
 
 void SmartShift::configure()
 {
-    _smartshift->setStatus(_config.getSettings());
+    if(_config.has_value()) {
+        const auto& conf = _config.value();
+        hidpp20::SmartShift::SmartshiftStatus settings {};
+        settings.setActive = conf.on.has_value();
+        if(settings.setActive)
+            settings.active = conf.on.value();
+        settings.setAutoDisengage = conf.threshold.has_value();
+        if(settings.setAutoDisengage)
+            settings.autoDisengage = conf.threshold.value();
+
+        _smartshift->setStatus(settings);
+    }
 }
 
 void SmartShift::listen()
@@ -50,32 +61,4 @@ void SmartShift::setStatus(backend::hidpp20::SmartShift::SmartshiftStatus
     status)
 {
     _smartshift->setStatus(status);
-}
-
-SmartShift::Config::Config(Device *dev) : DeviceFeature::Config(dev), _status()
-{
-    try {
-        auto& config_root = dev->config().getSetting("smartshift");
-        if(!config_root.isGroup()) {
-            logPrintf(WARN, "Line %d: smartshift must be an object",
-                    config_root.getSourceLine());
-            return;
-        }
-        _status.setActive = config_root.lookupValue("on", _status.active);
-        int tmp;
-        _status.setAutoDisengage = config_root.lookupValue("threshold", tmp);
-        if(_status.setAutoDisengage)
-            _status.autoDisengage = tmp;
-        _status.setDefaultAutoDisengage = config_root.lookupValue
-                ("default_threshold", tmp);
-        if(_status.setDefaultAutoDisengage)
-            _status.defaultAutoDisengage = tmp;
-    } catch(libconfig::SettingNotFoundException& e) {
-        // SmartShift not configured, use default
-    }
-}
-
-hidpp20::SmartShift::SmartshiftStatus SmartShift::Config::getSettings()
-{
-    return _status;
 }

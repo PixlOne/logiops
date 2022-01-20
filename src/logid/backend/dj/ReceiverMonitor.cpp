@@ -27,7 +27,7 @@ using namespace logid::backend::dj;
 
 ReceiverMonitor::ReceiverMonitor(
         std::string path,
-        const std::chrono::milliseconds& io_timeout,
+        double io_timeout,
         const std::shared_ptr<workqueue>& wq) :
         _workqueue (wq),
         _receiver (std::make_shared<Receiver>(std::move(path), io_timeout, wq))

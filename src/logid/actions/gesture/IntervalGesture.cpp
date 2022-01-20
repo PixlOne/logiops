@@ -17,17 +17,26 @@
  */
 #include "IntervalGesture.h"
 #include "../../util/log.h"
+#include "../../Configuration.h"
 
 using namespace logid::actions;
 
-IntervalGesture::IntervalGesture(Device *device, libconfig::Setting &root) :
-    Gesture (device), _config (device, root)
+IntervalGesture::IntervalGesture(Device *device, config::IntervalGesture& config) :
+    Gesture (device), _config (config)
 {
+    if(config.action) {
+        try {
+            _action = Action::makeAction(device, config.action.value());
+        } catch(InvalidAction& e) {
+            logPrintf(WARN, "Mapping gesture to invalid action");
+        }
+    }
 }
 
 void IntervalGesture::press(bool init_threshold)
 {
-    _axis = init_threshold ? _config.threshold() : 0;
+    _axis = init_threshold ?
+            _config.threshold.value_or(defaults::gesture_threshold) : 0;
     _interval_pass_count = 0;
 }
 
@@ -39,15 +48,19 @@ void IntervalGesture::release(bool primary)
 
 void IntervalGesture::move(int16_t axis)
 {
+    const auto threshold =
+            _config.threshold.value_or(defaults::gesture_threshold);
     _axis += axis;
-    if(_axis < _config.threshold())
+    if(_axis < threshold)
         return;
 
-    int16_t new_interval_count = (_axis - _config.threshold())/
-            _config.interval();
+    int16_t new_interval_count = (_axis - threshold)/
+            _config.interval;
     if(new_interval_count > _interval_pass_count) {
-        _config.action()->press();
-        _config.action()->release();
+        if(_action) {
+            _action->press();
+            _action->release();
+        }
     }
     _interval_pass_count = new_interval_count;
 }
@@ -59,38 +72,5 @@ bool IntervalGesture::wheelCompatibility() const
 
 bool IntervalGesture::metThreshold() const
 {
-    return _axis >= _config.threshold();
-}
-
-IntervalGesture::Config::Config(Device *device, libconfig::Setting &setting) :
-    Gesture::Config(device, setting)
-{
-    try {
-        auto& interval = setting.lookup("interval");
-        if(interval.getType() != libconfig::Setting::TypeInt) {
-            logPrintf(WARN, "Line %d: interval must be an integer, skipping.",
-                    interval.getSourceLine());
-            throw InvalidGesture();
-        }
-        _interval = (int)interval;
-    } catch(libconfig::SettingNotFoundException& e) {
-        try {
-            // pixels is an alias for interval
-            auto& interval = setting.lookup("pixels");
-            if(interval.getType() != libconfig::Setting::TypeInt) {
-                logPrintf(WARN, "Line %d: pixels must be an integer, skipping.",
-                          interval.getSourceLine());
-                throw InvalidGesture();
-            }
-            _interval = (int)interval;
-        } catch(libconfig::SettingNotFoundException& e) {
-            logPrintf(WARN, "Line %d: interval is a required field, skipping.",
-                      setting.getSourceLine());
-        }
-    }
-}
-
-int16_t IntervalGesture::Config::interval() const
-{
-    return _interval;
+    return _axis >= _config.threshold.value_or(defaults::gesture_threshold);;
 }

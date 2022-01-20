@@ -28,6 +28,9 @@ namespace actions
     {
     public:
         explicit ToggleHiresScroll(Device* dev);
+        ToggleHiresScroll(Device* device,
+                          [[maybe_unused]] config::ToggleHiresScroll& action) :
+            ToggleHiresScroll(device) { }
 
         virtual void press();
         virtual void release();

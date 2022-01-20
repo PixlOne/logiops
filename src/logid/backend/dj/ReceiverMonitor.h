@@ -33,7 +33,7 @@ namespace dj
     {
     public:
         ReceiverMonitor(std::string path,
-                        const std::chrono::milliseconds& io_timeout,
+                        double io_timeout,
                         const std::shared_ptr<workqueue>& wq);
         virtual ~ReceiverMonitor();
 

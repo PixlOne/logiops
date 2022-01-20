@@ -29,9 +29,46 @@ using namespace logid;
 
 #define SCROLL_EVENTHANDLER_NAME "THUMB_WHEEL"
 
-ThumbWheel::ThumbWheel(Device *dev) : DeviceFeature(dev), _wheel_info(),
-    _config(dev)
+std::shared_ptr<actions::Action> _genAction(
+        Device* dev, std::optional<config::BasicAction>& conf)
 {
+    if(conf.has_value()) {
+        try {
+            return actions::Action::makeAction(dev, conf.value());
+        } catch(actions::InvalidAction& e) {
+            logPrintf(WARN, "Mapping thumb wheel to invalid action");
+        }
+    }
+
+    return nullptr;
+}
+
+std::shared_ptr<actions::Gesture> _genGesture(
+        Device* dev, std::optional<config::Gesture>& conf)
+{
+    if(conf.has_value()) {
+        try {
+            return actions::Gesture::makeGesture(dev, conf.value());
+        } catch (actions::InvalidAction &e) {
+            logPrintf(WARN, "Mapping thumb wheel to invalid gesture");
+        }
+    }
+
+        return nullptr;
+}
+
+ThumbWheel::ThumbWheel(Device *dev) : DeviceFeature(dev), _wheel_info(),
+    _config (dev->activeProfile().thumbwheel)
+{
+    if(_config.has_value()) {
+        auto& conf = _config.value();
+        _left_action = _genGesture(dev, conf.left);
+        _right_action = _genGesture(dev, conf.right);
+        _touch_action = _genAction(dev, conf.touch);
+        _tap_action = _genAction(dev, conf.tap);
+        _proxy_action = _genAction(dev, conf.proxy);
+    }
+
     try {
         _thumb_wheel = std::make_shared<hidpp20::ThumbWheel>(&dev->hidpp20());
     } catch(hidpp20::UnsupportedFeature& e) {
@@ -47,33 +84,41 @@ ThumbWheel::ThumbWheel(Device *dev) : DeviceFeature(dev), _wheel_info(),
     logPrintf(DEBUG, "Thumb wheel resolution: native (%d), diverted (%d)",
               _wheel_info.nativeRes, _wheel_info.divertedRes);
 
-    if(_config.leftAction()) {
+    if(_left_action) {
         try {
             auto left_axis = std::dynamic_pointer_cast<actions::AxisGesture>(
-                    _config.leftAction());
+                    _left_action);
             // TODO: How do hires multipliers work on 0x2150 thumbwheels?
             if(left_axis)
                 left_axis->setHiresMultiplier(_wheel_info.divertedRes);
         } catch(std::bad_cast& e) { }
 
-        _config.leftAction()->press(true);
+        _left_action->press(true);
     }
 
-    if(_config.rightAction()) {
+    if(_right_action) {
         try {
             auto right_axis = std::dynamic_pointer_cast<actions::AxisGesture>(
-                    _config.rightAction());
+                    _right_action);
             if(right_axis)
                 right_axis->setHiresMultiplier(_wheel_info.divertedRes);
         } catch(std::bad_cast& e) { }
 
-        _config.rightAction()->press(true);
+        _right_action->press(true);
     }
+}
+
+ThumbWheel::~ThumbWheel() {
+    _device->hidpp20().removeEventHandler(SCROLL_EVENTHANDLER_NAME);
 }
 
 void ThumbWheel::configure()
 {
-    _thumb_wheel->setStatus(_config.divert(), _config.invert());
+    if(_config.has_value()) {
+        const auto& config = _config.value();
+        _thumb_wheel->setStatus(config.divert.value_or(false),
+                                config.invert.value_or(false));
+    }
 }
 
 void ThumbWheel::listen()
@@ -98,7 +143,7 @@ void ThumbWheel::listen()
 void ThumbWheel::_handleEvent(hidpp20::ThumbWheel::ThumbwheelEvent event)
 {
     if(event.flags & hidpp20::ThumbWheel::SingleTap) {
-        auto action = _config.tapAction();
+        auto action = _tap_action;
         if(action) {
             action->press();
             action->release();
@@ -107,23 +152,21 @@ void ThumbWheel::_handleEvent(hidpp20::ThumbWheel::ThumbwheelEvent event)
 
     if((bool)(event.flags & hidpp20::ThumbWheel::Proxy) != _last_proxy) {
         _last_proxy = !_last_proxy;
-        auto action = _config.proxyAction();
-        if(action) {
+        if(_proxy_action) {
             if(_last_proxy)
-                action->press();
+                _proxy_action->press();
             else
-                action->release();
+                _proxy_action->release();
         }
     }
 
     if((bool)(event.flags & hidpp20::ThumbWheel::Touch) != _last_touch) {
         _last_touch = !_last_touch;
-        auto action = _config.touchAction();
-        if(action) {
+        if(_touch_action) {
             if(_last_touch)
-                action->press();
+                _touch_action->press();
             else
-                action->release();
+                _touch_action->release();
         }
     }
 
@@ -132,10 +175,10 @@ void ThumbWheel::_handleEvent(hidpp20::ThumbWheel::ThumbwheelEvent event)
         event.rotation *= _wheel_info.defaultDirection;
 
         if(event.rotationStatus == hidpp20::ThumbWheel::Start) {
-            if(_config.rightAction())
-               _config.rightAction()->press(true);
-            if(_config.leftAction())
-                _config.leftAction()->press(true);
+            if(_right_action)
+               _right_action->press(true);
+            if(_left_action)
+                _left_action->press(true);
             _last_direction = 0;
         }
 
@@ -144,9 +187,9 @@ void ThumbWheel::_handleEvent(hidpp20::ThumbWheel::ThumbwheelEvent event)
             std::shared_ptr<actions::Gesture> scroll_action;
 
             if(direction > 0)
-                scroll_action = _config.rightAction();
+                scroll_action = _right_action;
             else
-                scroll_action = _config.leftAction();
+                scroll_action = _left_action;
 
             if(scroll_action) {
                 scroll_action->press(true);
@@ -157,136 +200,10 @@ void ThumbWheel::_handleEvent(hidpp20::ThumbWheel::ThumbwheelEvent event)
         }
 
         if(event.rotationStatus == hidpp20::ThumbWheel::Stop) {
-            if(_config.rightAction())
-                _config.rightAction()->release();
-            if(_config.leftAction())
-                _config.leftAction()->release();
+            if(_right_action)
+                _right_action->release();
+            if(_left_action)
+                _left_action->release();
         }
     }
-}
-
-ThumbWheel::Config::Config(Device* dev) : DeviceFeature::Config(dev)
-{
-    try {
-        auto& config_root = dev->config().getSetting("thumbwheel");
-        if(!config_root.isGroup()) {
-            logPrintf(WARN, "Line %d: thumbwheel must be a group",
-                      config_root.getSourceLine());
-            return;
-        }
-
-        try {
-            auto& divert = config_root.lookup("divert");
-            if(divert.getType() == libconfig::Setting::TypeBoolean) {
-                _divert = divert;
-            } else {
-                logPrintf(WARN, "Line %d: divert must be a boolean",
-                          divert.getSourceLine());
-            }
-        } catch(libconfig::SettingNotFoundException& e) { }
-
-        try {
-            auto& invert = config_root.lookup("invert");
-            if(invert.getType() == libconfig::Setting::TypeBoolean) {
-                _invert = invert;
-            } else {
-                logPrintf(WARN, "Line %d: invert must be a boolean, ignoring.",
-                          invert.getSourceLine());
-            }
-        } catch(libconfig::SettingNotFoundException& e) { }
-
-        if(_divert) {
-            _left_action = _genGesture(dev, config_root, "left");
-            if(!_left_action)
-                logPrintf(WARN, "Line %d: divert is true but no left action "
-                                "was set", config_root.getSourceLine());
-
-            _right_action = _genGesture(dev, config_root, "right");
-            if(!_right_action)
-                logPrintf(WARN, "Line %d: divert is true but no right action "
-                                "was set", config_root.getSourceLine());
-        }
-
-        _proxy_action = _genAction(dev, config_root, "proxy");
-        _tap_action = _genAction(dev, config_root, "tap");
-        _touch_action = _genAction(dev, config_root, "touch");
-    } catch(libconfig::SettingNotFoundException& e) {
-        // ThumbWheel not configured, use default
-    }
-}
-
-std::shared_ptr<actions::Action> ThumbWheel::Config::_genAction(Device* dev,
-        libconfig::Setting& config_root, const std::string& name)
-{
-    try {
-        auto& a_group = config_root.lookup(name);
-        try {
-            return actions::Action::makeAction(dev, a_group);
-        } catch(actions::InvalidAction& e) {
-            logPrintf(WARN, "Line %d: Invalid action",
-                      a_group.getSourceLine());
-        }
-    } catch(libconfig::SettingNotFoundException& e) {
-
-    }
-    return nullptr;
-}
-
-std::shared_ptr<actions::Gesture> ThumbWheel::Config::_genGesture(Device* dev,
-        libconfig::Setting& config_root, const std::string& name)
-{
-    try {
-        auto& g_group = config_root.lookup(name);
-        try {
-            auto g = actions::Gesture::makeGesture(dev, g_group);
-            if(g->wheelCompatibility()) {
-                return g;
-            } else {
-                logPrintf(WARN, "Line %d: This gesture cannot be used"
-                                " as a scroll action.",
-                                g_group.getSourceLine());
-            }
-        } catch(actions::InvalidGesture& e) {
-            logPrintf(WARN, "Line %d: Invalid scroll action",
-                      g_group.getSourceLine());
-        }
-    } catch(libconfig::SettingNotFoundException& e) {
-
-    }
-    return nullptr;
-}
-
-bool ThumbWheel::Config::divert() const
-{
-    return _divert;
-}
-
-bool ThumbWheel::Config::invert() const
-{
-    return _invert;
-}
-
-const std::shared_ptr<actions::Gesture>& ThumbWheel::Config::leftAction() const
-{
-    return _left_action;
-}
-
-const std::shared_ptr<actions::Gesture>& ThumbWheel::Config::rightAction() const
-{
-    return _right_action;
-}
-
-const std::shared_ptr<actions::Action>& ThumbWheel::Config::proxyAction() const
-{
-    return _proxy_action;
-}
-
-const std::shared_ptr<actions::Action>& ThumbWheel::Config::tapAction() const
-{
-    return _tap_action;
-}
-
-const std::shared_ptr<actions::Action>& ThumbWheel::Config::touchAction() const
-{
-    return _touch_action;
 }

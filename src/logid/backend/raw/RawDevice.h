@@ -42,7 +42,7 @@ namespace raw
         static bool supportedReport(uint8_t id, uint8_t length);
 
         explicit RawDevice(std::string path,
-                           const std::chrono::milliseconds& io_timeout,
+                           double io_timeout,
                            const std::shared_ptr<workqueue>& wq);
         ~RawDevice();
         std::string hidrawPath() const;

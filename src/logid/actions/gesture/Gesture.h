@@ -51,21 +51,8 @@ namespace actions
 
         virtual ~Gesture() = default;
 
-        class Config
-        {
-        public:
-            Config(Device* device, libconfig::Setting& root,
-                    bool action_required=true);
-            virtual int16_t threshold() const;
-            virtual std::shared_ptr<Action> action();
-        protected:
-            Device* _device;
-            std::shared_ptr<Action> _action;
-            int16_t _threshold;
-        };
-
         static std::shared_ptr<Gesture> makeGesture(Device* device,
-                libconfig::Setting& setting);
+                config::Gesture& gesture);
 
     protected:
         explicit Gesture(Device* device);

@@ -35,29 +35,22 @@ namespace features
 
         uint8_t getMode();
         void setMode(uint8_t mode);
-
-        class Config : public DeviceFeature::Config
-        {
-        public:
-            explicit Config(Device* dev);
-            uint8_t getMode() const;
-            uint8_t getMask() const;
-
-            const std::shared_ptr<actions::Gesture>& upAction() const;
-            const std::shared_ptr<actions::Gesture>& downAction() const;
-        protected:
-            uint8_t _mode;
-            uint8_t _mask;
-
-            std::shared_ptr<actions::Gesture> _up_action;
-            std::shared_ptr<actions::Gesture> _down_action;
-        };
     private:
+        void _makeAction(std::shared_ptr<actions::Gesture>& gesture,
+                         std::optional<config::Gesture>& config);
+
         void _handleScroll(backend::hidpp20::HiresScroll::WheelStatus event);
         std::shared_ptr<backend::hidpp20::HiresScroll> _hires_scroll;
         std::chrono::time_point<std::chrono::system_clock> _last_scroll;
         int16_t _last_direction = 0;
-        Config _config;
+
+        std::optional<std::variant<bool, config::HiresScroll>>& _config;
+
+        uint8_t _mode;
+        uint8_t _mask;
+
+        std::shared_ptr<actions::Gesture> _up_action;
+        std::shared_ptr<actions::Gesture> _down_action;
     };
 }}
 
