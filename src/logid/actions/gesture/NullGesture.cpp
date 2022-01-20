@@ -16,17 +16,20 @@
  *
  */
 #include "NullGesture.h"
+#include "../../Configuration.h"
 
 using namespace logid::actions;
 
-NullGesture::NullGesture(Device *device, libconfig::Setting& setting) :
-    Gesture (device), _config (device, setting, false)
+NullGesture::NullGesture(Device *device,
+                         config::NoGesture& config) :
+    Gesture (device), _config (config)
 {
 }
 
 void NullGesture::press(bool init_threshold)
 {
-    _axis = init_threshold ? _config.threshold() : 0;
+    _axis = init_threshold ? _config.threshold.value_or(
+            defaults::gesture_threshold) : 0;
 }
 
 void NullGesture::release(bool primary)
@@ -47,5 +50,5 @@ bool NullGesture::wheelCompatibility() const
 
 bool NullGesture::metThreshold() const
 {
-    return _axis > _config.threshold();
+    return _axis > _config.threshold.value_or(defaults::gesture_threshold);
 }

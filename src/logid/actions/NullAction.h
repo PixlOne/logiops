@@ -27,6 +27,8 @@ namespace actions
     {
     public:
         explicit NullAction(Device* device);
+        NullAction(Device* device, [[maybe_unused]] config::NoAction& config) :
+            NullAction(device) { }
 
         virtual void press();
         virtual void release();

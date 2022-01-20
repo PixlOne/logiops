@@ -98,9 +98,10 @@ std::shared_ptr<Device> Device::make(
 Device::Device(std::string path, backend::hidpp::DeviceIndex index,
                std::shared_ptr<DeviceManager> manager) :
     _hidpp20 (path, index,
-              manager->config()->ioTimeout(), manager->workQueue()),
+              manager->config()->io_timeout.value_or(defaults::io_timeout),
+              manager->workQueue()),
     _path (std::move(path)), _index (index),
-    _config (manager->config(), this),
+    _config (_getConfig(manager, _hidpp20.name())),
     _receiver (nullptr),
     _manager (manager),
     _nickname (manager),
@@ -115,7 +116,7 @@ Device::Device(std::shared_ptr<backend::raw::RawDevice> raw_device,
                std::shared_ptr<DeviceManager> manager) :
                _hidpp20(raw_device, index),
                _path (raw_device->hidrawPath()), _index (index),
-               _config (manager->config(), this),
+               _config (_getConfig(manager, _hidpp20.name())),
                _receiver (nullptr),
                _manager (manager),
                _nickname (manager),
@@ -129,7 +130,7 @@ Device::Device(Receiver* receiver, hidpp::DeviceIndex index,
                std::shared_ptr<DeviceManager> manager) :
                _hidpp20 (receiver->rawReceiver(), index),
                _path (receiver->path()), _index (index),
-               _config (manager->config(), this),
+               _config (_getConfig(manager, _hidpp20.name())),
                _receiver (receiver),
                _manager (manager),
                _nickname (manager),
@@ -143,6 +144,10 @@ void Device::_init()
 {
     logPrintf(INFO, "Device found: %s on %s:%d", name().c_str(),
             hidpp20().devicePath().c_str(), _index);
+
+    _profile = _config.profiles.find(_config.default_profile);
+    if(_profile == _config.profiles.end())
+        _profile = _config.profiles.insert({_config.default_profile, {}}).first;
 
     _addFeature<features::DPI>("dpi");
     _addFeature<features::SmartShift>("smartshift");
@@ -239,9 +244,18 @@ std::shared_ptr<ipcgull::node> Device::ipcNode() const
     return _ipc_node;
 }
 
-Device::Config& Device::config()
+/*config::Device& Device::config()
 {
     return _config;
+}*/
+
+config::Profile& Device::activeProfile()
+{
+    return _profile->second;
+}
+const config::Profile& Device::activeProfile() const
+{
+    return _profile->second;
 }
 
 hidpp20::Device& Device::hidpp20()
@@ -285,118 +299,28 @@ void Device::DeviceIPC::notifyStatus() const
     emit_signal("StatusChanged", (bool)(_device._awake));
 }
 
-Device::Config::Config(const std::shared_ptr<Configuration>& config, Device*
-    device) : _device (device), _config (config)
+config::Device& Device::_getConfig(
+        const std::shared_ptr<DeviceManager>& manager,
+        const std::string& name)
 {
-    try {
-        _root_setting = config->getDevice(device->name());
-    } catch(Configuration::DeviceNotFound& e) {
-        logPrintf(INFO, "Device %s not configured, using default config.",
-                device->name().c_str());
-        return;
+    static std::mutex config_mutex;
+    std::lock_guard<std::mutex> lock(config_mutex);
+    auto& devices = manager->config()->devices;
+    if(!devices.has_value())
+        devices = decltype(config::Config::devices)();
+    auto& device = devices.value()[name];
+    if(std::holds_alternative<config::Profile>(device)) {
+        config::Device d;
+        d.profiles["default"] = std::get<config::Profile>(device);
+        d.default_profile = "default";
+        device = std::move(d);
     }
 
-    try {
-        auto& profiles = _config->getSetting(_root_setting + "/profiles");
-        int profile_index = 0;
-        if(!profiles.isList()) {
-            logPrintf(WARN, "Line %d: profiles must be a list, defaulting to"
-                            "old-style config", profiles.getSourceLine());
-        }
-
-        try {
-            auto& default_profile = _config->getSetting(_root_setting +
-                    "/default_profile");
-            if(default_profile.getType() == libconfig::Setting::TypeString) {
-                _profile_name = (const char*)default_profile;
-            } else if(default_profile.isNumber()) {
-                profile_index = default_profile;
-            } else {
-                logPrintf(WARN, "Line %d: default_profile must be a string or"
-                                " integer, defaulting to first profile",
-                                default_profile.getSourceLine());
-            }
-        } catch(libconfig::SettingNotFoundException& e) {
-            logPrintf(INFO, "Line %d: default_profile missing, defaulting to "
-                            "first profile", profiles.getSourceLine());
-        }
-
-        if(profiles.getLength() <= profile_index) {
-            if(profiles.getLength() == 0) {
-                logPrintf(WARN, "Line %d: No profiles defined",
-                          profiles.getSourceLine());
-            } else {
-                logPrintf(WARN, "Line %d: default_profile does not exist, "
-                                "defaulting to first",
-                                profiles.getSourceLine());
-                profile_index = 0;
-            }
-        }
-
-        for(int i = 0; i < profiles.getLength(); i++) {
-            const auto& profile = profiles[i];
-            std::string name;
-            if(!profile.isGroup()) {
-                logPrintf(WARN, "Line %d: Profile must be a group, "
-                                "skipping", profile.getSourceLine());
-                continue;
-            }
-
-            try {
-                const auto& name_setting = profile.lookup("name");
-                if(name_setting.getType() !=
-                   libconfig::Setting::TypeString) {
-                    logPrintf(WARN, "Line %d: Profile names must be "
-                                    "strings, using name \"%d\"",
-                              name_setting.getSourceLine(), i);
-                    name = std::to_string(i);
-                } else {
-                    name = (const char *) name_setting;
-                }
-
-                if(_profiles.find(name) != _profiles.end()) {
-                    logPrintf(WARN, "Line %d: Profile with the same name "
-                                    "already exists, skipping.",
-                              name_setting.getSourceLine());
-                    continue;
-                }
-            } catch(libconfig::SettingNotFoundException& e) {
-                logPrintf(INFO, "Line %d: Profile is unnamed, using name "
-                                "\"%d\"", profile.getSourceLine(), i);
-            }
-
-            if(i == profile_index && _profile_name.empty())
-                _profile_root = profile.getPath();
-            _profiles[name] = profile.getPath();
-        }
-
-        if(_profiles.empty()) {
-            _profile_name = "0";
-        }
-
-        if(_profile_root.empty())
-            _profile_root = _profiles[_profile_name];
-    } catch(libconfig::SettingNotFoundException& e) {
-        // No profiles, default to root
-        _profile_root = _root_setting;
+    auto& conf = std::get<config::Device>(device);
+    if(conf.profiles.empty()) {
+        conf.profiles["default"] = std::get<config::Profile>(device);
+        conf.default_profile = "default";
     }
-}
 
-libconfig::Setting& Device::Config::getSetting(const std::string& path)
-{
-    if(_profile_root.empty())
-        throw libconfig::SettingNotFoundException((_root_setting + '/' +
-            path).c_str());
-    return _config->getSetting(_profile_root + '/' + path);
-}
-
-const std::map<std::string, std::string> & Device::Config::getProfiles() const
-{
-    return _profiles;
-}
-
-void Device::Config::setProfile(const std::string &name)
-{
-    _profile_name = name;
-    _profile_root = _profiles[name];
+    return conf;
 }

@@ -27,29 +27,18 @@ namespace actions {
     class CycleDPI : public Action
     {
     public:
-        explicit CycleDPI(Device* device, libconfig::Setting& setting);
+        explicit CycleDPI(Device* device, config::CycleDPI& setting);
 
         virtual void press();
         virtual void release();
 
         virtual uint8_t reprogFlags() const;
 
-    class Config : public Action::Config
-    {
-    public:
-        Config(Device* device, libconfig::Setting& setting);
-        uint16_t nextDPI();
-        bool empty() const;
-        uint8_t sensor() const;
-    private:
-        std::size_t _current_index;
-        std::vector<uint16_t> _dpis;
-        uint8_t _sensor;
-    };
-
     protected:
-        Config _config;
+        std::mutex _dpi_lock;
+        config::CycleDPI& _config;
         std::shared_ptr<features::DPI> _dpi;
+        std::list<int>::const_iterator _current_dpi;
     };
 }}
 

@@ -16,24 +16,30 @@
  *
  */
 #include "ReleaseGesture.h"
+#include "../../Configuration.h"
 
 using namespace logid::actions;
 
-ReleaseGesture::ReleaseGesture(Device *device, libconfig::Setting &root) :
-    Gesture (device), _config (device, root)
+ReleaseGesture::ReleaseGesture(Device *device, config::ReleaseGesture& config) :
+    Gesture (device), _config (config)
 {
+    if(_config.action.has_value())
+        _action = Action::makeAction(device, _config.action.value());
 }
 
 void ReleaseGesture::press(bool init_threshold)
 {
-    _axis = init_threshold ? _config.threshold() : 0;
+    _axis = init_threshold ? _config.threshold.value_or(
+            defaults::gesture_threshold) : 0;
 }
 
 void ReleaseGesture::release(bool primary)
 {
     if(metThreshold() && primary) {
-        _config.action()->press();
-        _config.action()->release();
+        if(_action) {
+            _action->press();
+            _action->release();
+        }
     }
 }
 
@@ -49,5 +55,5 @@ bool ReleaseGesture::wheelCompatibility() const
 
 bool ReleaseGesture::metThreshold() const
 {
-    return _axis >= _config.threshold();
+    return _axis >= _config.threshold.value_or(defaults::gesture_threshold);
 }

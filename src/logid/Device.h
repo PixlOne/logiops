@@ -59,7 +59,9 @@ namespace logid
         std::string name();
         uint16_t pid();
 
-        Config& config();
+        //config::Device& config();
+        config::Profile& activeProfile();
+        const config::Profile& activeProfile() const;
         backend::hidpp20::Device& hidpp20();
 
         static std::shared_ptr<Device> make(
@@ -108,6 +110,10 @@ namespace logid
         Device(Receiver* receiver, backend::hidpp::DeviceIndex index,
                std::shared_ptr<DeviceManager> manager);
 
+        static config::Device& _getConfig(
+                const std::shared_ptr<DeviceManager>& manager,
+                const std::string& name);
+
         void _init();
 
         /* Adds a feature without calling an error if unsupported */
@@ -120,29 +126,13 @@ namespace logid
             }
         }
 
-        class Config
-        {
-        public:
-            Config(const std::shared_ptr<Configuration>& config, Device*
-                device);
-            libconfig::Setting& getSetting(const std::string& path);
-            const std::map<std::string, std::string>& getProfiles() const;
-            void setProfile(const std::string& name);
-        private:
-            Device* _device;
-            std::string _root_setting;
-            std::string _profile_root;
-            std::string _profile_name;
-            std::map<std::string, std::string> _profiles;
-            std::shared_ptr<Configuration> _config;
-        };
-
         backend::hidpp20::Device _hidpp20;
         std::string _path;
         backend::hidpp::DeviceIndex _index;
         std::map<std::string, std::shared_ptr<features::DeviceFeature>>
             _features;
-        Config _config;
+        config::Device& _config;
+        std::map<std::string, config::Profile>::iterator _profile;
 
         Receiver* _receiver;
         const std::weak_ptr<DeviceManager> _manager;

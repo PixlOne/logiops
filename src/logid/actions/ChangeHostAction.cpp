@@ -24,9 +24,14 @@
 using namespace logid::actions;
 using namespace logid::backend;
 
-ChangeHostAction::ChangeHostAction(Device *device, libconfig::Setting&
-config) : Action(device), _config (device, config)
+ChangeHostAction::ChangeHostAction(Device *device, config::ChangeHost& config)
+    : Action(device), _config (config)
 {
+    if(std::holds_alternative<std::string>(_config.host)) {
+        auto& host = std::get<std::string>(_config.host);
+        std::transform(host.begin(), host.end(),
+                       host.begin(), ::tolower);
+    }
     try {
         _change_host = std::make_shared<hidpp20::ChangeHost>(&device->hidpp20());
     } catch (hidpp20::UnsupportedFeature& e) {
@@ -47,9 +52,21 @@ void ChangeHostAction::release()
         task::spawn(_device->workQueue(),
         [this] {
             auto host_info = _change_host->getHostInfo();
-            auto next_host = _config.nextHost(host_info);
+            int next_host;
+            if(std::holds_alternative<std::string>(_config.host)) {
+                const auto& host = std::get<std::string>(_config.host);
+                if(host == "next")
+                    next_host = host_info.currentHost + 1;
+                else if(host == "prev" || host == "previous")
+                    next_host = host_info.currentHost - 1;
+                else
+                    next_host = host_info.currentHost;
+            } else {
+                next_host = std::get<int>(_config.host)-1;
+            }
+            next_host %= host_info.hostCount;
             if(next_host != host_info.currentHost)
-                _change_host->setHost(next_host);
+                _change_host->setHost(next_host-1);
         });
     }
 }
@@ -57,64 +74,4 @@ void ChangeHostAction::release()
 uint8_t ChangeHostAction::reprogFlags() const
 {
     return hidpp20::ReprogControls::TemporaryDiverted;
-}
-
-ChangeHostAction::Config::Config(Device *device, libconfig::Setting& config)
-    : Action::Config(device)
-{
-    try {
-        auto& host = config.lookup("host");
-        if(host.getType() == libconfig::Setting::TypeInt) {
-            _offset = false;
-            _host = host;
-            _host--; // hosts are one-indexed in config
-
-            if(_host < 0) {
-                logPrintf(WARN, "Line %d: host must be positive.",
-                        host.getSourceLine());
-                _offset = true;
-                _host = 0;
-            }
-
-        } else if(host.getType() == libconfig::Setting::TypeString) {
-            _offset = true;
-            std::string hostmode = host;
-            std::transform(hostmode.begin(), hostmode.end(),
-                    hostmode.begin(), ::tolower);
-
-            if(hostmode == "next")
-                _host = 1;
-            else if(hostmode == "prev" || hostmode == "previous")
-                _host = -1;
-            else {
-                logPrintf(WARN, "Line %d: host must equal an integer, 'next',"
-                                "or 'prev'.", host.getSourceLine());
-                _host = 0;
-            }
-        } else {
-            logPrintf(WARN, "Line %d: host must equal an integer, 'next',"
-                            "or 'prev'.", host.getSourceLine());
-            _offset = true;
-            _host = 0;
-        }
-    } catch (libconfig::SettingNotFoundException& e) {
-        logPrintf(WARN, "Line %d: host is a required field, skipping.",
-                config.getSourceLine());
-        _offset = true;
-        _host = 0;
-    }
-}
-
-uint8_t ChangeHostAction::Config::nextHost(hidpp20::ChangeHost::HostInfo info)
-{
-    if(_offset) {
-        return (info.currentHost + _host) % info.hostCount;
-    } else {
-        if(_host >= info.hostCount || _host < 0) {
-            logPrintf(WARN, "No such host %d, defaulting to current.",
-                    _host+1);
-            return info.currentHost;
-        } else
-            return _host;
-    }
 }

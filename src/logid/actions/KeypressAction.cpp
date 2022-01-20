@@ -24,71 +24,61 @@
 using namespace logid::actions;
 using namespace logid::backend;
 
-KeypressAction::KeypressAction(Device *device, libconfig::Setting& config) :
-    Action(device), _config (device, config)
+KeypressAction::KeypressAction(Device *device, config::KeypressAction& config) :
+    Action(device), _config (config)
 {
+    if(std::holds_alternative<std::string>(_config.keys)) {
+        const auto& key = std::get<std::string>(_config.keys);
+        try {
+            auto code = _device->virtualInput()->toKeyCode(key);
+            _device->virtualInput()->registerKey(code);
+            _keys.emplace_back(code);
+        } catch(InputDevice::InvalidEventCode& e) {
+            logPrintf(WARN, "Invalid keycode %s, skipping.", key.c_str());
+        }
+    } else if(std::holds_alternative<uint>(_config.keys)) {
+        const auto& key = std::get<uint>(_config.keys);
+        _device->virtualInput()->registerKey(key);
+        _keys.emplace_back(key);
+    } else if(std::holds_alternative<std::list<std::variant<uint, std::string
+            >>>(_config.keys)) {
+        const auto& keys = std::get<std::list<std::variant<uint, std::string>>>(
+                _config.keys);
+        for(const auto& key : keys) {
+            if(std::holds_alternative<std::string>(_config.keys)) {
+                const auto& key_str = std::get<std::string>(key);
+                try {
+                    auto code = _device->virtualInput()->toKeyCode(key_str);
+                    _device->virtualInput()->registerKey(code);
+                    _keys.emplace_back(code);
+                } catch(InputDevice::InvalidEventCode& e) {
+                    logPrintf(WARN, "Invalid keycode %s, skipping.",
+                              key_str.c_str());
+                }
+            } else if(std::holds_alternative<uint>(_config.keys)) {
+                auto& code = std::get<uint>(_config.keys);
+                _device->virtualInput()->registerKey(code);
+                _keys.emplace_back(code);
+            }
+        }
+    }
 }
 
 void KeypressAction::press()
 {
     _pressed = true;
-    for(auto& key : _config.keys())
+    for(auto& key : _keys)
         _device->virtualInput()->pressKey(key);
 }
 
 void KeypressAction::release()
 {
     _pressed = false;
-    for(auto& key : _config.keys())
+    for(auto& key : _keys)
         _device->virtualInput()->releaseKey(key);
 }
 
 uint8_t KeypressAction::reprogFlags() const
 {
     return hidpp20::ReprogControls::TemporaryDiverted;
-}
-
-KeypressAction::Config::Config(Device* device, libconfig::Setting& config) :
-    Action::Config(device)
-{
-    if(!config.isGroup()) {
-        logPrintf(WARN, "Line %d: action must be an object, skipping.",
-                config.getSourceLine());
-        return;
-    }
-
-    try {
-        auto &keys = config.lookup("keys");
-        if(keys.isArray() || keys.isList()) {
-            int key_count = keys.getLength();
-            for(int i = 0; i < key_count; i++) {
-                auto& key = keys[i];
-                if(key.isNumber()) {
-                    _keys.push_back(key);
-                    _device->virtualInput()->registerKey(key);
-                } else if(key.getType() == libconfig::Setting::TypeString) {
-                    try {
-                        _keys.push_back(
-                                _device->virtualInput()->toKeyCode(key));
-                        _device->virtualInput()->registerKey(
-                                _device->virtualInput()->toKeyCode(key));
-                    } catch(InputDevice::InvalidEventCode& e) {
-                        logPrintf(WARN, "Line %d: Invalid keycode %s, skipping."
-                            , key.getSourceLine(), key.c_str());
-                    }
-                } else {
-                    logPrintf(WARN, "Line %d: keycode must be string or int",
-                            key.getSourceLine(), key.c_str());
-                }
-            }
-        }
-    } catch (libconfig::SettingNotFoundException& e) {
-        logPrintf(WARN, "Line %d: keys is a required field, skipping.",
-                config.getSourceLine());
-    }
-}
-
-std::vector<uint>& KeypressAction::Config::keys()
-{
-    return _keys;
 }

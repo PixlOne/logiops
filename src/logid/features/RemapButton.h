@@ -33,16 +33,6 @@ namespace features
         virtual void configure();
         virtual void listen();
 
-        class Config : public DeviceFeature::Config
-        {
-        public:
-            explicit Config(Device* dev);
-            const std::map<uint8_t, std::shared_ptr<actions::Action>>&
-                buttons();
-        protected:
-            void _parseButton(libconfig::Setting& setting);
-            std::map<uint8_t, std::shared_ptr<actions::Action>> _buttons;
-        };
     private:
         class ButtonIPC : public ipcgull::interface
         {
@@ -52,10 +42,12 @@ namespace features
         };
 
         void _buttonEvent(const std::set<uint16_t>& new_state);
-        Config _config;
         std::shared_ptr<backend::hidpp20::ReprogControls> _reprog_controls;
         std::set<uint16_t> _pressed_buttons;
         std::mutex _button_lock;
+
+        std::optional<config::RemapButton>& _config;
+        std::map<uint16_t, std::shared_ptr<actions::Action>> _buttons;
 
         std::shared_ptr<ipcgull::node> _ipc_node;
         typedef std::pair<std::shared_ptr<ipcgull::node>,

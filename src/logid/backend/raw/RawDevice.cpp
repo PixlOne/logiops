@@ -65,11 +65,12 @@ bool RawDevice::supportedReport(uint8_t id, uint8_t length)
 }
 
 RawDevice::RawDevice(std::string path,
-                     const milliseconds& io_timeout,
+                     double io_timeout,
                      const std::shared_ptr<workqueue>& wq) :
                      _path (std::move(path)),
                      _continue_listen (false), _continue_respond (false),
-                     _io_timeout (io_timeout),
+                     _io_timeout (duration_cast<milliseconds>(
+                             duration<double, std::milli>(io_timeout))),
                      _workqueue (wq)
 {
     int ret;

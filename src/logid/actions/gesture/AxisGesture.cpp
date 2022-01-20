@@ -23,14 +23,28 @@
 
 using namespace logid::actions;
 
-AxisGesture::AxisGesture(Device *device, libconfig::Setting &root) :
-    Gesture (device), _config (device, root)
+AxisGesture::AxisGesture(Device *device, config::AxisGesture& config) :
+    Gesture (device), _multiplier (1), _config (config)
 {
+    if(std::holds_alternative<uint>(_config.axis)) {
+        _input_axis = std::get<uint>(_config.axis);
+    } else {
+        const auto& axis = std::get<std::string>(_config.axis);
+        try {
+            _axis = _device->virtualInput()->toAxisCode(axis);
+            _device->virtualInput()->registerAxis(_axis);
+        } catch(InputDevice::InvalidEventCode& e) {
+            logPrintf(WARN, "Invalid axis %s.");
+            throw InvalidGesture();
+        }
+    }
+    _device->virtualInput()->registerAxis(_input_axis);
 }
 
 void AxisGesture::press(bool init_threshold)
 {
-    _axis = init_threshold ? _config.threshold() : 0;
+    _axis = init_threshold ?
+            _config.threshold.value_or(defaults::gesture_threshold) : 0;
     _axis_remainder = 0;
     _hires_remainder = 0;
 }
@@ -43,19 +57,23 @@ void AxisGesture::release(bool primary)
 
 void AxisGesture::move(int16_t axis)
 {
+    const auto threshold = _config.threshold.value_or(
+            defaults::gesture_threshold);
     int16_t new_axis = _axis+axis;
-    int low_res_axis = InputDevice::getLowResAxis(_config.axis());
+    int low_res_axis = InputDevice::getLowResAxis(axis);
     int hires_remainder = _hires_remainder;
 
-    if(new_axis > _config.threshold()) {
+    if(new_axis > threshold) {
         double move = axis;
-        if(_axis < _config.threshold())
-            move = new_axis - _config.threshold();
-        bool negative_multiplier = _config.multiplier() < 0;
+        if(_axis < threshold)
+            move = new_axis - threshold;
+        bool negative_multiplier = _config.axis_multiplier.value_or(1) < 0;
         if(negative_multiplier)
-            move *= -_config.multiplier();
+            move *= -_config.axis_multiplier.value_or(1);
         else
-            move *= _config.multiplier();
+            move *= _config.axis_multiplier.value_or(1);
+        // Handle hi-res multiplier
+        move *= _multiplier;
 
         double move_floor = floor(move);
         _axis_remainder = move - move_floor;
@@ -70,7 +88,7 @@ void AxisGesture::move(int16_t axis)
 
         if(low_res_axis != -1) {
             int lowres_movement = 0, hires_movement = move_floor;
-            _device->virtualInput()->moveAxis(_config.axis(), hires_movement);
+            _device->virtualInput()->moveAxis(_input_axis, hires_movement);
             hires_remainder += hires_movement;
             if(abs(hires_remainder) >= 60) {
                 lowres_movement = hires_remainder/120;
@@ -82,7 +100,7 @@ void AxisGesture::move(int16_t axis)
 
             _hires_remainder = hires_remainder;
         } else {
-            _device->virtualInput()->moveAxis(_config.axis(), move_floor);
+            _device->virtualInput()->moveAxis(_input_axis, move_floor);
         }
     }
     _axis = new_axis;
@@ -90,72 +108,7 @@ void AxisGesture::move(int16_t axis)
 
 bool AxisGesture::metThreshold() const
 {
-    return _axis >= _config.threshold();
-}
-
-void AxisGesture::setHiresMultiplier(double multiplier)
-{
-    _config.setHiresMultiplier(multiplier);
-}
-
-AxisGesture::Config::Config(Device *device, libconfig::Setting &setting) :
-    Gesture::Config(device, setting, false)
-{
-    try {
-        auto& axis = setting.lookup("axis");
-        if(axis.isNumber()) {
-            _axis = axis;
-            _device->virtualInput()->registerAxis(_axis);
-        } else if(axis.getType() == libconfig::Setting::TypeString) {
-            try {
-                _axis = _device->virtualInput()->toAxisCode(axis);
-                _device->virtualInput()->registerAxis(_axis);
-            } catch(InputDevice::InvalidEventCode& e) {
-                logPrintf(WARN, "Line %d: Invalid axis %s, skipping."
-                        , axis.getSourceLine(), axis.c_str());
-            }
-        } else {
-            logPrintf(WARN, "Line %d: axis must be string or int, skipping.",
-                      axis.getSourceLine(), axis.c_str());
-            throw InvalidGesture();
-        }
-    } catch(libconfig::SettingNotFoundException& e) {
-        logPrintf(WARN, "Line %d: axis is a required field, skippimg.",
-                setting.getSourceLine());
-        throw InvalidGesture();
-    }
-
-    try {
-        auto& multiplier = setting.lookup("axis_multiplier");
-        if(multiplier.isNumber()) {
-            if(multiplier.getType() == libconfig::Setting::TypeFloat)
-                _multiplier = multiplier;
-            else
-                _multiplier = (int)multiplier;
-        } else {
-            logPrintf(WARN, "Line %d: axis_multiplier must be a number, "
-                            "setting to default (1).",
-                            multiplier.getSourceLine());
-        }
-    } catch(libconfig::SettingNotFoundException& e) {
-        // Ignore
-    }
-
-    int low_res_axis = InputDevice::getLowResAxis(_axis);
-    if(low_res_axis != -1) {
-        _multiplier *= 120;
-        _device->virtualInput()->registerAxis(low_res_axis);
-    }
-}
-
-unsigned int AxisGesture::Config::axis() const
-{
-    return _axis;
-}
-
-double AxisGesture::Config::multiplier() const
-{
-    return _multiplier;
+    return _axis >= _config.threshold.value_or(defaults::gesture_threshold);
 }
 
 bool AxisGesture::wheelCompatibility() const
@@ -163,15 +116,9 @@ bool AxisGesture::wheelCompatibility() const
     return true;
 }
 
-void AxisGesture::Config::setHiresMultiplier(double multiplier)
+void AxisGesture::setHiresMultiplier(double multiplier)
 {
-    if(_hires_multiplier == multiplier || multiplier == 0)
-        return;
-
     if(InputDevice::getLowResAxis(_axis) != -1) {
-        _multiplier *= _hires_multiplier;
-        _multiplier /= multiplier;
+        _multiplier = multiplier;
     }
-
-    _hires_multiplier = multiplier;
 }

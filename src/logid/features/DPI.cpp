@@ -19,12 +19,11 @@
 #include <cmath>
 #include "DPI.h"
 #include "../Device.h"
-#include "../util/log.h"
 
 using namespace logid::features;
 using namespace logid::backend;
 
-uint16_t getClosestDPI(hidpp20::AdjustableDPI::SensorDPIList& dpi_list,
+uint16_t getClosestDPI(const hidpp20::AdjustableDPI::SensorDPIList& dpi_list,
         uint16_t dpi)
 {
     if(dpi_list.isRange) {
@@ -58,7 +57,8 @@ uint16_t getClosestDPI(hidpp20::AdjustableDPI::SensorDPIList& dpi_list,
     }
 }
 
-DPI::DPI(Device* device) : DeviceFeature(device), _config (device)
+DPI::DPI(Device* device) : DeviceFeature(device),
+         _config (device->activeProfile().dpi)
 {
     try {
         _adjustable_dpi = std::make_shared<hidpp20::AdjustableDPI>
@@ -70,20 +70,23 @@ DPI::DPI(Device* device) : DeviceFeature(device), _config (device)
 
 void DPI::configure()
 {
-    const uint8_t sensors = _adjustable_dpi->getSensorCount();
-    for(uint8_t i = 0; i < _config.getSensorCount(); i++) {
-        hidpp20::AdjustableDPI::SensorDPIList dpi_list;
-        if(_dpi_lists.size() <= i) {
-            dpi_list = _adjustable_dpi->getSensorDPIList(i);
-            _dpi_lists.push_back(dpi_list);
+    if(_config.has_value()) {
+        const auto& config = _config.value();
+        if(std::holds_alternative<int>(config)) {
+            const auto& dpi = std::get<int>(config);
+            _adjustable_dpi->setSensorDPI(
+                    0,
+                    getClosestDPI(_adjustable_dpi->getSensorDPIList(0),
+                                  dpi) );
         } else {
-            dpi_list = _dpi_lists[i];
-        }
-        if(i < sensors) {
-            auto dpi = _config.getDPI(i);
-            if(dpi) {
-                _adjustable_dpi->setSensorDPI(i, getClosestDPI(dpi_list,
-                        dpi));
+            const auto& dpis = std::get<std::list<int>>(config);
+            int i = 0;
+            for(const auto& dpi : dpis) {
+                _adjustable_dpi->setSensorDPI(
+                        i,
+                        getClosestDPI(_adjustable_dpi->getSensorDPIList(i),
+                                      dpi) );
+                ++i;
             }
         }
     }
@@ -110,37 +113,4 @@ void DPI::setDPI(uint16_t dpi, uint8_t sensor)
     }
     dpi_list = _dpi_lists[sensor];
     _adjustable_dpi->setSensorDPI(sensor, getClosestDPI(dpi_list, dpi));
-}
-
-/* Some devices have multiple sensors, but an older config format
- * only supports a single DPI. The dpi setting can be an array or
- * an integer.
- */
-DPI::Config::Config(Device *dev) : DeviceFeature::Config(dev)
-{
-    try {
-        auto& config_root = dev->config().getSetting("dpi");
-        if(config_root.isNumber()) {
-            int dpi = config_root;
-            _dpis.push_back(dpi);
-        } else if(config_root.isArray()) {
-            for(int i = 0; i < config_root.getLength(); i++)
-                _dpis.push_back((int)config_root[i]);
-        } else {
-            logPrintf(WARN, "Line %d: dpi is improperly formatted",
-                    config_root.getSourceLine());
-        }
-    } catch(libconfig::SettingNotFoundException& e) {
-        // DPI not configured, use default
-    }
-}
-
-uint8_t DPI::Config::getSensorCount()
-{
-    return _dpis.size();
-}
-
-uint16_t DPI::Config::getDPI(uint8_t sensor)
-{
-    return _dpis[sensor];
 }

@@ -27,23 +27,15 @@ namespace actions {
     class KeypressAction : public Action
     {
     public:
-        KeypressAction(Device* dev, libconfig::Setting& config);
+        KeypressAction(Device* dev, config::KeypressAction& config);
 
         virtual void press();
         virtual void release();
 
         virtual uint8_t reprogFlags() const;
-
-        class Config : public Action::Config
-        {
-        public:
-            explicit Config(Device* device, libconfig::Setting& root);
-            std::vector<uint>& keys();
-        protected:
-            std::vector<uint> _keys;
-        };
     protected:
-        Config _config;
+        config::KeypressAction& _config;
+        std::list<uint> _keys;
     };
 }}
 

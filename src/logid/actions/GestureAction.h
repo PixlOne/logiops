@@ -39,7 +39,7 @@ namespace actions {
         static Direction toDirection(std::string direction);
         static Direction toDirection(int16_t x, int16_t y);
 
-        GestureAction(Device* dev, libconfig::Setting& config);
+        GestureAction(Device* dev, config::GestureAction& config);
 
         virtual void press();
         virtual void release();
@@ -47,20 +47,10 @@ namespace actions {
 
         virtual uint8_t reprogFlags() const;
 
-        class Config : public Action::Config
-        {
-        public:
-            Config(Device* device, libconfig::Setting& root);
-            std::map<Direction, std::shared_ptr<Gesture>>& gestures();
-            std::shared_ptr<Action> noneAction();
-        protected:
-            std::map<Direction, std::shared_ptr<Gesture>> _gestures;
-            std::shared_ptr<Action> _none_action;
-        };
-
     protected:
         int16_t _x, _y;
-        Config _config;
+        std::map<Direction, std::shared_ptr<Gesture>> _gestures;
+        config::GestureAction& _config;
     };
 }}
 

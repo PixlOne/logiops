@@ -26,7 +26,7 @@ namespace actions
     class IntervalGesture : public Gesture
     {
     public:
-        IntervalGesture(Device* device, libconfig::Setting& root);
+        IntervalGesture(Device* device, config::IntervalGesture& config);
 
         virtual void press(bool init_threshold=false);
         virtual void release(bool primary=false);
@@ -35,19 +35,11 @@ namespace actions
         virtual bool wheelCompatibility() const;
         virtual bool metThreshold() const;
 
-        class Config : public Gesture::Config
-        {
-        public:
-            Config(Device* device, libconfig::Setting& setting);
-            int16_t interval() const;
-        private:
-            int16_t _interval;
-        };
-
     protected:
         int16_t _axis;
         int16_t _interval_pass_count;
-        Config _config;
+        std::shared_ptr<Action> _action;
+        config::IntervalGesture& _config;
     };
 }}
 

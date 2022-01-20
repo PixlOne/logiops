@@ -28,6 +28,9 @@ namespace actions {
     {
     public:
         explicit ToggleSmartShift(Device* dev);
+        ToggleSmartShift(Device* device,
+                         [[maybe_unused]] config::ToggleSmartShift& action) :
+            ToggleSmartShift(device) { }
 
         virtual void press();
         virtual void release();

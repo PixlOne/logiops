@@ -18,7 +18,6 @@
 #include "HiresScroll.h"
 #include "../Device.h"
 #include "../InputDevice.h"
-#include "../actions/gesture/Gesture.h"
 #include "../actions/gesture/AxisGesture.h"
 
 using namespace logid::features;
@@ -26,36 +25,43 @@ using namespace logid::backend;
 
 #define MOVE_EVENTHANDLER_NAME "HIRES_SCROLL"
 
-HiresScroll::HiresScroll(Device *dev) : DeviceFeature(dev), _config(dev)
+HiresScroll::HiresScroll(Device *dev) : DeviceFeature(dev),
+    _config (dev->activeProfile().hiresscroll), _mode (0), _mask (0)
 {
+    if(_config.has_value()) {
+        if(std::holds_alternative<bool>(_config.value())) {
+            config::HiresScroll conf {};
+            conf.hires = std::get<bool>(_config.value());
+            conf.invert = false;
+            conf.target = false;
+            _mask |= hidpp20::HiresScroll::Mode::HiRes;
+            _config.value() = conf;
+        }
+        auto& conf = std::get<config::HiresScroll>(_config.value());
+        if(conf.hires.has_value()) {
+            _mask |= hidpp20::HiresScroll::Mode::HiRes;
+            if(conf.hires.value())
+                _mode |= hidpp20::HiresScroll::Mode::HiRes;
+        }
+        if(conf.invert.has_value()) {
+            _mask |= hidpp20::HiresScroll::Mode::Inverted;
+            if(conf.invert.value())
+                _mode |= hidpp20::HiresScroll::Mode::Inverted;
+        }
+        if(conf.target.has_value()) {
+            _mask |= hidpp20::HiresScroll::Mode::Target;
+            if(conf.target.value())
+                _mode |= hidpp20::HiresScroll::Mode::Target;
+        }
+
+        _makeAction(_up_action, conf.up);
+        _makeAction(_down_action, conf.down);
+    }
+
     try {
         _hires_scroll = std::make_shared<hidpp20::HiresScroll>(&dev->hidpp20());
     } catch(hidpp20::UnsupportedFeature& e) {
         throw UnsupportedFeature();
-    }
-
-    if(_config.upAction()) {
-        try {
-            auto up_axis = std::dynamic_pointer_cast<actions::AxisGesture>(
-                    _config.upAction());
-            if(up_axis)
-                up_axis->setHiresMultiplier(
-                        _hires_scroll->getCapabilities().multiplier);
-        } catch(std::bad_cast& e) { }
-
-        _config.upAction()->press(true);
-    }
-
-    if(_config.downAction()) {
-        try {
-            auto down_axis = std::dynamic_pointer_cast<actions::AxisGesture>(
-                    _config.downAction());
-            if(down_axis)
-                down_axis->setHiresMultiplier(
-                        _hires_scroll->getCapabilities().multiplier);
-        } catch(std::bad_cast& e) { }
-
-        _config.downAction()->press(true);
     }
 
     _last_scroll = std::chrono::system_clock::now();
@@ -69,8 +75,8 @@ HiresScroll::~HiresScroll()
 void HiresScroll::configure()
 {
     auto mode = _hires_scroll->getMode();
-    mode &= ~_config.getMask();
-    mode |= (_config.getMode() & _config.getMask());
+    mode &= ~_mask;
+    mode |= (_mode & _mask);
     _hires_scroll->setMode(mode);
 }
 
@@ -103,18 +109,37 @@ void HiresScroll::setMode(uint8_t mode)
     _hires_scroll->setMode(mode);
 }
 
+void HiresScroll::_makeAction(std::shared_ptr<actions::Gesture> &gesture,
+                              std::optional<config::Gesture> &config)
+{
+    if(config.has_value()) {
+        gesture = actions::Gesture::makeGesture(_device, config.value());
+        try {
+            auto axis = std::dynamic_pointer_cast<actions::AxisGesture>(
+                    gesture);
+            if(axis)
+                axis->setHiresMultiplier(
+                        _hires_scroll->getCapabilities().multiplier);
+        } catch(std::bad_cast& e) { }
+        if(gesture)
+            gesture->press(true);
+    } else {
+        gesture.reset();
+    }
+}
+
 void HiresScroll::_handleScroll(hidpp20::HiresScroll::WheelStatus event)
 {
     auto now = std::chrono::system_clock::now();
     if(std::chrono::duration_cast<std::chrono::seconds>(
             now - _last_scroll).count() >= 1) {
-        if(_config.upAction()) {
-            _config.upAction()->release();
-            _config.upAction()->press(true);
+        if(_up_action) {
+            _up_action->release();
+            _up_action->press(true);
         }
-        if(_config.downAction()) {
-            _config.downAction()->release();
-            _config.downAction()->press(true);
+        if(_down_action) {
+            _down_action->release();
+            _down_action->press(true);
         }
 
         _last_direction = 0;
@@ -122,140 +147,25 @@ void HiresScroll::_handleScroll(hidpp20::HiresScroll::WheelStatus event)
 
     if(event.deltaV > 0) {
         if(_last_direction == -1) {
-            if(_config.downAction()){
-                _config.downAction()->release();
-                _config.downAction()->press(true);
+            if(_down_action){
+                _down_action->release();
+                _down_action->press(true);
             }
         }
-        if(_config.upAction())
-            _config.upAction()->move(event.deltaV);
+        if(_up_action)
+            _up_action->move(event.deltaV);
         _last_direction = 1;
     } else if(event.deltaV < 0) {
         if(_last_direction == 1) {
-            if(_config.upAction()){
-                _config.upAction()->release();
-                _config.upAction()->press(true);
+            if(_up_action){
+                _up_action->release();
+                _up_action->press(true);
             }
         }
-        if(_config.downAction())
-            _config.downAction()->move(-event.deltaV);
+        if(_down_action)
+            _down_action->move(-event.deltaV);
         _last_direction = -1;
     }
 
     _last_scroll = now;
-}
-
-HiresScroll::Config::Config(Device *dev) : DeviceFeature::Config(dev)
-{
-    try {
-        auto& config_root = dev->config().getSetting("hiresscroll");
-        if(!config_root.isGroup()) {
-            logPrintf(WARN, "Line %d: hiresscroll must be a group",
-                      config_root.getSourceLine());
-            return;
-        }
-        _mode = 0;
-        _mask = 0;
-        try {
-            auto& hires = config_root.lookup("hires");
-            if(hires.getType() == libconfig::Setting::TypeBoolean) {
-                _mask |= hidpp20::HiresScroll::Mode::HiRes;
-                if(hires)
-                    _mode |= hidpp20::HiresScroll::Mode::HiRes;
-            } else {
-                logPrintf(WARN, "Line %d: hires must be a boolean",
-                    hires.getSourceLine());
-            }
-        } catch(libconfig::SettingNotFoundException& e) { }
-
-        try {
-            auto& invert = config_root.lookup("invert");
-            if(invert.getType() == libconfig::Setting::TypeBoolean) {
-                _mask |= hidpp20::HiresScroll::Mode::Inverted;
-                if(invert)
-                    _mode |= hidpp20::HiresScroll::Mode::Inverted;
-            } else {
-                logPrintf(WARN, "Line %d: invert must be a boolean, ignoring.",
-                          invert.getSourceLine());
-            }
-        } catch(libconfig::SettingNotFoundException& e) { }
-
-        try {
-            auto& target = config_root.lookup("target");
-            if(target.getType() == libconfig::Setting::TypeBoolean) {
-                _mask |= hidpp20::HiresScroll::Mode::Target;
-                if(target)
-                    _mode |= hidpp20::HiresScroll::Mode::Target;
-            } else {
-                logPrintf(WARN, "Line %d: target must be a boolean, ignoring.",
-                          target.getSourceLine());
-            }
-        } catch(libconfig::SettingNotFoundException& e) { }
-
-        if(_mode & hidpp20::HiresScroll::Mode::Target) {
-            try {
-                auto& up = config_root.lookup("up");
-                try {
-                    auto g = actions::Gesture::makeGesture(dev, up);
-                    if(g->wheelCompatibility()) {
-                        _up_action = g;
-                    } else {
-                        logPrintf(WARN, "Line %d: This gesture cannot be used"
-                                        " as a scroll action.",
-                                        up.getSourceLine());
-                    }
-                } catch(actions::InvalidGesture& e) {
-                    logPrintf(WARN, "Line %d: Invalid scroll action",
-                            up.getSourceLine());
-                }
-            } catch(libconfig::SettingNotFoundException&) {
-                logPrintf(WARN, "Line %d: target is true but no up action was"
-                                " set", config_root.getSourceLine());
-            }
-
-            try {
-                auto& down = config_root.lookup("down");
-                try {
-                    auto g = actions::Gesture::makeGesture(dev, down);
-                    if(g->wheelCompatibility()) {
-                        _down_action = g;
-                    } else {
-                        logPrintf(WARN, "Line %d: This gesture cannot be used"
-                                        " as a scroll action.",
-                                  down.getSourceLine());
-                    }
-                } catch(actions::InvalidGesture& e) {
-                    logPrintf(WARN, "Line %d: Invalid scroll action",
-                              down.getSourceLine());
-                }
-            } catch(libconfig::SettingNotFoundException&) {
-                logPrintf(WARN, "Line %d: target is true but no down action was"
-                                " set", config_root.getSourceLine());
-            }
-        }
-    } catch(libconfig::SettingNotFoundException& e) {
-        // HiresScroll not configured, use default
-    }
-}
-
-uint8_t HiresScroll::Config::getMode() const
-{
-    return _mode;
-}
-
-uint8_t HiresScroll::Config::getMask() const
-{
-    return _mask;
-}
-
-const std::shared_ptr<logid::actions::Gesture>&
-        HiresScroll::Config::upAction() const
-{
-    return _up_action;
-}
-
-const std::shared_ptr<logid::actions::Gesture>&
-        HiresScroll::Config::downAction() const
-{
-    return _down_action;
 }

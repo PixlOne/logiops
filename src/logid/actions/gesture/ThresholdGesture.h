@@ -26,7 +26,7 @@ namespace actions
     class ThresholdGesture : public Gesture
     {
     public:
-        ThresholdGesture(Device* device, libconfig::Setting& root);
+        ThresholdGesture(Device* device, config::ThresholdGesture& config);
 
         virtual void press(bool init_threshold=false);
         virtual void release(bool primary=false);
@@ -38,7 +38,8 @@ namespace actions
 
     protected:
         int16_t _axis;
-        Gesture::Config _config;
+        std::shared_ptr<actions::Action> _action;
+        config::ThresholdGesture& _config;
 
     private:
         bool _executed = false;

@@ -44,7 +44,7 @@ namespace logid {
 DeviceManager::DeviceManager(std::shared_ptr<Configuration> config,
                              std::shared_ptr<InputDevice> virtual_input,
                              std::shared_ptr<ipcgull::server> server) :
-    backend::raw::DeviceMonitor(config->workerCount()),
+    backend::raw::DeviceMonitor(config->workers.value_or(defaults::worker_count)),
     _server (std::move(server)), _config (std::move(config)),
     _virtual_input (std::move(virtual_input)),
     _root_node (ipcgull::node::make_root("")),
@@ -95,8 +95,11 @@ void DeviceManager::addDevice(std::string path)
 
     // Check if device is ignored before continuing
     {
-        raw::RawDevice raw_dev(path, config()->ioTimeout(), workQueue());
-        if(config()->isIgnored(raw_dev.productId())) {
+        raw::RawDevice raw_dev(
+                path,config()->io_timeout.value_or(defaults::io_timeout),
+                workQueue());
+        if(config()->ignore.has_value() &&
+          config()->ignore.value().contains(raw_dev.productId())) {
             logPrintf(DEBUG, "%s: Device 0x%04x ignored.",
                   path.c_str(), raw_dev.productId());
             return;
@@ -104,8 +107,10 @@ void DeviceManager::addDevice(std::string path)
     }
 
     try {
-        hidpp::Device device(path, hidpp::DefaultDevice,
-                             config()->ioTimeout(), workQueue());
+        hidpp::Device device(
+                path, hidpp::DefaultDevice,
+                config()->io_timeout.value_or(defaults::io_timeout),
+                workQueue());
         isReceiver = device.version() == std::make_tuple(1, 0);
     } catch(hidpp10::Error &e) {
         if(e.code() != hidpp10::Error::UnknownDevice)

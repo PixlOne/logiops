@@ -28,26 +28,16 @@ namespace actions
     class ChangeHostAction : public Action
     {
     public:
-        ChangeHostAction(Device* device, libconfig::Setting& config);
+        ChangeHostAction(Device* device, config::ChangeHost& config);
 
         virtual void press();
         virtual void release();
 
         virtual uint8_t reprogFlags() const;
 
-        class Config : public Action::Config
-        {
-        public:
-            Config(Device* device, libconfig::Setting& setting);
-            uint8_t nextHost(backend::hidpp20::ChangeHost::HostInfo info);
-        private:
-            bool _offset;
-            int _host;
-        };
-
     protected:
         std::shared_ptr<backend::hidpp20::ChangeHost> _change_host;
-        Config _config;
+        config::ChangeHost& _config;
     };
 }}
 

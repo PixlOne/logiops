@@ -26,7 +26,7 @@ template<typename data>
 class mutex_queue
 {
 public:
-    mutex_queue<data>() = default;
+    mutex_queue() = default;
     bool empty()
     {
         std::lock_guard<std::mutex> lock(_mutex);

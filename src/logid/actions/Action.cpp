@@ -18,7 +18,6 @@
 
 #include <algorithm>
 #include "Action.h"
-#include "../util/log.h"
 #include "KeypressAction.h"
 #include "ToggleSmartShift.h"
 #include "ToggleHiresScroll.h"
@@ -31,49 +30,39 @@
 using namespace logid;
 using namespace logid::actions;
 
-std::shared_ptr<Action> Action::makeAction(Device *device, libconfig::Setting
-    &setting)
+template <typename T>
+struct action_type {
+    typedef typename T::action type;
+};
+
+template <typename T>
+struct action_type<const T> : action_type<T> { };
+
+template <typename T>
+struct action_type<T&> : action_type<T> { };
+
+template <typename T>
+std::shared_ptr<Action> _makeAction(Device* device,
+                                    T action) {
+    return std::make_shared<typename action_type<T>::type>(device, action);
+}
+
+std::shared_ptr<Action> Action::makeAction(Device *device,
+                                           config::BasicAction& action)
 {
-    if(!setting.isGroup()) {
-        logPrintf(WARN, "Line %d: Action is not a group, ignoring.",
-                setting.getSourceLine());
-        throw InvalidAction();
-    }
+    std::shared_ptr<Action> ret;
+    std::visit([&device, &ret](auto&& x) {
+        ret = _makeAction(device, x);
+    }, action);
+    return ret;
+}
 
-    try {
-        auto& action_type = setting.lookup("type");
-
-        if(action_type.getType() != libconfig::Setting::TypeString) {
-            logPrintf(WARN, "Line %d: Action type must be a string",
-                    action_type.getSourceLine());
-            throw InvalidAction();
-        }
-
-        std::string type = action_type;
-        std::transform(type.begin(), type.end(), type.begin(), ::tolower);
-
-        if(type == "keypress")
-            return std::make_shared<KeypressAction>(device, setting);
-        else if(type == "togglesmartshift")
-            return std::make_shared<ToggleSmartShift>(device);
-        else if(type == "togglehiresscroll")
-            return std::make_shared<ToggleHiresScroll>(device);
-        else if(type == "gestures")
-            return std::make_shared<GestureAction>(device, setting);
-        else if(type == "cycledpi")
-            return std::make_shared<CycleDPI>(device, setting);
-        else if(type == "changedpi")
-            return std::make_shared<ChangeDPI>(device, setting);
-        else if(type == "none")
-            return std::make_shared<NullAction>(device);
-        else if(type == "changehost")
-            return std::make_shared<ChangeHostAction>(device, setting);
-        else
-            throw InvalidAction(type);
-
-    } catch(libconfig::SettingNotFoundException& e) {
-        logPrintf(WARN, "Line %d: Action type is missing, ignoring.",
-                setting.getSourceLine());
-        throw InvalidAction();
-    }
+std::shared_ptr<Action> Action::makeAction(Device *device,
+                                           config::Action& action)
+{
+    std::shared_ptr<Action> ret;
+    std::visit([&device, &ret](auto&& x) {
+        ret = _makeAction(device, x);
+    }, action);
+    return ret;
 }

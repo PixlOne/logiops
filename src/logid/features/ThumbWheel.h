@@ -21,6 +21,7 @@
 #include "../backend/hidpp20/features/ThumbWheel.h"
 #include "DeviceFeature.h"
 #include "../actions/gesture/Gesture.h"
+#include "../config/schema.h"
 
 namespace logid {
 namespace features
@@ -29,45 +30,26 @@ namespace features
     {
     public:
         explicit ThumbWheel(Device* dev);
+        ~ThumbWheel();
         virtual void configure();
         virtual void listen();
 
-        class Config : public DeviceFeature::Config
-        {
-        public:
-            explicit Config(Device* dev);
-            bool divert() const;
-            bool invert() const;
-
-            const std::shared_ptr<actions::Gesture>& leftAction() const;
-            const std::shared_ptr<actions::Gesture>& rightAction() const;
-            const std::shared_ptr<actions::Action>& proxyAction() const;
-            const std::shared_ptr<actions::Action>& tapAction() const;
-            const std::shared_ptr<actions::Action>& touchAction() const;
-        protected:
-            bool _divert = false;
-            bool _invert = false;
-
-            static std::shared_ptr<actions::Gesture> _genGesture(Device* dev,
-                    libconfig::Setting& setting, const std::string& name);
-            static std::shared_ptr<actions::Action> _genAction(Device* dev,
-                    libconfig::Setting& setting, const std::string& name);
-
-            std::shared_ptr<actions::Gesture> _left_action;
-            std::shared_ptr<actions::Gesture> _right_action;
-            std::shared_ptr<actions::Action> _proxy_action;
-            std::shared_ptr<actions::Action> _tap_action;
-            std::shared_ptr<actions::Action> _touch_action;
-        };
     private:
         void _handleEvent(backend::hidpp20::ThumbWheel::ThumbwheelEvent event);
 
         std::shared_ptr<backend::hidpp20::ThumbWheel> _thumb_wheel;
         backend::hidpp20::ThumbWheel::ThumbwheelInfo _wheel_info;
+
+        std::shared_ptr<actions::Gesture> _left_action;
+        std::shared_ptr<actions::Gesture> _right_action;
+        std::shared_ptr<actions::Action> _proxy_action;
+        std::shared_ptr<actions::Action> _tap_action;
+        std::shared_ptr<actions::Action> _touch_action;
+
         int8_t _last_direction = 0;
         bool _last_proxy = false;
         bool _last_touch = false;
-        Config _config;
+        std::optional<config::ThumbWheel>& _config;
     };
 }}
 
