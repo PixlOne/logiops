@@ -25,6 +25,45 @@
 namespace logid {
 namespace features
 {
+    class RemapButton;
+
+    class Button
+    {
+    public:
+        typedef backend::hidpp20::ReprogControls::ControlInfo Info;
+        typedef std::function<void(std::shared_ptr<actions::Action>)>
+                ConfigFunction;
+
+        Button(Info info, int index,
+               Device* device, ConfigFunction conf_func,
+               std::shared_ptr<ipcgull::node> root,
+               config::Button& config);
+        void press() const;
+        void release() const;
+        void move(int16_t x, int16_t y) const;
+
+        void configure() const;
+
+        bool pressed() const;
+    private:
+        class IPC : public ipcgull::interface
+        {
+        public:
+            IPC(Button* parent,
+                const Info& info);
+        };
+
+        std::shared_ptr<ipcgull::node> _node;
+        std::shared_ptr<IPC> _interface;
+        Device* _device;
+        const ConfigFunction _conf_func;
+
+        config::Button& _config;
+
+        std::shared_ptr<actions::Action> _action;
+        const Info _info;
+    };
+
     class RemapButton : public DeviceFeature
     {
     public:
@@ -34,25 +73,15 @@ namespace features
         virtual void listen();
 
     private:
-        class ButtonIPC : public ipcgull::interface
-        {
-        public:
-            ButtonIPC(RemapButton* parent,
-                      backend::hidpp20::ReprogControls::ControlInfo info);
-        };
-
         void _buttonEvent(const std::set<uint16_t>& new_state);
         std::shared_ptr<backend::hidpp20::ReprogControls> _reprog_controls;
         std::set<uint16_t> _pressed_buttons;
         std::mutex _button_lock;
 
         std::optional<config::RemapButton>& _config;
-        std::map<uint16_t, std::shared_ptr<actions::Action>> _buttons;
+        std::map<uint16_t, Button> _buttons;
 
         std::shared_ptr<ipcgull::node> _ipc_node;
-        typedef std::pair<std::shared_ptr<ipcgull::node>,
-                std::shared_ptr<ButtonIPC>> ButtonIPCPair;
-        std::vector<ButtonIPCPair> _button_ipcs;
     };
 }}
 

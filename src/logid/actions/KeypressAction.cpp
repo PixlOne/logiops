@@ -45,7 +45,7 @@ KeypressAction::KeypressAction(Device *device, config::KeypressAction& config) :
         const auto& keys = std::get<std::list<std::variant<uint, std::string>>>(
                 _config.keys);
         for(const auto& key : keys) {
-            if(std::holds_alternative<std::string>(_config.keys)) {
+            if(std::holds_alternative<std::string>(key)) {
                 const auto& key_str = std::get<std::string>(key);
                 try {
                     auto code = _device->virtualInput()->toKeyCode(key_str);
@@ -55,8 +55,8 @@ KeypressAction::KeypressAction(Device *device, config::KeypressAction& config) :
                     logPrintf(WARN, "Invalid keycode %s, skipping.",
                               key_str.c_str());
                 }
-            } else if(std::holds_alternative<uint>(_config.keys)) {
-                auto& code = std::get<uint>(_config.keys);
+            } else if(std::holds_alternative<uint>(key)) {
+                auto& code = std::get<uint>(key);
                 _device->virtualInput()->registerKey(code);
                 _keys.emplace_back(code);
             }

@@ -33,22 +33,6 @@ RemapButton::RemapButton(Device *dev): DeviceFeature(dev),
     _config (dev->activeProfile().buttons),
     _ipc_node (dev->ipcNode()->make_child("buttons"))
 {
-    if(_config.has_value()) {
-        for(auto& button : _config.value()) {
-            if(button.second.action.has_value()) {
-                try {
-                    _buttons.emplace(
-                            button.first,
-                            Action::makeAction(
-                                    dev,button.second.action.value()));
-                } catch(std::exception& e) {
-                    logPrintf(WARN, "Error creating button action: %s",
-                              e.what());
-                }
-            }
-        }
-    }
-
     try {
         _reprog_controls = hidpp20::ReprogControls::autoVersion(
                 &dev->hidpp20());
@@ -57,6 +41,39 @@ RemapButton::RemapButton(Device *dev): DeviceFeature(dev),
     }
 
     _reprog_controls->initCidMap();
+
+    if(!_config.has_value())
+        _config = config::RemapButton();
+
+    for(const auto& control : _reprog_controls->getControls()) {
+        const auto i = _buttons.size();
+        Button::ConfigFunction func = [this, info=control.second](
+                std::shared_ptr<actions::Action> action) {
+            hidpp20::ReprogControls::ControlInfo report{};
+            report.controlID = info.controlID;
+            report.flags = HIDPP20_REPROG_REBIND;
+
+            if(action) {
+                if(( action->reprogFlags() &
+                     hidpp20::ReprogControls::RawXYDiverted ) &&
+                   ( !_reprog_controls->supportsRawXY() ||
+                     !(info.additionalFlags & hidpp20::ReprogControls::RawXY) ))
+                    logPrintf(WARN,
+                              "%s: Cannot divert raw XY movements for CID "
+                              "0x%02x", _device->name().c_str(),
+                              info.controlID);
+
+                report.flags |= action->reprogFlags();
+            }
+            _reprog_controls->setControlReporting(info.controlID, report);
+        };
+        _buttons.emplace(std::piecewise_construct,
+                         std::forward_as_tuple(control.second.controlID),
+                         std::forward_as_tuple(control.second, i,
+                                               _device, func,
+                                               _ipc_node,
+                                               _config.value()[control.first]));
+    }
 
     if(global_loglevel <= DEBUG) {
         #define FLAG(x) (control.second.flags & hidpp20::ReprogControls::x ? \
@@ -77,14 +94,6 @@ RemapButton::RemapButton(Device *dev): DeviceFeature(dev),
         #undef ADDITIONAL_FLAG
         #undef FLAG
     }
-
-    for(const auto& control : _reprog_controls->getControls()) {
-        auto i = std::to_string(_button_ipcs.size());
-        auto node = _ipc_node->make_child(i);
-        auto iface = node->make_interface<ButtonIPC>(this,
-                                                         control.second);
-        _button_ipcs.emplace_back(node, iface);
-    }
 }
 
 RemapButton::~RemapButton()
@@ -94,32 +103,8 @@ RemapButton::~RemapButton()
 
 void RemapButton::configure()
 {
-    ///TODO: DJ reporting trickery if cannot be remapped
-    for(const auto& i : _buttons) {
-        hidpp20::ReprogControls::ControlInfo info{};
-        try {
-            info = _reprog_controls->getControlIdInfo(i.first);
-        } catch(hidpp20::Error& e) {
-            if(e.code() == hidpp20::Error::InvalidArgument) {
-                logPrintf(WARN, "%s: CID 0x%02x does not exist.",
-                        _device->name().c_str(), i.first);
-                continue;
-            }
-            throw e;
-        }
-
-        if((i.second->reprogFlags() & hidpp20::ReprogControls::RawXYDiverted) &&
-                (!_reprog_controls->supportsRawXY() || !(info.additionalFlags &
-                hidpp20::ReprogControls::RawXY)))
-            logPrintf(WARN, "%s: Cannot divert raw XY movements for CID "
-                            "0x%02x", _device->name().c_str(), i.first);
-
-        hidpp20::ReprogControls::ControlInfo report{};
-        report.controlID = i.first;
-        report.flags = HIDPP20_REPROG_REBIND;
-        report.flags |= i.second->reprogFlags();
-        _reprog_controls->setControlReporting(i.first, report);
-    }
+    for(const auto& button : _buttons)
+        button.second.configure();
 }
 
 void RemapButton::listen()
@@ -142,8 +127,8 @@ void RemapButton::listen()
             else { // RawXY
                 auto divertedXY = _reprog_controls->divertedRawXYEvent(report);
                 for(const auto& button : this->_buttons)
-                    if(button.second->pressed())
-                        button.second->move(divertedXY.x, divertedXY.y);
+                    if(button.second.pressed())
+                        button.second.move(divertedXY.x, divertedXY.y);
             }
         };
 
@@ -164,7 +149,7 @@ void RemapButton::_buttonEvent(const std::set<uint16_t>& new_state)
         } else {
             auto action = _buttons.find(i);
             if(action != _buttons.end())
-                action->second->press();
+                action->second.press();
         }
     }
 
@@ -172,22 +157,66 @@ void RemapButton::_buttonEvent(const std::set<uint16_t>& new_state)
     for(auto& i : _pressed_buttons) {
         auto action = _buttons.find(i);
         if(action != _buttons.end())
-            action->second->release();
+            action->second.release();
     }
 
     _pressed_buttons = new_state;
 }
 
-RemapButton::ButtonIPC::ButtonIPC(
-        RemapButton *parent,
-        backend::hidpp20::ReprogControls::ControlInfo info) :
+Button::Button(Info info, int index,
+               Device *device, ConfigFunction conf_func,
+               std::shared_ptr<ipcgull::node> root,
+               config::Button &config) :
+               _node (root->make_child(std::to_string(index))),
+               _interface (_node->make_interface<IPC>(this, info)),
+               _device (device), _conf_func (std::move(conf_func)),
+               _config (config),
+               _info (info)
+{
+    if(_config.action.has_value()) {
+        try {
+            _action = Action::makeAction(_device, _config.action.value());
+        } catch(std::exception& e) {
+            logPrintf(WARN, "Error creating button action: %s",
+                      e.what());
+        }
+    }
+}
+
+void Button::press() const {
+    if(_action)
+        _action->press();
+}
+
+void Button::release() const {
+    if(_action)
+        _action->release();
+}
+
+void Button::move(int16_t x, int16_t y) const {
+    if(_action)
+        _action->move(x, y);
+}
+
+bool Button::pressed() const {
+    if(_action)
+        return _action->pressed();
+    return false;
+}
+
+void Button::configure() const {
+    _conf_func(_action);
+}
+
+Button::IPC::IPC(Button* parent,
+                 const Info& info) :
         ipcgull::interface("pizza.pixl.LogiOps.Device.Button", {}, {
                 {"ControlID", ipcgull::property<uint16_t>(
                         ipcgull::property_readable, info.controlID)},
-                {"Remappable", ipcgull::property<bool>(
+                {"Remappable", ipcgull::property<const bool>(
                         ipcgull::property_readable,
                         info.flags & hidpp20::ReprogControls::TemporaryDivertable)},
-                {"GestureSupport", ipcgull::property<bool>(
+                {"GestureSupport", ipcgull::property<const bool>(
                         ipcgull::property_readable,
                         (info.additionalFlags & hidpp20::ReprogControls::RawXY)
                         )}
