@@ -25,48 +25,10 @@
 
 namespace logid
 {
-    class workqueue;
-
-    class task
-    {
-    public:
-        enum Status
-        {
-            Waiting,
-            Running,
-            Completed
-        };
-
-        explicit task(const std::function<void()>& function,
-                        const std::function<void(std::exception&)>&
-                        exception_handler={[](std::exception& e)
-                                           {ExceptionHandler::Default(e);}});
-
-        Status getStatus();
-
-        void run(); // Runs synchronously
-        void wait();
-        void waitStart();
-        std::future_status waitFor(std::chrono::milliseconds ms);
-
-        /* This function spawns a new task into the least used worker queue
-         * and forgets about it.
-         */
-        static void spawn(std::shared_ptr<workqueue> wq,
-                          const std::function<void()>& function,
-                          const std::function<void(std::exception&)>&
-                          exception_handler={[](std::exception& e)
-                                             {ExceptionHandler::Default(e);}});
-
-    private:
-        std::shared_ptr<std::function<void()>> _function;
-        std::shared_ptr<std::function<void(std::exception&)>>
-                _exception_handler;
-        std::atomic<Status> _status;
-        std::condition_variable _status_cv;
-        std::packaged_task<void()> _task_pkg;
-        std::future<void> _future;
-    };
+    /* This function spawns a new task into the least used worker queue
+    * and forgets about it.
+    */
+    void spawn_task(const std::function<void()>& function);
 }
 
 #endif //LOGID_TASK_H

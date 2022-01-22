@@ -66,8 +66,7 @@ Receiver::Receiver(const std::string& path,
                    const std::shared_ptr<DeviceManager>& manager) :
     dj::ReceiverMonitor(path,
                         manager->config()->io_timeout.value_or(
-                                defaults::io_timeout),
-                        manager->workQueue()),
+                                defaults::io_timeout)),
     _path (path), _manager (manager), _nickname (manager),
     _ipc_node (manager->receiversNode()->make_child(_nickname)),
     _ipc_interface (_ipc_node->make_interface<ReceiverIPC>(this))

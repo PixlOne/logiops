@@ -30,11 +30,7 @@
 #include "defs.h"
 #include "../../util/mutex_queue.h"
 
-namespace logid {
-    class workqueue;
-
-namespace backend {
-namespace raw
+namespace logid::backend::raw
 {
     class RawDevice
     {
@@ -42,8 +38,7 @@ namespace raw
         static bool supportedReport(uint8_t id, uint8_t length);
 
         explicit RawDevice(std::string path,
-                           double io_timeout,
-                           const std::shared_ptr<workqueue>& wq);
+                           double io_timeout);
         ~RawDevice();
         std::string hidrawPath() const;
 
@@ -85,7 +80,6 @@ namespace raw
         std::condition_variable _listen_condition;
 
         const std::chrono::milliseconds _io_timeout;
-        const std::shared_ptr<workqueue> _workqueue;
 
         std::map<std::string, std::shared_ptr<RawEventHandler>>
             _event_handlers;
@@ -104,6 +98,6 @@ namespace raw
         mutex_queue<std::shared_ptr<std::packaged_task<std::vector<uint8_t>()>>>
             _io_queue;
     };
-}}}
+}
 
 #endif //LOGID_BACKEND_RAWDEVICE_H

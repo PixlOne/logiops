@@ -23,9 +23,8 @@
 
 using namespace logid::backend::hidpp20;
 
-Device::Device(std::string path, hidpp::DeviceIndex index,
-               double io_timeout, const std::shared_ptr<workqueue>& wq) :
-               hidpp::Device(path, index, io_timeout, wq)
+Device::Device(std::string path, hidpp::DeviceIndex index, double io_timeout) :
+               hidpp::Device(path, index, io_timeout)
 {
     assert(std::get<0>(version()) >= 2);
 }

@@ -64,11 +64,8 @@ add_executable(logid
         backend/hidpp20/features/WirelessDeviceStatus.cpp
         backend/hidpp20/features/ThumbWheel.cpp
         backend/dj/Report.cpp
-        util/mutex_queue.h
-        util/workqueue.cpp
-        util/worker_thread.cpp
-        util/task.cpp
         util/thread.cpp
+        util/task.cpp
         util/ExceptionHandler.cpp)
 
 set_target_properties(logid PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})

@@ -276,12 +276,10 @@ namespace logid::config {
             std::variant<Device, Profile>, "name">> devices;
         std::optional<std::set<uint16_t>> ignore;
         std::optional<double> io_timeout;
-        std::optional<int> workers;
-        Config() : group({"devices", "ignore", "io_timeout", "workers"},
+        Config() : group({"devices", "ignore", "io_timeout"},
                          &Config::devices,
                          &Config::ignore,
-                         &Config::io_timeout,
-                         &Config::workers) { }
+                         &Config::io_timeout) { }
     };
 }
 

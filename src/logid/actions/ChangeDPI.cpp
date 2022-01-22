@@ -39,7 +39,7 @@ void ChangeDPI::press()
 {
     _pressed = true;
     if(_dpi) {
-        task::spawn(_device->workQueue(),
+        spawn_task(
         [this]{
             try {
                 uint16_t last_dpi = _dpi->getDPI(_config.sensor.value_or(0));

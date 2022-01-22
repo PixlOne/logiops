@@ -32,7 +32,6 @@
 
 namespace logid
 {
-    class workqueue;
     class InputDevice;
 
     class DeviceManager : public backend::raw::DeviceMonitor

@@ -62,8 +62,7 @@ namespace hidpp
         };
 
         Device(const std::string& path, DeviceIndex index,
-               double io_timeout,
-               const std::shared_ptr<workqueue>& wq);
+               double io_timeout);
         Device(std::shared_ptr<raw::RawDevice> raw_device,
                 DeviceIndex index);
         Device(std::shared_ptr<dj::Receiver> receiver,

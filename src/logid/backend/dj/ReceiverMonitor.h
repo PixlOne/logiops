@@ -33,8 +33,7 @@ namespace dj
     {
     public:
         ReceiverMonitor(std::string path,
-                        double io_timeout,
-                        const std::shared_ptr<workqueue>& wq);
+                        double io_timeout);
         virtual ~ReceiverMonitor();
 
         void enumerate();
@@ -55,7 +54,6 @@ namespace dj
 
         std::shared_ptr<Receiver> receiver() const;
     private:
-        std::shared_ptr<workqueue> _workqueue;
         std::shared_ptr<Receiver> _receiver;
     };
 

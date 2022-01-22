@@ -40,7 +40,7 @@ void CycleDPI::press()
 {
     _pressed = true;
     if(_dpi && !_config.dpis.empty()) {
-        task::spawn(_device->workQueue(),
+        spawn_task(
         [this](){
             std::lock_guard<std::mutex> lock(_dpi_lock);
             ++_current_dpi;

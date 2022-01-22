@@ -29,7 +29,7 @@ namespace hidpp20 {
     {
     public:
         Device(std::string path, hidpp::DeviceIndex index,
-               double io_timeout, const std::shared_ptr<workqueue>& wq);
+               double io_timeout);
         Device(std::shared_ptr<raw::RawDevice> raw_device, hidpp::DeviceIndex index);
         Device(std::shared_ptr<dj::Receiver> receiver, hidpp::DeviceIndex
             index);

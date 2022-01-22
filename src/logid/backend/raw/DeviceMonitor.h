@@ -26,10 +26,7 @@
 
 struct udev;
 
-namespace logid {
-    class workqueue;
-namespace backend {
-namespace raw
+namespace logid::backend::raw
 {
     class DeviceMonitor
     {
@@ -38,9 +35,8 @@ namespace raw
         void run();
         void stop();
 
-        std::shared_ptr<workqueue> workQueue() const;
     protected:
-        explicit DeviceMonitor(int worker_count);
+        DeviceMonitor();
         virtual ~DeviceMonitor();
         virtual void addDevice(std::string device) = 0;
         virtual void removeDevice(std::string device) = 0;
@@ -49,8 +45,7 @@ namespace raw
         int _pipe[2];
         std::atomic<bool> _run_monitor;
         std::mutex _running;
-        std::shared_ptr<workqueue> _workqueue;
     };
-}}}
+}
 
 #endif //LOGID_BACKEND_RAW_DEVICEMONITOR_H

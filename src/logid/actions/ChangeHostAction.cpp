@@ -49,7 +49,7 @@ void ChangeHostAction::press()
 void ChangeHostAction::release()
 {
     if(_change_host) {
-        task::spawn(_device->workQueue(),
+        spawn_task(
         [this] {
             auto host_info = _change_host->getHostInfo();
             int next_host;

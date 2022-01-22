@@ -82,7 +82,6 @@ namespace logid
 
         void reset();
 
-        [[nodiscard]] std::shared_ptr<workqueue> workQueue() const;
         [[nodiscard]] std::shared_ptr<InputDevice> virtualInput() const;
         [[nodiscard]] std::shared_ptr<ipcgull::node> ipcNode() const;
 

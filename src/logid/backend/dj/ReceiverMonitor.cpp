@@ -25,12 +25,8 @@
 
 using namespace logid::backend::dj;
 
-ReceiverMonitor::ReceiverMonitor(
-        std::string path,
-        double io_timeout,
-        const std::shared_ptr<workqueue>& wq) :
-        _workqueue (wq),
-        _receiver (std::make_shared<Receiver>(std::move(path), io_timeout, wq))
+ReceiverMonitor::ReceiverMonitor(std::string path, double io_timeout) :
+        _receiver (std::make_shared<Receiver>(std::move(path), io_timeout))
 {
     assert(_receiver->hidppEventHandlers().find("RECVMON") ==
         _receiver->hidppEventHandlers().end());
@@ -66,25 +62,29 @@ void ReceiverMonitor::run()
             /* Running in a new thread prevents deadlocks since the
              * receiver may be enumerating.
              */
-            task::spawn(_workqueue,
-            [this, report]() {
-                if (report.subId() == Receiver::DeviceConnection)
-                    this->addDevice(this->_receiver->deviceConnectionEvent
-                    (report));
-                else if (report.subId() == Receiver::DeviceDisconnection)
-                    this->removeDevice(this->_receiver->
-                            deviceDisconnectionEvent(report));
-            }, {[report, path=this->_receiver->rawDevice()->hidrawPath()]
-            (std::exception& e) {
-                if(report.subId() == Receiver::DeviceConnection)
-                    logPrintf(ERROR, "Failed to add device %d to receiver "
-                                      "on %s: %s", report.deviceIndex(),
-                                      path.c_str(), e.what());
-                else if(report.subId() == Receiver::DeviceDisconnection)
-                    logPrintf(ERROR, "Failed to remove device %d from "
-                                      "receiver on %s: %s", report.deviceIndex()
-                                      ,path.c_str(), e.what());
-            }});
+            std::async([this, report,
+                        path=this->_receiver->rawDevice()->hidrawPath()]() {
+                if (report.subId() == Receiver::DeviceConnection) {
+                    try {
+                        this->addDevice(this->_receiver->deviceConnectionEvent
+                                (report));
+                    } catch(std::exception& e) {
+                        logPrintf(ERROR, "Failed to add device %d to receiver "
+                                         "on %s: %s", report.deviceIndex(),
+                                  path.c_str(), e.what());
+                    }
+                }
+                else if (report.subId() == Receiver::DeviceDisconnection) {
+                    try {
+                        this->removeDevice(this->_receiver->
+                                deviceDisconnectionEvent(report));
+                    } catch(std::exception& e) {
+                        logPrintf(ERROR, "Failed to remove device %d from "
+                                         "receiver on %s: %s", report.deviceIndex(),
+                                         path.c_str(), e.what());
+                    }
+                }
+            });
         };
 
         _receiver->addHidppEventHandler("RECVMON", event_handler);
@@ -122,16 +122,18 @@ void ReceiverMonitor::waitForDevice(hidpp::DeviceIndex index)
         event.index = index;
         event.fromTimeoutCheck = true;
 
-        task::spawn(_workqueue,
-        {[this, event, nickname]() {
+        spawn_task(
+        [this, event, nickname]() {
+            try {
                 _receiver->rawDevice()->removeEventHandler(nickname);
                 this->addDevice(event);
-        }}, {[path=_receiver->rawDevice()->hidrawPath(), event]
-        (std::exception& e) {
-            logPrintf(ERROR, "Failed to add device %d to receiver "
-                             "on %s: %s", event.index,
-                             path.c_str(), e.what());
-        }});
+            } catch(std::exception& e) {
+                logPrintf(ERROR, "Failed to add device %d to receiver "
+                                 "on %s: %s", event.index,
+                          _receiver->rawDevice()->hidrawPath().c_str(),
+                          e.what());
+            }
+        });
     };
 
     _receiver->rawDevice()->addEventHandler(nickname, handler);

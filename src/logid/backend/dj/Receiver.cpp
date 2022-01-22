@@ -20,7 +20,6 @@
 #include "Report.h"
 #include "Receiver.h"
 #include "Error.h"
-#include "../../util/thread.h"
 
 using namespace logid::backend::dj;
 using namespace logid::backend;
@@ -44,11 +43,9 @@ InvalidReceiver::Reason InvalidReceiver::code() const noexcept
     return _reason;
 }
 
-Receiver::Receiver(std::string path,
-                   double io_timeout,
-                   const std::shared_ptr<workqueue>& wq) :
+Receiver::Receiver(std::string path, double io_timeout) :
     _raw_device (std::make_shared<raw::RawDevice>(
-            std::move(path), io_timeout, wq)),
+            std::move(path), io_timeout)),
     _hidpp10_device (_raw_device, hidpp::DefaultDevice)
 {
     if(!supportsDjReports(_raw_device->reportDescriptor()))

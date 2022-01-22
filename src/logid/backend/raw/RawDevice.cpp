@@ -22,10 +22,7 @@
 #include "../dj/defs.h"
 #include "../../util/log.h"
 #include "../hidpp/Report.h"
-#include "../../Configuration.h"
 #include "../../util/thread.h"
-#include "../../util/task.h"
-#include "../../util/workqueue.h"
 
 #include <string>
 #include <system_error>
@@ -64,14 +61,11 @@ bool RawDevice::supportedReport(uint8_t id, uint8_t length)
     }
 }
 
-RawDevice::RawDevice(std::string path,
-                     double io_timeout,
-                     const std::shared_ptr<workqueue>& wq) :
+RawDevice::RawDevice(std::string path, double io_timeout) :
                      _path (std::move(path)),
                      _continue_listen (false), _continue_respond (false),
                      _io_timeout (duration_cast<milliseconds>(
-                             duration<double, std::milli>(io_timeout))),
-                     _workqueue (wq)
+                             duration<double, std::milli>(io_timeout)))
 {
     int ret;
 
@@ -204,32 +198,19 @@ std::vector<uint8_t> RawDevice::sendReport(const std::vector<uint8_t>& report)
         return f.get();
     }
     else {
-        std::vector<uint8_t> response;
         std::exception_ptr _exception;
-        std::shared_ptr<task> t = std::make_shared<task>(
-                [this, report, &response]() {
-                    response = _respondToReport(report);
-        }, [&_exception](std::exception& e) {
-                    try {
-                        throw e;
-                    } catch(std::exception& e) {
-                        _exception = std::make_exception_ptr(e);
-                    }
-                });
-        _workqueue->queue(t);
-        t->waitStart();
-        auto status = t->waitFor(_io_timeout);
-        if(_exception)
-            std::rethrow_exception(_exception);
+        auto response = std::async(std::launch::deferred,
+                [this, report]()->std::vector<uint8_t> {
+                return _respondToReport(report);
+        });
+        auto status = response.wait_for(_io_timeout);
         if(status == std::future_status::timeout) {
-            _continue_respond = false;
             interruptRead();
-            t->wait();
-            if(_exception)
-                std::rethrow_exception(_exception);
+            if(response.valid())
+                response.wait();
             throw TimeoutError();
-        } else
-            return response;
+        }
+        return response.get();
     }
 }
 

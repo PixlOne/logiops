@@ -98,8 +98,7 @@ std::shared_ptr<Device> Device::make(
 Device::Device(std::string path, backend::hidpp::DeviceIndex index,
                std::shared_ptr<DeviceManager> manager) :
     _hidpp20 (path, index,
-              manager->config()->io_timeout.value_or(defaults::io_timeout),
-              manager->workQueue()),
+              manager->config()->io_timeout.value_or(defaults::io_timeout)),
     _path (std::move(path)), _index (index),
     _config (_getConfig(manager, _hidpp20.name())),
     _receiver (nullptr),
@@ -211,19 +210,6 @@ void Device::reset()
     else
         logPrintf(DEBUG, "%s:%d tried to reset, but no reset mechanism was "
                          "available.", _path.c_str(), _index);
-}
-
-std::shared_ptr<workqueue> Device::workQueue() const
-{
-    if(auto manager = _manager.lock()) {
-        return manager->workQueue();
-    } else {
-        logPrintf(ERROR, "Device manager lost");
-        logPrintf(ERROR,
-                  "Fatal error occurred, file a bug report,"
-                  " the program will now exit.");
-        std::terminate();
-    }
 }
 
 std::shared_ptr<InputDevice> Device::virtualInput() const

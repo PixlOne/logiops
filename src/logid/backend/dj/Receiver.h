@@ -52,9 +52,7 @@ namespace dj
     class Receiver final
     {
     public:
-        Receiver(std::string path,
-                 double io_timeout,
-                 const std::shared_ptr<workqueue>& wq);
+        Receiver(std::string path, double io_timeout);
 
         enum DjEvents : uint8_t
         {

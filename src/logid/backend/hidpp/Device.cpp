@@ -18,7 +18,6 @@
 
 #include <cassert>
 #include <utility>
-#include "../../util/thread.h"
 #include "Device.h"
 #include "Report.h"
 #include "../hidpp20/features/Root.h"
@@ -50,9 +49,8 @@ Device::InvalidDevice::Reason Device::InvalidDevice::code() const noexcept
 }
 
 Device::Device(const std::string& path, DeviceIndex index,
-               double io_timeout,
-               const std::shared_ptr<workqueue>& wq):
-    _raw_device (std::make_shared<raw::RawDevice>(path, io_timeout, wq)),
+               double io_timeout):
+    _raw_device (std::make_shared<raw::RawDevice>(path, io_timeout)),
     _receiver (nullptr), _path (path), _index (index)
 {
     _init();

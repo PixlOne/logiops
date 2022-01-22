@@ -25,7 +25,6 @@
 #include "util/log.h"
 #include "DeviceManager.h"
 #include "InputDevice.h"
-#include "util/workqueue.h"
 
 #define LOGID_VIRTUAL_INPUT_NAME "LogiOps Virtual Input"
 #define DEFAULT_CONFIG_FILE "/etc/logid.cfg"
