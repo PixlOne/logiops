@@ -64,13 +64,14 @@ std::shared_ptr<Receiver> Receiver::make(
 
 Receiver::Receiver(const std::string& path,
                    const std::shared_ptr<DeviceManager>& manager) :
-    dj::ReceiverMonitor(path,
+    dj::ReceiverMonitor(path, manager,
                         manager->config()->io_timeout.value_or(
                                 defaults::io_timeout)),
     _path (path), _manager (manager), _nickname (manager),
     _ipc_node (manager->receiversNode()->make_child(_nickname)),
     _ipc_interface (_ipc_node->make_interface<ReceiverIPC>(this))
 {
+    ready();
 }
 
 const Receiver::DeviceList& Receiver::devices() const {
@@ -118,7 +119,9 @@ void Receiver::addDevice(hidpp::DeviceConnectionEvent event)
         if(!event.linkEstablished)
             return;
 
-        hidpp::Device hidpp_device(receiver(), event);
+        hidpp::Device hidpp_device(
+                receiver(), event,
+                manager->config()->io_timeout.value_or(defaults::io_timeout));
 
         auto version = hidpp_device.version();
 

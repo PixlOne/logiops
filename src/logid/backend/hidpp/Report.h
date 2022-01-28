@@ -32,7 +32,7 @@ namespace logid {
 namespace backend {
 namespace hidpp
 {
-    uint8_t getSupportedReports(std::vector<uint8_t>&& rdesc);
+    uint8_t getSupportedReports(const std::vector<uint8_t>& rdesc);
 
     namespace Offset
     {
@@ -78,8 +78,8 @@ namespace hidpp
         Report::Type type() const;
         void setType(Report::Type type);
 
-        logid::backend::hidpp::DeviceIndex deviceIndex() const;
-        void setDeviceIndex(hidpp::DeviceIndex index);
+        DeviceIndex deviceIndex() const;
+        void setDeviceIndex(DeviceIndex index);
 
         uint8_t feature() const;
         void setFeature(uint8_t feature);
@@ -106,15 +106,15 @@ namespace hidpp
         {
             uint8_t sub_id, address, error_code;
         };
-        bool isError10(Hidpp10Error* error);
+        bool isError10(Hidpp10Error* error) const;
 
         struct Hidpp20Error
         {
             uint8_t feature_index, function, software_id, error_code;
         };
-        bool isError20(Hidpp20Error* error);
+        bool isError20(Hidpp20Error* error) const;
 
-        std::vector<uint8_t> rawReport () const { return _data; }
+        std::vector<uint8_t> rawReport() const { return _data; }
 
         static constexpr std::size_t HeaderLength = 4;
     private:

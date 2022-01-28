@@ -66,7 +66,7 @@ static const std::array<uint8_t, 39> DJReportDesc2 = {
         0xC0               // End Collection
 };
 
-bool dj::supportsDjReports(std::vector<uint8_t>&& rdesc)
+bool dj::supportsDjReports(const std::vector<uint8_t>& rdesc)
 {
     auto it = std::search(rdesc.begin(), rdesc.end(),
             DJReportDesc.begin(), DJReportDesc.end());
@@ -76,7 +76,7 @@ bool dj::supportsDjReports(std::vector<uint8_t>&& rdesc)
     return it != rdesc.end();
 }
 
-Report::Report(std::vector<uint8_t>& data) : _data (data)
+Report::Report(const std::vector<uint8_t>& data) : _data (data)
 {
     switch(data[Offset::Type]) {
     case ReportType::Short:

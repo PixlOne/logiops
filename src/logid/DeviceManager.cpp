@@ -55,6 +55,7 @@ DeviceManager::DeviceManager(std::shared_ptr<Configuration> config,
     _device_node->add_server(_server);
     _receiver_node->add_server(_server);
     _root_node->add_server(_server);
+    ready();
 }
 
 std::shared_ptr<DeviceManager> DeviceManager::make(
@@ -94,8 +95,7 @@ void DeviceManager::addDevice(std::string path)
 
     // Check if device is ignored before continuing
     {
-        raw::RawDevice raw_dev(
-                path,config()->io_timeout.value_or(defaults::io_timeout));
+        raw::RawDevice raw_dev(path, _self.lock());
         if(config()->ignore.has_value() &&
           config()->ignore.value().contains(raw_dev.productId())) {
             logPrintf(DEBUG, "%s: Device 0x%04x ignored.",
@@ -106,7 +106,7 @@ void DeviceManager::addDevice(std::string path)
 
     try {
         hidpp::Device device(
-                path, hidpp::DefaultDevice,
+                path, hidpp::DefaultDevice, _self.lock(),
                 config()->io_timeout.value_or(defaults::io_timeout));
         isReceiver = device.version() == std::make_tuple(1, 0);
     } catch(hidpp10::Error &e) {
@@ -126,7 +126,6 @@ void DeviceManager::addDevice(std::string path)
     if(isReceiver) {
         logPrintf(INFO, "Detected receiver at %s", path.c_str());
         auto receiver = Receiver::make(path, _self.lock());
-        receiver->run();
         std::lock_guard<std::mutex> lock(_map_lock);
         _receivers.emplace(path, receiver);
         _ipc_receivers->receiverAdded(receiver);

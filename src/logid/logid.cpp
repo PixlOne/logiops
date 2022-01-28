@@ -57,7 +57,7 @@ void logid::reload()
 {
     log_printf(INFO, "Reloading logid...");
     finder_reloading.lock();
-    finder->stop();
+    finder->_stop();
     Configuration* old_config = global_config;
     global_config = new Configuration(config_file.c_str());
     delete(old_config);
@@ -157,19 +157,6 @@ int main(int argc, char** argv)
     std::shared_ptr<Configuration> config;
     std::shared_ptr<InputDevice> virtual_input;
 
-    auto server = ipcgull::make_server("pizza.pixl.LogiOps",
-                                      "/pizza/pixl/LogiOps",
-                                      ipcgull::IPCGULL_USER);
-
-    std::thread( [server]() {
-        try {
-            server->start();
-        } catch(ipcgull::connection_failed& e) {
-            logPrintf(ERROR, "Lost IPC connection, terminating.");
-            std::terminate();
-        }
-    } ).detach();
-
     // Read config
     try {
         config = std::make_shared<Configuration>(options.config_file);
@@ -177,6 +164,10 @@ int main(int argc, char** argv)
     catch (std::exception &e) {
         config = std::make_shared<Configuration>();
     }
+
+    auto server = ipcgull::make_server("pizza.pixl.LogiOps",
+                                       "/pizza/pixl/LogiOps",
+                                       ipcgull::IPCGULL_USER);
 
     //Create a virtual input device
     try {
@@ -186,12 +177,16 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    // Scan devices, create listeners, handlers, etc.
+    // Device manager runs on its own I/O thread asynchronously
     auto device_manager = DeviceManager::make(config, virtual_input, server);
 
-    device_manager->run();
+    device_manager->enumerate();
 
-    server->stop_sync();
+    try {
+        server->start();
+    } catch(ipcgull::connection_failed& e) {
+        logPrintf(ERROR, "Lost IPC connection, terminating.");
+    }
 
     return EXIT_SUCCESS;
 }

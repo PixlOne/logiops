@@ -25,8 +25,11 @@
 
 using namespace logid::backend::dj;
 
-ReceiverMonitor::ReceiverMonitor(std::string path, double io_timeout) :
-        _receiver (std::make_shared<Receiver>(std::move(path), io_timeout))
+ReceiverMonitor::ReceiverMonitor(std::string path,
+                                 std::shared_ptr<raw::DeviceMonitor> monitor,
+                                 double timeout):
+        _receiver (std::make_shared<Receiver>(
+                std::move(path), std::move(monitor), timeout))
 {
     assert(_receiver->hidppEventHandlers().find("RECVMON") ==
         _receiver->hidppEventHandlers().end());
@@ -42,13 +45,11 @@ ReceiverMonitor::ReceiverMonitor(std::string path, double io_timeout) :
 
 ReceiverMonitor::~ReceiverMonitor()
 {
-    this->stop();
+    _receiver->removeHidppEventHandler("RECVMON");
 }
 
-void ReceiverMonitor::run()
+void ReceiverMonitor::ready()
 {
-    _receiver->listen();
-
     if(_receiver->hidppEventHandlers().find("RECVMON") ==
            _receiver->hidppEventHandlers().end()) {
         std::shared_ptr<hidpp::EventHandler> event_handler =
@@ -62,8 +63,8 @@ void ReceiverMonitor::run()
             /* Running in a new thread prevents deadlocks since the
              * receiver may be enumerating.
              */
-            std::async([this, report,
-                        path=this->_receiver->rawDevice()->hidrawPath()]() {
+            spawn_task([this, report,
+                        path= this->_receiver->rawDevice()->rawPath()]() {
                 if (report.subId() == Receiver::DeviceConnection) {
                     try {
                         this->addDevice(this->_receiver->deviceConnectionEvent
@@ -93,13 +94,6 @@ void ReceiverMonitor::run()
     enumerate();
 }
 
-void ReceiverMonitor::stop()
-{
-    _receiver->removeHidppEventHandler("RECVMON");
-
-    _receiver->stopListening();
-}
-
 void ReceiverMonitor::enumerate()
 {
     _receiver->enumerateHidpp();
@@ -107,36 +101,34 @@ void ReceiverMonitor::enumerate()
 
 void ReceiverMonitor::waitForDevice(hidpp::DeviceIndex index)
 {
-    std::string nickname = "WAIT_DEV_" + std::to_string(index);
-    auto handler = std::make_shared<raw::RawEventHandler>();
-    handler->condition = [index](std::vector<uint8_t>& report)->bool {
-        return report[Offset::DeviceIndex] == index;
-    };
+    auto handler_id = std::make_shared<raw::RawDevice::EvHandlerId>();
 
-    handler->callback = [this, index, nickname](std::vector<uint8_t>& report) {
-        (void)report; // Suppress unused warning
+    *handler_id = _receiver->rawDevice()->addEventHandler({
+        [index](const std::vector<uint8_t>& report)->bool {
+            return report[Offset::DeviceIndex] == index;
+        },
+        [this, index, handler_id](
+                [[maybe_unused]] const std::vector<uint8_t>& report) {
+            hidpp::DeviceConnectionEvent event{};
+            event.withPayload = false;
+            event.linkEstablished = true;
+            event.index = index;
+            event.fromTimeoutCheck = true;
 
-        hidpp::DeviceConnectionEvent event{};
-        event.withPayload = false;
-        event.linkEstablished = true;
-        event.index = index;
-        event.fromTimeoutCheck = true;
-
-        spawn_task(
-        [this, event, nickname]() {
-            try {
-                _receiver->rawDevice()->removeEventHandler(nickname);
-                this->addDevice(event);
-            } catch(std::exception& e) {
-                logPrintf(ERROR, "Failed to add device %d to receiver "
-                                 "on %s: %s", event.index,
-                          _receiver->rawDevice()->hidrawPath().c_str(),
-                          e.what());
-            }
-        });
-    };
-
-    _receiver->rawDevice()->addEventHandler(nickname, handler);
+            spawn_task([this, event, handler_id]() {
+                assert(handler_id);
+                try {
+                    _receiver->rawDevice()->removeEventHandler(*handler_id);
+                    addDevice(event);
+                } catch(std::exception& e) {
+                    logPrintf(ERROR, "Failed to add device %d to receiver "
+                                     "on %s: %s", event.index,
+                              _receiver->rawDevice()->rawPath().c_str(),
+                              e.what());
+                }
+            });
+        }
+    });
 }
 
 std::shared_ptr<Receiver> ReceiverMonitor::receiver() const

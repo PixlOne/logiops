@@ -19,6 +19,7 @@
 #ifndef LOGID_BACKEND_HIDPP_DEVICE_H
 #define LOGID_BACKEND_HIDPP_DEVICE_H
 
+#include <optional>
 #include <string>
 #include <memory>
 #include <functional>
@@ -62,14 +63,14 @@ namespace hidpp
         };
 
         Device(const std::string& path, DeviceIndex index,
-               double io_timeout);
-        Device(std::shared_ptr<raw::RawDevice> raw_device,
-                DeviceIndex index);
+               std::shared_ptr<raw::DeviceMonitor> monitor, double timeout);
+        Device(std::shared_ptr<raw::RawDevice> raw_device, DeviceIndex index,
+               double timeout);
         Device(std::shared_ptr<dj::Receiver> receiver,
-                hidpp::DeviceConnectionEvent event);
+               hidpp::DeviceConnectionEvent event, double timeout);
         Device(std::shared_ptr<dj::Receiver> receiver,
-                DeviceIndex index);
-        ~Device();
+               DeviceIndex index, double timeout);
+        virtual ~Device();
 
         std::string devicePath() const;
         DeviceIndex deviceIndex() const;
@@ -78,33 +79,42 @@ namespace hidpp
         std::string name() const;
         uint16_t pid() const;
 
-        void listen(); // Runs asynchronously
-        void stopListening();
-
         void addEventHandler(const std::string& nickname,
                 const std::shared_ptr<EventHandler>& handler);
         void removeEventHandler(const std::string& nickname);
         const std::map<std::string, std::shared_ptr<EventHandler>>&
             eventHandlers();
 
-        Report sendReport(Report& report);
-        void sendReportNoResponse(Report& report);
+        virtual Report sendReport(const Report& report);
+        void sendReportNoResponse(Report report);
 
         void handleEvent(Report& report);
+    protected:
+        // Returns whether the report is a response
+        virtual bool responseReport(const Report& report);
+
+        void reportFixup(Report& report);
+
+        const std::chrono::milliseconds io_timeout;
+        uint8_t supported_reports;
     private:
         void _init();
 
         std::shared_ptr<raw::RawDevice> _raw_device;
+        raw::RawDevice::EvHandlerId _raw_handler;
         std::shared_ptr<dj::Receiver> _receiver;
         std::string _path;
         DeviceIndex _index;
-        uint8_t _supported_reports;
 
         std::tuple<uint8_t, uint8_t> _version;
         uint16_t _pid;
         std::string _name;
 
-        std::atomic<bool> _listening;
+        std::mutex _send_lock;
+        std::mutex _resp_wait_lock;
+        std::condition_variable _resp_cv;
+        std::mutex _slot_lock;
+        std::optional<Report> _report_slot;
 
         std::map<std::string, std::shared_ptr<EventHandler>> _event_handlers;
     };

@@ -29,8 +29,14 @@ namespace raw
 {
     struct RawEventHandler
     {
-        std::function<bool(std::vector<uint8_t>& )> condition;
-        std::function<void(std::vector<uint8_t>& )> callback;
+        std::function<bool(const std::vector<uint8_t>&)> condition;
+        std::function<void(const std::vector<uint8_t>&)> callback;
+
+        RawEventHandler(std::function<bool(const std::vector<uint8_t>&)> cond,
+                        std::function<void(const std::vector<uint8_t>&)> call) :
+                        condition (std::move(cond)), callback (std::move(call))
+        {
+        }
     };
 }}}
 

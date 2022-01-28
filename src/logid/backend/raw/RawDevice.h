@@ -26,77 +26,62 @@
 #include <atomic>
 #include <future>
 #include <set>
+#include <list>
 
 #include "defs.h"
 #include "../../util/mutex_queue.h"
 
 namespace logid::backend::raw
 {
+    class DeviceMonitor;
+    class IOMonitor;
+
     class RawDevice
     {
     public:
-        static bool supportedReport(uint8_t id, uint8_t length);
+        static constexpr int max_data_length = 32;
+        typedef std::list<RawEventHandler>::const_iterator EvHandlerId;
 
-        explicit RawDevice(std::string path,
-                           double io_timeout);
-        ~RawDevice();
-        std::string hidrawPath() const;
+        struct dev_info {
+            int16_t vid;
+            int16_t pid;
+        };
 
-        std::string name() const;
-        uint16_t vendorId() const;
-        uint16_t productId() const;
+        RawDevice(std::string path,
+                  std::shared_ptr<DeviceMonitor> monitor);
+        ~RawDevice() noexcept;
+
+        [[nodiscard]] const std::string& rawPath() const;
+
+        [[nodiscard]] const std::string& name() const;
+        [[nodiscard]] int16_t vendorId() const;
+        [[nodiscard]] int16_t productId() const;
 
         static std::vector<uint8_t> getReportDescriptor(std::string path);
         static std::vector<uint8_t> getReportDescriptor(int fd);
-        std::vector<uint8_t> reportDescriptor() const;
+        [[nodiscard]] const std::vector<uint8_t>& reportDescriptor() const;
 
-        std::vector<uint8_t> sendReport(const std::vector<uint8_t>& report);
-        void sendReportNoResponse(const std::vector<uint8_t>& report);
-        void interruptRead(bool wait_for_halt=true);
+        void sendReport(const std::vector<uint8_t>& report);
 
-        void listen();
-        void listenAsync();
-        void stopListener();
-        bool isListening();
-
-        void addEventHandler(const std::string& nickname,
-                const std::shared_ptr<RawEventHandler>& handler);
-        void removeEventHandler(const std::string& nickname);
-        const std::map<std::string, std::shared_ptr<RawEventHandler>>&
-            eventHandlers();
+        EvHandlerId addEventHandler(RawEventHandler handler);
+        void removeEventHandler(EvHandlerId id);
 
     private:
-        std::mutex _dev_io, _listening;
-        std::string _path;
-        int _fd;
-        int _pipe[2];
-        uint16_t _vid;
-        uint16_t _pid;
-        std::string _name;
-        std::vector<uint8_t> _rdesc;
+        void _readReports();
 
-        std::atomic<bool> _continue_listen;
-        std::atomic<bool> _continue_respond;
-        std::condition_variable _listen_condition;
+        std::atomic_bool _valid;
 
-        const std::chrono::milliseconds _io_timeout;
+        const std::string _path;
+        const int _fd;
+        const dev_info _devinfo;
+        const std::string _name;
+        const std::vector<uint8_t> _rdesc;
 
-        std::map<std::string, std::shared_ptr<RawEventHandler>>
-            _event_handlers;
+        std::shared_ptr<IOMonitor> _io_monitor;
+
+        std::list<RawEventHandler> _event_handlers;
         std::mutex _event_handler_lock;
-        void _handleEvent(std::vector<uint8_t>& report);
-
-        /* These will only be used internally and processed with a queue */
-        int _sendReport(const std::vector<uint8_t>& report);
-        int _readReport(std::vector<uint8_t>& report, std::size_t maxDataLength);
-        int _readReport(std::vector<uint8_t>& report, std::size_t maxDataLength,
-                std::chrono::milliseconds timeout);
-
-        std::vector<uint8_t> _respondToReport(const std::vector<uint8_t>&
-                request);
-
-        mutex_queue<std::shared_ptr<std::packaged_task<std::vector<uint8_t>()>>>
-            _io_queue;
+        void _handleEvent(const std::vector<uint8_t>& report);
     };
 }
 

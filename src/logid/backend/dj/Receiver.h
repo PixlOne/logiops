@@ -52,7 +52,10 @@ namespace dj
     class Receiver final
     {
     public:
-        Receiver(std::string path, double io_timeout);
+        Receiver(std::string path,
+                 const std::shared_ptr<raw::DeviceMonitor>& monitor,
+                 double timeout);
+        ~Receiver();
 
         enum DjEvents : uint8_t
         {
@@ -161,9 +164,6 @@ namespace dj
         static hidpp::DeviceConnectionEvent deviceConnectionEvent(
                 const hidpp::Report& report);
 
-        void listen();
-        void stopListening();
-
         void addDjEventHandler(const std::string& nickname,
                 const std::shared_ptr<EventHandler>& handler);
         void removeDjEventHandler(const std::string& nickname);
@@ -183,6 +183,9 @@ namespace dj
 
         void _handleDjEvent(dj::Report& report);
         void _handleHidppEvent(hidpp::Report& report);
+
+        raw::RawDevice::EvHandlerId _raw_hidpp_handler;
+        raw::RawDevice::EvHandlerId _raw_dj_handler;
 
         std::map<std::string, std::shared_ptr<EventHandler>>
                 _dj_event_handlers;

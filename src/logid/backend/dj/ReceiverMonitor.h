@@ -33,14 +33,13 @@ namespace dj
     {
     public:
         ReceiverMonitor(std::string path,
-                        double io_timeout);
+                        std::shared_ptr<raw::DeviceMonitor> monitor,
+                        double timeout);
         virtual ~ReceiverMonitor();
 
         void enumerate();
-        void run();
-        void stop();
-
     protected:
+        void ready();
         virtual void addDevice(hidpp::DeviceConnectionEvent event) = 0;
         virtual void removeDevice(hidpp::DeviceIndex index) = 0;
 
@@ -52,7 +51,7 @@ namespace dj
 
         void _unpair();
 
-        std::shared_ptr<Receiver> receiver() const;
+        [[nodiscard]] std::shared_ptr<Receiver> receiver() const;
     private:
         std::shared_ptr<Receiver> _receiver;
     };

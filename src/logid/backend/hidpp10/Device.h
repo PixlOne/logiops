@@ -19,7 +19,11 @@
 #ifndef LOGID_BACKEND_HIDPP10_DEVICE_H
 #define LOGID_BACKEND_HIDPP10_DEVICE_H
 
+#include <optional>
+#include <variant>
+
 #include "../hidpp/Device.h"
+#include "Error.h"
 
 namespace logid {
 namespace backend {
@@ -29,18 +33,29 @@ namespace hidpp10
     {
     public:
         Device(const std::string& path, hidpp::DeviceIndex index,
-               double io_timeout);
+               std::shared_ptr<raw::DeviceMonitor> monitor, double timeout);
         Device(std::shared_ptr<raw::RawDevice> raw_dev,
-                hidpp::DeviceIndex index);
+                hidpp::DeviceIndex index, double timeout);
         Device(std::shared_ptr<dj::Receiver> receiver,
-               hidpp::DeviceIndex index);
+               hidpp::DeviceIndex index, double timeout);
+
+        hidpp::Report sendReport(const hidpp::Report& report) final;
 
         std::vector<uint8_t> getRegister(uint8_t address,
                 const std::vector<uint8_t>& params, hidpp::Report::Type type);
 
         std::vector<uint8_t> setRegister(uint8_t address,
                 const std::vector<uint8_t>& params, hidpp::Report::Type type);
+    protected:
+        bool responseReport(const hidpp::Report& report) final;
     private:
+        std::mutex _response_lock;
+        std::mutex _response_wait_lock;
+        std::condition_variable _response_cv;
+
+        typedef std::variant<hidpp::Report, Error::ErrorCode> Response;
+        std::map<uint8_t, std::optional<Response>> _responses;
+
         std::vector<uint8_t> accessRegister(uint8_t sub_id,
                 uint8_t address, const std::vector<uint8_t>& params);
     };

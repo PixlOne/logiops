@@ -17,6 +17,7 @@
  */
 
 #include <thread>
+#include <utility>
 #include "util/log.h"
 #include "features/DPI.h"
 #include "Device.h"
@@ -97,7 +98,7 @@ std::shared_ptr<Device> Device::make(
 
 Device::Device(std::string path, backend::hidpp::DeviceIndex index,
                std::shared_ptr<DeviceManager> manager) :
-    _hidpp20 (path, index,
+    _hidpp20 (path, index, manager,
               manager->config()->io_timeout.value_or(defaults::io_timeout)),
     _path (std::move(path)), _index (index),
     _config (_getConfig(manager, _hidpp20.name())),
@@ -113,21 +114,24 @@ Device::Device(std::string path, backend::hidpp::DeviceIndex index,
 Device::Device(std::shared_ptr<backend::raw::RawDevice> raw_device,
                hidpp::DeviceIndex index,
                std::shared_ptr<DeviceManager> manager) :
-               _hidpp20(raw_device, index),
-               _path (raw_device->hidrawPath()), _index (index),
-               _config (_getConfig(manager, _hidpp20.name())),
-               _receiver (nullptr),
-               _manager (manager),
-               _nickname (manager),
-               _ipc_node (manager->devicesNode()->make_child(_nickname)),
-               _awake (ipcgull::property_readable, true)
+        _hidpp20(std::move(raw_device), index,
+                 manager->config()->io_timeout.value_or(defaults::io_timeout)),
+        _path (raw_device->rawPath()), _index (index),
+        _config (_getConfig(manager, _hidpp20.name())),
+        _receiver (nullptr),
+        _manager (manager),
+        _nickname (manager),
+        _ipc_node (manager->devicesNode()->make_child(_nickname)),
+        _awake (ipcgull::property_readable, true)
 {
     _init();
 }
 
 Device::Device(Receiver* receiver, hidpp::DeviceIndex index,
                std::shared_ptr<DeviceManager> manager) :
-               _hidpp20 (receiver->rawReceiver(), index),
+               _hidpp20 (receiver->rawReceiver(), index,
+                         manager->config()->io_timeout.value_or(
+                                 defaults::io_timeout)),
                _path (receiver->path()), _index (index),
                _config (_getConfig(manager, _hidpp20.name())),
                _receiver (receiver),
@@ -162,8 +166,6 @@ void Device::_init()
         feature.second->configure();
         feature.second->listen();
     }
-
-    _hidpp20.listen();
 }
 
 std::string Device::name()

@@ -19,7 +19,7 @@
 #ifndef LOGID_BACKEND_HIDPP_DEFS_H
 #define LOGID_BACKEND_HIDPP_DEFS_H
 
-#define LOGID_HIDPP_SOFTWARE_ID 0
+#define LOGID_HIDPP_SOFTWARE_ID 1
 
 #include <cstdint>
 

@@ -84,7 +84,7 @@ static const std::array<uint8_t, 22> LongReportDesc2 = {
         0xC0			// End Collection
 };
 
-uint8_t hidpp::getSupportedReports(std::vector<uint8_t>&& rdesc)
+uint8_t hidpp::getSupportedReports(const std::vector<uint8_t>& rdesc)
 {
     uint8_t ret = 0;
 
@@ -248,7 +248,7 @@ uint8_t Report::swId() const
 
 void Report::setSwId(uint8_t sub_id)
 {
-    _data[Offset::Function] &= 0x0f;
+    _data[Offset::Function] &= 0xf0;
     _data[Offset::Function] |= sub_id & 0x0f;
 }
 
@@ -290,7 +290,7 @@ void Report::setParams(const std::vector<uint8_t>& _params)
         _data[Offset::Parameters + i] = _params[i];
 }
 
-bool Report::isError10(Report::Hidpp10Error *error)
+bool Report::isError10(Report::Hidpp10Error *error) const
 {
     assert(error != nullptr);
 
@@ -305,7 +305,7 @@ bool Report::isError10(Report::Hidpp10Error *error)
     return true;
 }
 
-bool Report::isError20(Report::Hidpp20Error* error)
+bool Report::isError20(Report::Hidpp20Error* error) const
 {
     assert(error != nullptr);
 

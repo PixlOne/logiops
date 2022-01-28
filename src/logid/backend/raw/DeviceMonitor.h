@@ -23,28 +23,40 @@
 #include <mutex>
 #include <atomic>
 #include <memory>
+#include "IOMonitor.h"
 
-struct udev;
+extern "C"
+{
+    struct udev;
+    struct udev_monitor;
+}
 
 namespace logid::backend::raw
 {
     class DeviceMonitor
     {
     public:
+        virtual ~DeviceMonitor();
+
         void enumerate();
-        void run();
-        void stop();
+        [[nodiscard]] std::shared_ptr<IOMonitor> ioMonitor() const;
 
     protected:
         DeviceMonitor();
-        virtual ~DeviceMonitor();
+        // This should be run once the derived class is ready
+        void ready();
         virtual void addDevice(std::string device) = 0;
         virtual void removeDevice(std::string device) = 0;
     private:
+        void _addHandler(const std::string& device);
+        void _removeHandler(const std::string& device);
+
+        std::shared_ptr<IOMonitor> _io_monitor;
+
         struct udev* _udev_context;
-        int _pipe[2];
-        std::atomic<bool> _run_monitor;
-        std::mutex _running;
+        struct udev_monitor* _udev_monitor;
+        int _fd;
+        bool _ready;
     };
 }
 

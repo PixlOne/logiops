@@ -19,8 +19,12 @@
 #ifndef LOGID_BACKEND_HIDPP20_DEVICE_H
 #define LOGID_BACKEND_HIDPP20_DEVICE_H
 
-#include "../hidpp/Device.h"
 #include <cstdint>
+#include <optional>
+#include <variant>
+
+#include "../hidpp/Device.h"
+#include "Error.h"
 
 namespace logid {
 namespace backend {
@@ -28,11 +32,14 @@ namespace hidpp20 {
     class Device : public hidpp::Device
     {
     public:
-        Device(std::string path, hidpp::DeviceIndex index,
-               double io_timeout);
-        Device(std::shared_ptr<raw::RawDevice> raw_device, hidpp::DeviceIndex index);
-        Device(std::shared_ptr<dj::Receiver> receiver, hidpp::DeviceIndex
-            index);
+        Device(const std::string& path, hidpp::DeviceIndex index,
+               std::shared_ptr<raw::DeviceMonitor> monitor, double timeout);
+        Device(std::shared_ptr<raw::RawDevice> raw_device,
+               hidpp::DeviceIndex index, double timeout);
+        Device(std::shared_ptr<dj::Receiver> receiver,
+               hidpp::DeviceConnectionEvent event, double timeout);
+        Device(std::shared_ptr<dj::Receiver> receiver,
+               hidpp::DeviceIndex index, double timeout);
 
         std::vector<uint8_t> callFunction(uint8_t feature_index,
                 uint8_t function,
@@ -41,6 +48,18 @@ namespace hidpp20 {
         void callFunctionNoResponse(uint8_t feature_index,
                 uint8_t function,
                 std::vector<uint8_t>& params);
+
+        hidpp::Report sendReport(const hidpp::Report& report) final;
+    protected:
+        bool responseReport(const hidpp::Report& report) final;
+    private:
+        std::mutex _response_lock;
+        std::mutex _response_wait_lock;
+        std::condition_variable _response_cv;
+
+        static constexpr int response_slots = 14;
+        typedef std::variant<hidpp::Report, Error::ErrorCode> Response;
+        std::map<uint8_t, std::optional<Response>> _responses;
     };
 }}}
 

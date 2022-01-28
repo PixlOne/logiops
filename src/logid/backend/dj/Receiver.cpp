@@ -43,13 +43,44 @@ InvalidReceiver::Reason InvalidReceiver::code() const noexcept
     return _reason;
 }
 
-Receiver::Receiver(std::string path, double io_timeout) :
-    _raw_device (std::make_shared<raw::RawDevice>(
-            std::move(path), io_timeout)),
-    _hidpp10_device (_raw_device, hidpp::DefaultDevice)
+Receiver::Receiver(std::string path,
+                   const std::shared_ptr<raw::DeviceMonitor>& monitor,
+                   double timeout) :
+    _raw_device (std::make_shared<raw::RawDevice>(std::move(path), monitor)),
+    _hidpp10_device (_raw_device, hidpp::DefaultDevice, timeout)
 {
     if(!supportsDjReports(_raw_device->reportDescriptor()))
         throw InvalidReceiver(InvalidReceiver::NoDJReports);
+
+    // Pass all HID++ events on DefaultDevice to handleHidppEvent
+    _raw_hidpp_handler = _raw_device->addEventHandler({
+        [](const std::vector<uint8_t>& report)->bool {
+            return (report[hidpp::Offset::Type] == hidpp::Report::Type::Short ||
+                report[hidpp::Offset::Type] == hidpp::Report::Type::Long);
+        },
+        [this](const std::vector<uint8_t>& report)->void {
+            hidpp::Report _report(report);
+            this->_handleHidppEvent(_report);
+        }
+    });
+
+    // Pass all DJ events with device index to handleDjEvent
+    _raw_dj_handler = _raw_device->addEventHandler({
+        [](const std::vector<uint8_t>& report)->bool {
+            return (report[Offset::Type] == Report::Type::Short ||
+            report[Offset::Type] == Report::Type::Long);
+            },
+            [this](const std::vector<uint8_t>& report)->void {
+            Report _report(report);
+            this->_handleDjEvent(_report);
+        }
+    });
+}
+
+Receiver::~Receiver()
+{
+    _raw_device->removeEventHandler(_raw_dj_handler);
+    _raw_device->removeEventHandler(_raw_hidpp_handler);
 }
 
 void Receiver::enumerateDj()
@@ -312,7 +343,7 @@ void Receiver::_sendDjRequest(hidpp::DeviceIndex index, uint8_t function,
 
     std::copy(params.begin(), params.end(), request.paramBegin());
 
-    _raw_device->sendReportNoResponse(request.rawData());
+    _raw_device->sendReport(request.rawData());
 }
 
 Receiver::ConnectionStatusEvent Receiver::connectionStatusEvent(Report& report)
@@ -322,57 +353,6 @@ Receiver::ConnectionStatusEvent Receiver::connectionStatusEvent(Report& report)
     event.index = report.index();
     event.linkLost = report.paramBegin()[0];
     return event;
-}
-
-void Receiver::listen()
-{
-    if(!_raw_device->isListening())
-        _raw_device->listenAsync();
-
-    if(_raw_device->eventHandlers().find("RECV_HIDPP") ==
-        _raw_device->eventHandlers().end()) {
-        // Pass all HID++ events on DefaultDevice to handleHidppEvent
-        std::shared_ptr<raw::RawEventHandler> hidpp_handler =
-                std::make_shared<raw::RawEventHandler>();
-        hidpp_handler->condition = [](std::vector<uint8_t>& report)->bool
-        {
-            return (report[hidpp::Offset::Type] == hidpp::Report::Type::Short ||
-                    report[hidpp::Offset::Type] == hidpp::Report::Type::Long);
-        };
-        hidpp_handler->callback = [this](std::vector<uint8_t>& report)
-                ->void {
-            hidpp::Report _report(report);
-            this->_handleHidppEvent(_report);
-        };
-        _raw_device->addEventHandler("RECV_HIDPP", hidpp_handler);
-    }
-
-    if(_raw_device->eventHandlers().find("RECV_DJ") ==
-       _raw_device->eventHandlers().end()) {
-        // Pass all DJ events with device index to handleDjEvent
-        std::shared_ptr<raw::RawEventHandler> dj_handler =
-                std::make_shared<raw::RawEventHandler>();
-        dj_handler->condition = [](std::vector<uint8_t>& report)->bool
-        {
-            return (report[Offset::Type] == Report::Type::Short ||
-                    report[Offset::Type] == Report::Type::Long);
-        };
-        dj_handler->callback = [this](std::vector<uint8_t>& report)->void
-        {
-            Report _report(report);
-            this->_handleDjEvent(_report);
-        };
-        _raw_device->addEventHandler("RECV_DJ", dj_handler);
-    }
-}
-
-void Receiver::stopListening()
-{
-    _raw_device->removeEventHandler("RECV_HIDPP");
-    _raw_device->removeEventHandler("RECV_DJ");
-
-    if(_raw_device->eventHandlers().empty())
-        _raw_device->stopListener();
 }
 
 std::shared_ptr<raw::RawDevice> Receiver::rawDevice() const
