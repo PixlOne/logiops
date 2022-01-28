@@ -41,6 +41,8 @@ const char* Device::InvalidDevice::what() const noexcept
         return "Invalid raw device";
     case Asleep:
         return "Device asleep";
+    case VirtualNode:
+        return "Virtual device";
     default:
         return "Invalid device";
     }
@@ -121,6 +123,35 @@ void Device::_init()
     supported_reports = getSupportedReports(_raw_device->reportDescriptor());
     if(!supported_reports)
         throw InvalidDevice(InvalidDevice::NoHIDPPReport);
+
+    /* hid_logitech_dj creates virtual /dev/hidraw nodes for receiver
+     * devices. We should ignore these devices.
+     */
+    if(_index == hidpp::DefaultDevice) {
+        _raw_handler = _raw_device->addEventHandler({
+                [index=this->_index](const std::vector<uint8_t>& report)->bool {
+                    return (report[Offset::Type] == Report::Type::Short ||
+                            report[Offset::Type] == Report::Type::Long);
+                }, [this](const std::vector<uint8_t>& report)->void {
+                    Report _report(report);
+                    this->handleEvent(_report);
+        } });
+
+        try {
+            auto rsp = sendReport({ReportType::Short, _index, 0, 0,
+                                  LOGID_HIDPP_SOFTWARE_ID});
+            if(rsp.deviceIndex() != _index) {
+                throw InvalidDevice(InvalidDevice::VirtualNode);
+            }
+        } catch(hidpp10::Error& e) {
+            // Ignore
+        } catch(std::exception& e) {
+            _raw_device->removeEventHandler(_raw_handler);
+            throw;
+        }
+
+        _raw_device->removeEventHandler(_raw_handler);
+    }
 
     _raw_handler = _raw_device->addEventHandler({
             [index=this->_index](const std::vector<uint8_t>& report)->bool {
@@ -227,14 +258,16 @@ Report Device::sendReport(const Report &report)
     if(!valid)
         throw TimeoutError();
 
+    std::lock_guard<std::mutex> sl(_slot_lock);
+
     {
         Report::Hidpp10Error error{};
-        if(report.isError10(&error))
+        if(_report_slot.value().isError10(&error))
             throw hidpp10::Error(error.error_code);
     }
     {
         Report::Hidpp20Error error{};
-        if(report.isError20(&error))
+        if(_report_slot.value().isError20(&error))
             throw hidpp20::Error(error.error_code);
     }
     return _report_slot.value();
@@ -246,6 +279,11 @@ bool Device::responseReport(const Report &report)
         _send_lock.unlock();
         return false;
     }
+
+    // Basic check to see if the report is a response
+    if( (report.swId() != LOGID_HIDPP_SOFTWARE_ID)
+       && report.subId() < 0x80)
+        return false;
 
     std::lock_guard lock(_slot_lock);
     _report_slot = report;

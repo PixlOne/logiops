@@ -30,12 +30,6 @@ public:
     const char* what() const noexcept override;
 };
 
-class InvalidDevice : public std::exception
-{
-public:
-    InvalidDevice() = default;
-    const char* what() const noexcept override;
-};
 }}
 
 #endif //LOGID_BACKEND_ERROR_H

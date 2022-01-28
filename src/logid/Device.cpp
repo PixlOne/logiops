@@ -296,7 +296,12 @@ config::Device& Device::_getConfig(
     auto& devices = manager->config()->devices;
     if(!devices.has_value())
         devices = decltype(config::Config::devices)();
-    auto& device = devices.value()[name];
+
+    if(!devices.value().count(name)) {
+        devices.value().emplace(name, config::Device());
+    }
+
+    auto& device = devices.value().at(name);
     if(std::holds_alternative<config::Profile>(device)) {
         config::Device d;
         d.profiles["default"] = std::get<config::Profile>(device);
@@ -306,7 +311,7 @@ config::Device& Device::_getConfig(
 
     auto& conf = std::get<config::Device>(device);
     if(conf.profiles.empty()) {
-        conf.profiles["default"] = std::get<config::Profile>(device);
+        conf.profiles["default"] = {};
         conf.default_profile = "default";
     }
 

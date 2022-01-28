@@ -46,6 +46,14 @@ namespace actions {
     class Action
     {
     public:
+        static std::shared_ptr<Action> makeAction(
+                Device* device, const std::string& name,
+                std::optional<config::BasicAction>& config);
+
+        static std::shared_ptr<Action> makeAction(
+                Device* device, const std::string& name,
+                std::optional<config::Action>& config);
+
         static std::shared_ptr<Action> makeAction(Device* device,
                                                   config::BasicAction& action);
 

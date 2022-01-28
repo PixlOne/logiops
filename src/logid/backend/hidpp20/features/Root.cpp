@@ -92,5 +92,8 @@ std::tuple<uint8_t, uint8_t> EssentialRoot::getVersion()
     std::vector<uint8_t> params(0);
     auto response = this->callFunction(Root::Function::Ping, params);
 
+    if(response[0] == 0x11)
+        return std::make_tuple(1, 0);
+
     return std::make_tuple(response[0], response[1]);
 }

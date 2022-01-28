@@ -382,11 +382,10 @@ namespace logid::config {
         struct config_io<std::optional<T>> {
             static std::optional<T> get(const libconfig::Setting& parent,
                                       const std::string& name) {
-                try {
+                if(parent.exists(name))
                     return config_io<T>::get(parent.lookup(name));
-                } catch(libconfig::SettingException& e) {
+                else
                     return {};
-                }
             }
 
             static void set(libconfig::Setting& parent,

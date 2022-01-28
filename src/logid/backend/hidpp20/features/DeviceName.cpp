@@ -74,6 +74,10 @@ uint8_t EssentialDeviceName::getNameLength()
     std::vector<uint8_t> params(0);
 
     auto response = this->callFunction(DeviceName::Function::GetLength, params);
+
+    if(response[0] == 1)
+        return 1;
+
     return response[0];
 }
 

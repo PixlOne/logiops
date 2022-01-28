@@ -22,8 +22,3 @@ const char *logid::backend::TimeoutError::what() const noexcept
 {
     return "Device timed out";
 }
-
-const char *logid::backend::InvalidDevice::what() const noexcept
-{
-    return "Device has become invalidated";
-}

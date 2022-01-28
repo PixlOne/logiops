@@ -169,12 +169,16 @@ hidpp::Report Device::sendReport(const hidpp::Report& report)
 bool Device::responseReport(const hidpp::Report& report)
 {
     std::lock_guard<std::mutex> lock(_response_lock);
-    uint8_t sw_id = report.swId();
+    uint8_t sw_id;
 
     bool is_error = false;
     hidpp::Report::Hidpp20Error hidpp20_error {};
-    if(report.isError20(&hidpp20_error))
+    if(report.isError20(&hidpp20_error)) {
         is_error = true;
+        sw_id = hidpp20_error.software_id;
+    } else {
+        sw_id = report.swId();
+    }
 
     auto response_slot = _responses.find(sw_id);
     if(response_slot == _responses.end())

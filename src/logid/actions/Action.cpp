@@ -47,6 +47,61 @@ std::shared_ptr<Action> _makeAction(Device* device,
     return std::make_shared<typename action_type<T>::type>(device, action);
 }
 
+template <typename T>
+std::shared_ptr<Action> _makeAction(
+        Device *device, const std::string &name,
+        std::optional<T>& config)
+{
+    if(name == "pizza.pixl.LogiOps.Action.ChangeDPI") {
+        config = config::ChangeDPI();
+        return Action::makeAction(device, config.value());
+    } else if(name == "pizza.pixl.LogiOps.Action.ChangeHost") {
+        config = config::ChangeHost();
+        return Action::makeAction(device, config.value());
+    } else if(name == "pizza.pixl.LogiOps.Action.CycleDPI") {
+        config = config::CycleDPI();
+        return Action::makeAction(device, config.value());
+    } else if(name == "pizza.pixl.LogiOps.Action.Keypress") {
+        config = config::KeypressAction();
+        return Action::makeAction(device, config.value());
+    } else if(name == "pizza.pixl.LogiOps.Action.None") {
+        config = config::NoAction();
+        return Action::makeAction(device, config.value());
+    } else if(name == "pizza.pixl.LogiOps.Action.ToggleHiresScroll") {
+        config = config::ToggleHiresScroll();
+        return Action::makeAction(device, config.value());
+    } else if(name == "pizza.pixl.LogiOps.Action.ToggleSmartShift") {
+        config = config::ToggleHiresScroll();
+        return Action::makeAction(device, config.value());
+    } else if(name == "pizza.pixl.LogiOps.Action.Default") {
+        return nullptr;
+    }
+
+    throw InvalidAction();
+}
+
+std::shared_ptr<Action> Action::makeAction(
+        Device *device, const std::string &name,
+        std::optional<config::BasicAction> &config)
+{
+    return _makeAction(device, name, config);
+}
+
+std::shared_ptr<Action> Action::makeAction(
+        Device *device, const std::string &name,
+        std::optional<config::Action> &config)
+{
+    try {
+        return _makeAction(device, name, config);
+    } catch(actions::InvalidAction& e) {
+        if(name == "pizza.pixl.LogiOps.Action.Gesture") {
+            config = config::GestureAction();
+            return makeAction(device, config.value());
+        }
+        throw;
+    }
+}
+
 std::shared_ptr<Action> Action::makeAction(Device *device,
                                            config::BasicAction& action)
 {

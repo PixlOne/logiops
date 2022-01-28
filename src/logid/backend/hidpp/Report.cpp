@@ -246,10 +246,10 @@ uint8_t Report::swId() const
     return _data[Offset::Function] & 0x0f;
 }
 
-void Report::setSwId(uint8_t sub_id)
+void Report::setSwId(uint8_t sw_id)
 {
     _data[Offset::Function] &= 0xf0;
-    _data[Offset::Function] |= sub_id & 0x0f;
+    _data[Offset::Function] |= sw_id & 0x0f;
 }
 
 uint8_t Report::address() const

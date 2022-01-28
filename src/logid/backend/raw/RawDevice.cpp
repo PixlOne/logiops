@@ -155,8 +155,10 @@ const std::vector<uint8_t>& RawDevice::reportDescriptor() const
 
 void RawDevice::sendReport(const std::vector<uint8_t>& report)
 {
-    if(!_valid)
-        throw InvalidDevice();
+    if(!_valid) {
+        // We could throw an error here, but this will likely be closed soon.
+        return;
+    }
 
     if(logid::global_loglevel <= LogLevel::RAWREPORT) {
         printf("[RAWREPORT] %s OUT: ", _path.c_str());

@@ -53,7 +53,8 @@ namespace hidpp
             {
                 NoHIDPPReport,
                 InvalidRawDevice,
-                Asleep
+                Asleep,
+                VirtualNode
             };
             InvalidDevice(Reason reason) : _reason (reason) {}
             virtual const char* what() const noexcept;

@@ -112,7 +112,13 @@ void DeviceManager::addDevice(std::string path)
     } catch(hidpp10::Error &e) {
         if(e.code() != hidpp10::Error::UnknownDevice)
             throw;
-    } catch(hidpp::Device::InvalidDevice &e) { // Ignore
+    } catch(hidpp::Device::InvalidDevice &e) {
+        if(e.code() == hidpp::Device::InvalidDevice::VirtualNode) {
+            logPrintf(DEBUG, "Ignoring virtual node on %s",
+                      path.c_str());
+            return;
+        }
+
         defaultExists = false;
     } catch(std::system_error &e) {
         logPrintf(WARN, "I/O error on %s: %s, skipping device.",
