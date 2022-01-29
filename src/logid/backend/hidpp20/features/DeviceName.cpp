@@ -75,9 +75,6 @@ uint8_t EssentialDeviceName::getNameLength()
 
     auto response = this->callFunction(DeviceName::Function::GetLength, params);
 
-    if(response[0] == 1)
-        return 1;
-
     return response[0];
 }
 

@@ -99,9 +99,9 @@ void DeviceMonitor::ready()
                 std::string devnode = udev_device_get_devnode(device);
 
                 if (action == "add")
-                    spawn_task([this, devnode]() { _addHandler(devnode); } );
+                    _addHandler(devnode);
                 else if (action == "remove")
-                    spawn_task([this, devnode]() { _removeHandler(devnode); } );
+                    _removeHandler(devnode);
 
                 udev_device_unref(device);
             },
@@ -141,7 +141,7 @@ void DeviceMonitor::enumerate()
         std::string devnode = udev_device_get_devnode(device);
         udev_device_unref(device);
 
-        spawn_task([this, devnode]() { _addHandler(devnode); } );
+        _addHandler(devnode);
     }
 
     udev_enumerate_unref(udev_enum);

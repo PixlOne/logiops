@@ -42,7 +42,7 @@ std::vector<uint8_t> EssentialFeature::callFunction(uint8_t function_id,
     std::copy(params.begin(), params.end(), request.paramBegin());
 
     auto response = _device->sendReport(request);
-    return std::vector<uint8_t>(response.paramBegin(), response.paramEnd());
+    return {response.paramBegin(), response.paramEnd()};
 }
 
 EssentialFeature::EssentialFeature(hidpp::Device* dev, uint16_t _id) :
@@ -56,9 +56,7 @@ EssentialFeature::EssentialFeature(hidpp::Device* dev, uint16_t _id) :
         getFunc_req[0] = (_id >> 8) & 0xff;
         getFunc_req[1] = _id & 0xff;
         try {
-            auto getFunc_resp = this->callFunction(Root::GetFeature,
-                                                   getFunc_req);
-            _index = getFunc_resp[0];
+            _index = this->callFunction(Root::GetFeature,getFunc_req).at(0);
         } catch(Error& e) {
             if(e.code() == Error::InvalidFeatureIndex)
                 throw UnsupportedFeature(_id);

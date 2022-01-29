@@ -138,8 +138,10 @@ void Device::_init()
         } });
 
         try {
-            auto rsp = sendReport({ReportType::Short, _index, 0, 0,
-                                  LOGID_HIDPP_SOFTWARE_ID});
+            auto rsp = sendReport(
+                    {ReportType::Short, _index,
+                     hidpp20::FeatureID::ROOT, hidpp20::Root::Ping,
+                     LOGID_HIDPP_SOFTWARE_ID});
             if(rsp.deviceIndex() != _index) {
                 throw InvalidDevice(InvalidDevice::VirtualNode);
             }
