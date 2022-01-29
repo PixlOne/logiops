@@ -28,7 +28,8 @@ using namespace libconfig;
 const char* CycleDPI::interface_name =
         "pizza.pixl.LogiOps.Action.CycleDPI";
 
-CycleDPI::CycleDPI(Device* device, config::CycleDPI& config) :
+CycleDPI::CycleDPI(Device* device, config::CycleDPI& config,
+                   const std::shared_ptr<ipcgull::node>& parent) :
     Action (device), _config (config), _current_dpi (_config.dpis.begin())
 {
     _dpi = _device->getFeature<features::DPI>("dpi");
@@ -37,6 +38,8 @@ CycleDPI::CycleDPI(Device* device, config::CycleDPI& config) :
                         "CycleDPI action.",
                   _device->hidpp20().devicePath().c_str(),
                   _device->hidpp20().deviceIndex());
+
+    _ipc = parent->make_interface<IPC>(this);
 }
 
 void CycleDPI::press()
@@ -72,4 +75,9 @@ void CycleDPI::release()
 uint8_t CycleDPI::reprogFlags() const
 {
     return backend::hidpp20::ReprogControls::TemporaryDiverted;
+}
+
+CycleDPI::IPC::IPC(CycleDPI *action) :
+    ipcgull::interface(interface_name, {}, {}, {}), _action (*action)
+{
 }

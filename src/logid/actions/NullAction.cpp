@@ -24,7 +24,9 @@ using namespace logid::actions;
 const char* NullAction::interface_name =
         "pizza.pixl.LogiOps.Action.None";
 
-NullAction::NullAction(Device* device) : Action(device)
+NullAction::NullAction(Device* device,
+                       const std::shared_ptr<ipcgull::node>& parent) :
+                       Action(device), _ipc (parent->make_interface<IPC>())
 {
 }
 
@@ -41,4 +43,8 @@ void NullAction::release()
 uint8_t NullAction::reprogFlags() const
 {
     return backend::hidpp20::ReprogControls::TemporaryDiverted;
+}
+
+NullAction::IPC::IPC() : ipcgull::interface(interface_name, {}, {}, {})
+{
 }

@@ -29,7 +29,9 @@ namespace actions {
     public:
         static const char* interface_name;
 
-        KeypressAction(Device* dev, config::KeypressAction& config);
+        KeypressAction(Device* dev,
+                       config::KeypressAction& config,
+                       const std::shared_ptr<ipcgull::node>& parent);
 
         virtual void press();
         virtual void release();
@@ -38,6 +40,16 @@ namespace actions {
     protected:
         config::KeypressAction& _config;
         std::list<uint> _keys;
+    private:
+        class IPC : public ipcgull::interface
+        {
+        public:
+            explicit IPC(KeypressAction* action);
+        private:
+            KeypressAction& _action;
+        };
+
+        std::shared_ptr<IPC> _ipc;
     };
 }}
 

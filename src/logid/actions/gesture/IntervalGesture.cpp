@@ -21,12 +21,14 @@
 
 using namespace logid::actions;
 
-IntervalGesture::IntervalGesture(Device *device, config::IntervalGesture& config) :
-    Gesture (device), _config (config)
+IntervalGesture::IntervalGesture(Device *device, config::IntervalGesture& config,
+                                 const std::shared_ptr<ipcgull::node>& parent,
+                                 const std::string& direction) :
+    Gesture (device, parent, direction), _config (config)
 {
     if(config.action) {
         try {
-            _action = Action::makeAction(device, config.action.value());
+            _action = Action::makeAction(device, config.action.value(), _node);
         } catch(InvalidAction& e) {
             logPrintf(WARN, "Mapping gesture to invalid action");
         }

@@ -26,7 +26,9 @@ namespace actions
     class ReleaseGesture : public Gesture
     {
     public:
-        ReleaseGesture(Device* device, config::ReleaseGesture& config);
+        ReleaseGesture(Device* device, config::ReleaseGesture& config,
+                       const std::shared_ptr<ipcgull::node>& parent,
+                       const std::string& direction);
 
         virtual void press(bool init_threshold=false);
         virtual void release(bool primary=false);

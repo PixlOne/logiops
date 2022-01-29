@@ -26,7 +26,8 @@ using namespace logid::backend;
 #define MOVE_EVENTHANDLER_NAME "HIRES_SCROLL"
 
 HiresScroll::HiresScroll(Device *dev) : DeviceFeature(dev),
-    _config (dev->activeProfile().hiresscroll), _mode (0), _mask (0)
+    _config (dev->activeProfile().hiresscroll), _mode (0), _mask (0),
+    _node (dev->ipcNode()->make_child("hires"))
 {
     if(_config.has_value()) {
         if(std::holds_alternative<bool>(_config.value())) {
@@ -54,8 +55,8 @@ HiresScroll::HiresScroll(Device *dev) : DeviceFeature(dev),
                 _mode |= hidpp20::HiresScroll::Mode::Target;
         }
 
-        _makeAction(_up_action, conf.up);
-        _makeAction(_down_action, conf.down);
+        _makeAction(_up_action, conf.up, "up");
+        _makeAction(_down_action, conf.down, "down");
     }
 
     try {
@@ -110,10 +111,12 @@ void HiresScroll::setMode(uint8_t mode)
 }
 
 void HiresScroll::_makeAction(std::shared_ptr<actions::Gesture> &gesture,
-                              std::optional<config::Gesture> &config)
+                              std::optional<config::Gesture> &config,
+                              const std::string& direction)
 {
     if(config.has_value()) {
-        gesture = actions::Gesture::makeGesture(_device, config.value());
+        gesture = actions::Gesture::makeGesture(_device, config.value(),
+                                                _node, direction);
         try {
             auto axis = std::dynamic_pointer_cast<actions::AxisGesture>(
                     gesture);

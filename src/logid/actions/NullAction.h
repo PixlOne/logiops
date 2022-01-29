@@ -28,14 +28,22 @@ namespace actions
     public:
         static const char* interface_name;
 
-        explicit NullAction(Device* device);
-        NullAction(Device* device, [[maybe_unused]] config::NoAction& config) :
-            NullAction(device) { }
+        NullAction(Device* device,
+                   const std::shared_ptr<ipcgull::node>& parent);
+        NullAction(Device* device, [[maybe_unused]] config::NoAction& config,
+                   const std::shared_ptr<ipcgull::node>& parent) :
+            NullAction(device, parent) { }
 
         virtual void press();
         virtual void release();
 
         virtual uint8_t reprogFlags() const;
+    private:
+        class IPC : public ipcgull::interface {
+        public:
+            IPC();
+        };
+        std::shared_ptr<IPC> _ipc;
     };
 }}
 

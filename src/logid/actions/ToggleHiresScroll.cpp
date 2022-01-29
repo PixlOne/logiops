@@ -26,7 +26,9 @@ using namespace logid::backend;
 const char* ToggleHiresScroll::interface_name =
         "pizza.pixl.LogiOps.Action.ToggleHiresScroll";
 
-ToggleHiresScroll::ToggleHiresScroll(Device *dev) : Action (dev)
+ToggleHiresScroll::ToggleHiresScroll(
+        Device *dev, const std::shared_ptr<ipcgull::node>& parent) :
+        Action (dev), _ipc (parent->make_interface<IPC>())
 {
     _hires_scroll = _device->getFeature<features::HiresScroll>("hiresscroll");
     if(!_hires_scroll)
@@ -58,4 +60,8 @@ void ToggleHiresScroll::release()
 uint8_t ToggleHiresScroll::reprogFlags() const
 {
     return hidpp20::ReprogControls::TemporaryDiverted;
+}
+
+ToggleHiresScroll::IPC::IPC() : ipcgull::interface(interface_name, {}, {}, {})
+{
 }

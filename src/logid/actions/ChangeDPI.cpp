@@ -27,7 +27,9 @@ using namespace logid::actions;
 const char* ChangeDPI::interface_name =
         "pizza.pixl.LogiOps.Action.ChangeDPI";
 
-ChangeDPI::ChangeDPI(Device *device, config::ChangeDPI& config) :
+ChangeDPI::ChangeDPI(
+        Device *device, config::ChangeDPI& config,
+        const std::shared_ptr<ipcgull::node>& parent) :
     Action(device), _config (config)
 {
     _dpi = _device->getFeature<features::DPI>("dpi");
@@ -36,6 +38,8 @@ ChangeDPI::ChangeDPI(Device *device, config::ChangeDPI& config) :
                         "ChangeDPI action.",
                   _device->hidpp20().devicePath().c_str(),
                   _device->hidpp20().deviceIndex());
+
+    _ipc = parent->make_interface<IPC>(this);
 }
 
 void ChangeDPI::press()
@@ -70,4 +74,9 @@ void ChangeDPI::release()
 uint8_t ChangeDPI::reprogFlags() const
 {
     return backend::hidpp20::ReprogControls::TemporaryDiverted;
+}
+
+ChangeDPI::IPC::IPC(ChangeDPI *action) :
+        ipcgull::interface(interface_name, {}, {}, {}), _action (*action)
+{
 }

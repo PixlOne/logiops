@@ -27,7 +27,8 @@ using namespace logid::backend;
 const char* KeypressAction::interface_name =
         "pizza.pixl.LogiOps.Action.Keypress";
 
-KeypressAction::KeypressAction(Device *device, config::KeypressAction& config) :
+KeypressAction::KeypressAction(Device *device, config::KeypressAction& config,
+                               const std::shared_ptr<ipcgull::node>& parent) :
     Action(device), _config (config)
 {
     if(std::holds_alternative<std::string>(_config.keys)) {
@@ -65,6 +66,8 @@ KeypressAction::KeypressAction(Device *device, config::KeypressAction& config) :
             }
         }
     }
+
+    _ipc = parent->make_interface<IPC>(this);
 }
 
 void KeypressAction::press()
@@ -84,4 +87,9 @@ void KeypressAction::release()
 uint8_t KeypressAction::reprogFlags() const
 {
     return hidpp20::ReprogControls::TemporaryDiverted;
+}
+
+KeypressAction::IPC::IPC(KeypressAction *action) : ipcgull::interface(
+        interface_name, {}, {}, {}), _action (*action)
+{
 }

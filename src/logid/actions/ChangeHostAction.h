@@ -30,7 +30,8 @@ namespace actions
     public:
         static const char* interface_name;
 
-        ChangeHostAction(Device* device, config::ChangeHost& config);
+        ChangeHostAction(Device* device, config::ChangeHost& config,
+                         const std::shared_ptr<ipcgull::node>& parent);
 
         virtual void press();
         virtual void release();
@@ -40,6 +41,16 @@ namespace actions
     protected:
         std::shared_ptr<backend::hidpp20::ChangeHost> _change_host;
         config::ChangeHost& _config;
+    private:
+        class IPC : public ipcgull::interface
+        {
+        public:
+            IPC(ChangeHostAction* action);
+        private:
+            ChangeHostAction& _action;
+        };
+
+        std::shared_ptr<IPC> _ipc;
     };
 }}
 

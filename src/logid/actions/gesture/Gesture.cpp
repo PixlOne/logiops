@@ -27,7 +27,10 @@
 using namespace logid;
 using namespace logid::actions;
 
-Gesture::Gesture(Device *device) : _device (device)
+Gesture::Gesture(Device *device,
+                 const std::shared_ptr<ipcgull::node>& parent,
+                 const std::string& direction) : _device (device),
+                 _node (parent->make_child(direction))
 {
 }
 
@@ -43,17 +46,22 @@ template <typename T>
 struct gesture_type<T&> : gesture_type<T> { };
 
 template <typename T>
-std::shared_ptr<Gesture> _makeGesture(Device* device,
-                                    T gesture) {
-    return std::make_shared<typename gesture_type<T>::type>(device, gesture);
+std::shared_ptr<Gesture> _makeGesture(
+        Device* device, T gesture,
+        const std::shared_ptr<ipcgull::node>& parent,
+        const std::string& direction) {
+    return std::make_shared<typename gesture_type<T>::type>(
+            device, gesture, parent, std::move(direction));
 }
 
-std::shared_ptr<Gesture> Gesture::makeGesture(Device *device,
-                                             config::Gesture& gesture)
+std::shared_ptr<Gesture> Gesture::makeGesture(
+        Device *device, config::Gesture& gesture,
+        const std::shared_ptr<ipcgull::node>& parent,
+        const std::string& direction)
 {
     std::shared_ptr<Gesture> ret;
-    std::visit([&device, &ret](auto&& x) {
-        ret = _makeGesture(device, x);
+    std::visit([&device, &ret, &parent, &direction](auto&& x) {
+        ret = _makeGesture(device, x, parent, direction);
     }, gesture);
     return ret;
 }

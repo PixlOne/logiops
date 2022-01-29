@@ -27,7 +27,9 @@ using namespace logid::backend;
 const char* ChangeHostAction::interface_name =
         "pizza.pixl.LogiOps.Action.ChangeHost";
 
-ChangeHostAction::ChangeHostAction(Device *device, config::ChangeHost& config)
+ChangeHostAction::ChangeHostAction(
+        Device *device, config::ChangeHost& config,
+        const std::shared_ptr<ipcgull::node>& parent)
     : Action(device), _config (config)
 {
     if(std::holds_alternative<std::string>(_config.host)) {
@@ -42,6 +44,8 @@ ChangeHostAction::ChangeHostAction(Device *device, config::ChangeHost& config)
                         "ChangeHostAction will not work.", device->hidpp20()
                         .devicePath().c_str(), device->hidpp20().deviceIndex());
     }
+
+    _ipc = parent->make_interface<IPC>(this);
 }
 
 void ChangeHostAction::press()
@@ -77,4 +81,9 @@ void ChangeHostAction::release()
 uint8_t ChangeHostAction::reprogFlags() const
 {
     return hidpp20::ReprogControls::TemporaryDiverted;
+}
+
+ChangeHostAction::IPC::IPC(ChangeHostAction *action) :
+        ipcgull::interface(interface_name, {}, {}, {}), _action (*action)
+{
 }

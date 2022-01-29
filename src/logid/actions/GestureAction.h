@@ -39,9 +39,11 @@ namespace actions {
             Right
         };
         static Direction toDirection(std::string direction);
+        static std::string fromDirection(Direction direction);
         static Direction toDirection(int16_t x, int16_t y);
 
-        GestureAction(Device* dev, config::GestureAction& config);
+        GestureAction(Device* dev, config::GestureAction& config,
+                      const std::shared_ptr<ipcgull::node>& parent);
 
         virtual void press();
         virtual void release();
@@ -53,6 +55,17 @@ namespace actions {
         int16_t _x, _y;
         std::map<Direction, std::shared_ptr<Gesture>> _gestures;
         config::GestureAction& _config;
+
+    private:
+        class IPC : public ipcgull::interface
+        {
+        public:
+            explicit IPC(GestureAction* action);
+        private:
+            GestureAction& _action;
+        };
+
+        std::shared_ptr<IPC> _ipc;
     };
 }}
 

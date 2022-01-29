@@ -26,7 +26,9 @@ namespace actions
     class ThresholdGesture : public Gesture
     {
     public:
-        ThresholdGesture(Device* device, config::ThresholdGesture& config);
+        ThresholdGesture(Device* device, config::ThresholdGesture& config,
+                         const std::shared_ptr<ipcgull::node>& parent,
+                         const std::string& direction);
 
         virtual void press(bool init_threshold=false);
         virtual void release(bool primary=false);

@@ -37,7 +37,8 @@ namespace features
         void setMode(uint8_t mode);
     private:
         void _makeAction(std::shared_ptr<actions::Gesture>& gesture,
-                         std::optional<config::Gesture>& config);
+                         std::optional<config::Gesture>& config,
+                         const std::string& direction);
 
         void _handleScroll(backend::hidpp20::HiresScroll::WheelStatus event);
         std::shared_ptr<backend::hidpp20::HiresScroll> _hires_scroll;
@@ -51,6 +52,8 @@ namespace features
 
         std::shared_ptr<actions::Gesture> _up_action;
         std::shared_ptr<actions::Gesture> _down_action;
+
+        std::shared_ptr<ipcgull::node> _node;
     };
 }}
 

@@ -29,7 +29,8 @@ namespace logid {
         public:
             static const char* interface_name;
 
-            explicit ChangeDPI(Device* device, config::ChangeDPI& setting);
+            ChangeDPI(Device* device, config::ChangeDPI& setting,
+                      const std::shared_ptr<ipcgull::node>& parent);
 
             virtual void press();
             virtual void release();
@@ -39,6 +40,16 @@ namespace logid {
         protected:
             config::ChangeDPI& _config;
             std::shared_ptr<features::DPI> _dpi;
+        private:
+            class IPC : public ipcgull::interface
+            {
+            public:
+                IPC(ChangeDPI* action);
+            private:
+                ChangeDPI& _action;
+            };
+
+            std::shared_ptr<IPC> _ipc;
         };
     }}
 

@@ -45,6 +45,25 @@ GestureAction::Direction GestureAction::toDirection(std::string direction)
         throw std::invalid_argument("direction");
 }
 
+std::string GestureAction::fromDirection(Direction direction)
+{
+    switch(direction) {
+    case Up:
+        return "up";
+    case Down:
+        return "down";
+    case Left:
+        return "left";
+    case Right:
+        return "right";
+    case None:
+        return "none";
+    }
+
+    // This shouldn't happen
+    throw InvalidGesture();
+}
+
 GestureAction::Direction GestureAction::toDirection(int16_t x, int16_t y)
 {
     if(x >= 0 && y >= 0)
@@ -57,7 +76,8 @@ GestureAction::Direction GestureAction::toDirection(int16_t x, int16_t y)
         return x <= -y ? Up : Right;
 }
 
-GestureAction::GestureAction(Device* dev, config::GestureAction& config) :
+GestureAction::GestureAction(Device* dev, config::GestureAction& config,
+                             const std::shared_ptr<ipcgull::node>& parent) :
     Action (dev), _config (config)
 {
     if(_config.gestures.has_value()) {
@@ -66,12 +86,16 @@ GestureAction::GestureAction(Device* dev, config::GestureAction& config) :
             try {
                 auto direction = toDirection(x.first);
                 _gestures.emplace(direction,
-                                  Gesture::makeGesture(dev, x.second));
+                                  Gesture::makeGesture(
+                                          dev, x.second, parent,
+                                          fromDirection(direction)));
             } catch(std::invalid_argument& e) {
                 logPrintf(WARN, "%s is not a direction", x.first.c_str());
             }
         }
     }
+
+    _ipc = parent->make_interface<IPC>(this);
 }
 
 void GestureAction::press()
@@ -192,4 +216,9 @@ uint8_t GestureAction::reprogFlags() const
 {
     return (hidpp20::ReprogControls::TemporaryDiverted |
         hidpp20::ReprogControls::RawXYDiverted);
+}
+
+GestureAction::IPC::IPC(GestureAction *action) :
+    ipcgull::interface(interface_name, {}, {}, {}), _action (*action)
+{
 }

@@ -29,10 +29,11 @@ namespace actions
     public:
         static const char* interface_name;
 
-        explicit ToggleHiresScroll(Device* dev);
+        ToggleHiresScroll(Device* dev, const std::shared_ptr<ipcgull::node>& parent);
         ToggleHiresScroll(Device* device,
-                          [[maybe_unused]] config::ToggleHiresScroll& action) :
-            ToggleHiresScroll(device) { }
+                          [[maybe_unused]] config::ToggleHiresScroll& action,
+                          const std::shared_ptr<ipcgull::node>& parent) :
+                          ToggleHiresScroll(device, parent) { }
 
         virtual void press();
         virtual void release();
@@ -40,6 +41,14 @@ namespace actions
         virtual uint8_t reprogFlags() const;
     protected:
         std::shared_ptr<features::HiresScroll> _hires_scroll;
+    private:
+        class IPC : public ipcgull::interface
+        {
+        public:
+            IPC();
+        };
+
+        std::shared_ptr<IPC> _ipc;
     };
 }}
 

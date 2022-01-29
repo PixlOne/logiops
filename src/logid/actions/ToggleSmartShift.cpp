@@ -26,7 +26,9 @@ using namespace logid::backend;
 const char* ToggleSmartShift::interface_name =
         "pizza.pixl.LogiOps.Action.ToggleSmartShift";
 
-ToggleSmartShift::ToggleSmartShift(Device *dev) : Action (dev)
+ToggleSmartShift::ToggleSmartShift(
+        Device *dev, const std::shared_ptr<ipcgull::node>& parent) :
+        Action (dev), _ipc (parent->make_interface<IPC>())
 {
     _smartshift = _device->getFeature<features::SmartShift>("smartshift");
     if(!_smartshift)
@@ -58,4 +60,8 @@ void ToggleSmartShift::release()
 uint8_t ToggleSmartShift::reprogFlags() const
 {
     return hidpp20::ReprogControls::TemporaryDiverted;
+}
+
+ToggleSmartShift::IPC::IPC() : ipcgull::interface(interface_name, {}, {}, {})
+{
 }

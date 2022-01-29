@@ -23,8 +23,10 @@
 
 using namespace logid::actions;
 
-AxisGesture::AxisGesture(Device *device, config::AxisGesture& config) :
-    Gesture (device), _multiplier (1), _config (config)
+AxisGesture::AxisGesture(Device *device, config::AxisGesture& config,
+                         const std::shared_ptr<ipcgull::node>& parent,
+                         const std::string& direction) :
+    Gesture (device, parent, direction), _multiplier (1), _config (config)
 {
     if(std::holds_alternative<uint>(_config.axis)) {
         _input_axis = std::get<uint>(_config.axis);

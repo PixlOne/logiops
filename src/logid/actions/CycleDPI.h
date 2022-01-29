@@ -29,7 +29,8 @@ namespace actions {
     public:
         static const char* interface_name;
 
-        explicit CycleDPI(Device* device, config::CycleDPI& setting);
+        CycleDPI(Device* device, config::CycleDPI& setting,
+                 const std::shared_ptr<ipcgull::node>& parent);
 
         virtual void press();
         virtual void release();
@@ -41,6 +42,16 @@ namespace actions {
         config::CycleDPI& _config;
         std::shared_ptr<features::DPI> _dpi;
         std::list<int>::const_iterator _current_dpi;
+    private:
+        class IPC : public ipcgull::interface
+        {
+        public:
+            IPC(CycleDPI* action);
+        private:
+            CycleDPI& _action;
+        };
+
+        std::shared_ptr<IPC> _ipc;
     };
 }}
 

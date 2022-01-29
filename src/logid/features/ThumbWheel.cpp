@@ -30,11 +30,12 @@ using namespace logid;
 #define SCROLL_EVENTHANDLER_NAME "THUMB_WHEEL"
 
 std::shared_ptr<actions::Action> _genAction(
-        Device* dev, std::optional<config::BasicAction>& conf)
+        Device* dev, std::optional<config::BasicAction>& conf,
+        const std::shared_ptr<ipcgull::node>& parent)
 {
     if(conf.has_value()) {
         try {
-            return actions::Action::makeAction(dev, conf.value());
+            return actions::Action::makeAction(dev, conf.value(), parent);
         } catch(actions::InvalidAction& e) {
             logPrintf(WARN, "Mapping thumb wheel to invalid action");
         }
@@ -44,11 +45,12 @@ std::shared_ptr<actions::Action> _genAction(
 }
 
 std::shared_ptr<actions::Gesture> _genGesture(
-        Device* dev, std::optional<config::Gesture>& conf)
+        Device* dev, std::optional<config::Gesture>& conf,
+        const std::shared_ptr<ipcgull::node>& parent, const std::string& direction)
 {
     if(conf.has_value()) {
         try {
-            return actions::Gesture::makeGesture(dev, conf.value());
+            return actions::Gesture::makeGesture(dev, conf.value(), parent, direction);
         } catch (actions::InvalidAction &e) {
             logPrintf(WARN, "Mapping thumb wheel to invalid gesture");
         }
@@ -58,15 +60,19 @@ std::shared_ptr<actions::Gesture> _genGesture(
 }
 
 ThumbWheel::ThumbWheel(Device *dev) : DeviceFeature(dev), _wheel_info(),
+    _node (dev->ipcNode()->make_child("thumbwheel")),
+    _proxy_node (_node->make_child("proxy")),
+    _tap_node (_node->make_child("tap")),
+    _touch_node (_node->make_child("touch")),
     _config (dev->activeProfile().thumbwheel)
 {
     if(_config.has_value()) {
         auto& conf = _config.value();
-        _left_action = _genGesture(dev, conf.left);
-        _right_action = _genGesture(dev, conf.right);
-        _touch_action = _genAction(dev, conf.touch);
-        _tap_action = _genAction(dev, conf.tap);
-        _proxy_action = _genAction(dev, conf.proxy);
+        _left_action = _genGesture(dev, conf.left, _node, "left");
+        _right_action = _genGesture(dev, conf.right, _node, "right");
+        _touch_action = _genAction(dev, conf.touch, _touch_node);
+        _tap_action = _genAction(dev, conf.tap, _tap_node);
+        _proxy_action = _genAction(dev, conf.proxy, _proxy_node);
     }
 
     try {

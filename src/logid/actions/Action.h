@@ -21,6 +21,8 @@
 #include <atomic>
 #include <libconfig.h++>
 #include <memory>
+#include <ipcgull/node.h>
+#include <ipcgull/interface.h>
 #include "../config/schema.h"
 
 namespace logid {
@@ -48,17 +50,21 @@ namespace actions {
     public:
         static std::shared_ptr<Action> makeAction(
                 Device* device, const std::string& name,
-                std::optional<config::BasicAction>& config);
+                std::optional<config::BasicAction>& config,
+                const std::shared_ptr<ipcgull::node>& parent);
 
         static std::shared_ptr<Action> makeAction(
                 Device* device, const std::string& name,
-                std::optional<config::Action>& config);
+                std::optional<config::Action>& config,
+                const std::shared_ptr<ipcgull::node>& parent);
 
-        static std::shared_ptr<Action> makeAction(Device* device,
-                                                  config::BasicAction& action);
+        static std::shared_ptr<Action> makeAction(
+                Device* device, config::BasicAction& action,
+                const std::shared_ptr<ipcgull::node>& parent);
 
-        static std::shared_ptr<Action> makeAction(Device* device,
-                                                  config::Action& action);
+        static std::shared_ptr<Action> makeAction(
+                Device* device, config::Action& action,
+                const std::shared_ptr<ipcgull::node>& parent);
 
         virtual void press() = 0;
         virtual void release() = 0;

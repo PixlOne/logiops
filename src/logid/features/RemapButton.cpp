@@ -168,19 +168,20 @@ Button::Button(Info info, int index,
                std::shared_ptr<ipcgull::node> root,
                config::Button &config) :
                _node (root->make_child(std::to_string(index))),
-               _interface (_node->make_interface<IPC>(this, info)),
                _device (device), _conf_func (std::move(conf_func)),
                _config (config),
                _info (info)
 {
     if(_config.action.has_value()) {
         try {
-            _action = Action::makeAction(_device, _config.action.value());
+            _action = Action::makeAction(_device, _config.action.value(), _node);
         } catch(std::exception& e) {
             logPrintf(WARN, "Error creating button action: %s",
                       e.what());
         }
     }
+
+    _interface = _node->make_interface<IPC>(this, _info);
 }
 
 void Button::press() const {

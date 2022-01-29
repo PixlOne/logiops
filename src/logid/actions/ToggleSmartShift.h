@@ -29,10 +29,12 @@ namespace actions {
     public:
         static const char* interface_name;
 
-        explicit ToggleSmartShift(Device* dev);
+        ToggleSmartShift(Device* dev,
+                         const std::shared_ptr<ipcgull::node>& parent);
         ToggleSmartShift(Device* device,
-                         [[maybe_unused]] config::ToggleSmartShift& action) :
-            ToggleSmartShift(device) { }
+                         [[maybe_unused]] config::ToggleSmartShift& action,
+                         const std::shared_ptr<ipcgull::node>& parent) :
+            ToggleSmartShift(device, parent) { }
 
         virtual void press();
         virtual void release();
@@ -40,6 +42,14 @@ namespace actions {
         virtual uint8_t reprogFlags() const;
     protected:
         std::shared_ptr<features::SmartShift> _smartshift;
+    private:
+        class IPC : public ipcgull::interface
+        {
+        public:
+            IPC();
+        };
+
+        std::shared_ptr<IPC> _ipc;
     };
 }}
 

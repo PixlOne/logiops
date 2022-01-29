@@ -20,11 +20,13 @@
 
 using namespace logid::actions;
 
-ReleaseGesture::ReleaseGesture(Device *device, config::ReleaseGesture& config) :
-    Gesture (device), _config (config)
+ReleaseGesture::ReleaseGesture(Device *device, config::ReleaseGesture& config,
+                               const std::shared_ptr<ipcgull::node>& parent,
+                               const std::string& direction) :
+    Gesture (device, parent, direction), _config (config)
 {
     if(_config.action.has_value())
-        _action = Action::makeAction(device, _config.action.value());
+        _action = Action::makeAction(device, _config.action.value(), _node);
 }
 
 void ReleaseGesture::press(bool init_threshold)

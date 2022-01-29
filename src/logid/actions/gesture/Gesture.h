@@ -52,11 +52,16 @@ namespace actions
         virtual ~Gesture() = default;
 
         static std::shared_ptr<Gesture> makeGesture(Device* device,
-                config::Gesture& gesture);
+                config::Gesture& gesture,
+                const std::shared_ptr<ipcgull::node>& parent,
+                const std::string& direction);
 
     protected:
-        explicit Gesture(Device* device);
+        explicit Gesture(Device* device,
+                         const std::shared_ptr<ipcgull::node>& parent,
+                         const std::string& direction);
         Device* _device;
+        std::shared_ptr<ipcgull::node> _node;
     };
 }}
 
