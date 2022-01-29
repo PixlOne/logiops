@@ -65,7 +65,6 @@ add_executable(logid
         backend/hidpp20/features/WirelessDeviceStatus.cpp
         backend/hidpp20/features/ThumbWheel.cpp
         backend/dj/Report.cpp
-        util/thread.cpp
         util/task.cpp
         util/ExceptionHandler.cpp)
 

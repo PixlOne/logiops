@@ -29,7 +29,6 @@
 #include <list>
 
 #include "defs.h"
-#include "../../util/mutex_queue.h"
 
 namespace logid::backend::raw
 {
