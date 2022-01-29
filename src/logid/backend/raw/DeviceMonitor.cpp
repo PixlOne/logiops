@@ -99,9 +99,9 @@ void DeviceMonitor::ready()
                 std::string devnode = udev_device_get_devnode(device);
 
                 if (action == "add")
-                    _addHandler(devnode);
+                    spawn_task([this, devnode]() { _addHandler(devnode); });
                 else if (action == "remove")
-                    _removeHandler(devnode);
+                    spawn_task([this, devnode]() { _removeHandler(devnode); });
 
                 udev_device_unref(device);
             },
