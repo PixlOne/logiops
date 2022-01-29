@@ -23,6 +23,9 @@
 using namespace logid::actions;
 using namespace logid::backend;
 
+const char* ToggleSmartShift::interface_name =
+        "pizza.pixl.LogiOps.Action.ToggleSmartShift";
+
 ToggleSmartShift::ToggleSmartShift(Device *dev) : Action (dev)
 {
     _smartshift = _device->getFeature<features::SmartShift>("smartshift");

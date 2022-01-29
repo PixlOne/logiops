@@ -27,6 +27,8 @@ namespace actions {
     class ToggleSmartShift : public Action
     {
     public:
+        static const char* interface_name;
+
         explicit ToggleSmartShift(Device* dev);
         ToggleSmartShift(Device* device,
                          [[maybe_unused]] config::ToggleSmartShift& action) :

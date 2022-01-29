@@ -21,6 +21,9 @@
 
 using namespace logid::actions;
 
+const char* NullAction::interface_name =
+        "pizza.pixl.LogiOps.Action.None";
+
 NullAction::NullAction(Device* device) : Action(device)
 {
 }

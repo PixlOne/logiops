@@ -24,6 +24,9 @@
 using namespace logid::actions;
 using namespace logid::backend;
 
+const char* KeypressAction::interface_name =
+        "pizza.pixl.LogiOps.Action.Keypress";
+
 KeypressAction::KeypressAction(Device *device, config::KeypressAction& config) :
     Action(device), _config (config)
 {

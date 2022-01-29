@@ -24,6 +24,9 @@
 using namespace logid::actions;
 using namespace logid::backend;
 
+const char* ChangeHostAction::interface_name =
+        "pizza.pixl.LogiOps.Action.ChangeHost";
+
 ChangeHostAction::ChangeHostAction(Device *device, config::ChangeHost& config)
     : Action(device), _config (config)
 {

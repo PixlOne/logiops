@@ -28,6 +28,8 @@ namespace actions {
     class GestureAction : public Action
     {
     public:
+        static const char* interface_name;
+
         enum Direction
         {
             None,

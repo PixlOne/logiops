@@ -26,6 +26,8 @@ namespace actions
     class NullAction : public Action
     {
     public:
+        static const char* interface_name;
+
         explicit NullAction(Device* device);
         NullAction(Device* device, [[maybe_unused]] config::NoAction& config) :
             NullAction(device) { }

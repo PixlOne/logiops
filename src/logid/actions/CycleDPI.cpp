@@ -25,6 +25,9 @@
 using namespace logid::actions;
 using namespace libconfig;
 
+const char* CycleDPI::interface_name =
+        "pizza.pixl.LogiOps.Action.CycleDPI";
+
 CycleDPI::CycleDPI(Device* device, config::CycleDPI& config) :
     Action (device), _config (config), _current_dpi (_config.dpis.begin())
 {

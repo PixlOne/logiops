@@ -27,6 +27,8 @@ namespace logid {
         class ChangeDPI : public Action
         {
         public:
+            static const char* interface_name;
+
             explicit ChangeDPI(Device* device, config::ChangeDPI& setting);
 
             virtual void press();

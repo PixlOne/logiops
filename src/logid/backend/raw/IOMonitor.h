@@ -52,6 +52,8 @@ namespace logid::backend::raw {
         void _interrupt() noexcept;
         void _continue() noexcept;
 
+        std::unique_ptr<std::thread> _io_thread;
+
         std::map<int, IOHandler> _fds;
         std::mutex _io_lock, _ctl_lock;
         mutable std::mutex _run_lock;

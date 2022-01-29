@@ -52,25 +52,25 @@ std::shared_ptr<Action> _makeAction(
         Device *device, const std::string &name,
         std::optional<T>& config)
 {
-    if(name == "pizza.pixl.LogiOps.Action.ChangeDPI") {
+    if(name == ChangeDPI::interface_name) {
         config = config::ChangeDPI();
         return Action::makeAction(device, config.value());
-    } else if(name == "pizza.pixl.LogiOps.Action.ChangeHost") {
+    } else if(name == ChangeHostAction::interface_name) {
         config = config::ChangeHost();
         return Action::makeAction(device, config.value());
-    } else if(name == "pizza.pixl.LogiOps.Action.CycleDPI") {
+    } else if(name == CycleDPI::interface_name) {
         config = config::CycleDPI();
         return Action::makeAction(device, config.value());
-    } else if(name == "pizza.pixl.LogiOps.Action.Keypress") {
+    } else if(name == KeypressAction::interface_name) {
         config = config::KeypressAction();
         return Action::makeAction(device, config.value());
-    } else if(name == "pizza.pixl.LogiOps.Action.None") {
+    } else if(name == NullAction::interface_name) {
         config = config::NoAction();
         return Action::makeAction(device, config.value());
-    } else if(name == "pizza.pixl.LogiOps.Action.ToggleHiresScroll") {
+    } else if(name == ToggleHiresScroll::interface_name) {
         config = config::ToggleHiresScroll();
         return Action::makeAction(device, config.value());
-    } else if(name == "pizza.pixl.LogiOps.Action.ToggleSmartShift") {
+    } else if(name == ToggleSmartShift::interface_name) {
         config = config::ToggleHiresScroll();
         return Action::makeAction(device, config.value());
     } else if(name == "pizza.pixl.LogiOps.Action.Default") {
@@ -94,7 +94,7 @@ std::shared_ptr<Action> Action::makeAction(
     try {
         return _makeAction(device, name, config);
     } catch(actions::InvalidAction& e) {
-        if(name == "pizza.pixl.LogiOps.Action.Gesture") {
+        if(name == GestureAction::interface_name) {
             config = config::GestureAction();
             return makeAction(device, config.value());
         }

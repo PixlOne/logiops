@@ -66,9 +66,9 @@ IOMonitor::IOMonitor() : _epoll_fd (epoll_create1(0)),
         throw std::runtime_error("eventfd error");
     }));
 
-    std::thread([this](){
+    _io_thread = std::make_unique<std::thread>([this](){
         _listen();
-    }).detach();
+    });
 }
 
 IOMonitor::~IOMonitor() noexcept
@@ -124,7 +124,7 @@ void IOMonitor::_stop() noexcept
     _interrupt();
     _is_running = false;
     _continue();
-    std::lock_guard<std::mutex> run_lock(_run_lock);
+    _io_thread->join();
 }
 
 bool IOMonitor::_running() const

@@ -24,6 +24,9 @@
 
 using namespace logid::actions;
 
+const char* ChangeDPI::interface_name =
+        "pizza.pixl.LogiOps.Action.ChangeDPI";
+
 ChangeDPI::ChangeDPI(Device *device, config::ChangeDPI& config) :
     Action(device), _config (config)
 {

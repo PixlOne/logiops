@@ -27,6 +27,8 @@ namespace actions {
     class CycleDPI : public Action
     {
     public:
+        static const char* interface_name;
+
         explicit CycleDPI(Device* device, config::CycleDPI& setting);
 
         virtual void press();

@@ -23,6 +23,9 @@
 using namespace logid::actions;
 using namespace logid::backend;
 
+const char* ToggleHiresScroll::interface_name =
+        "pizza.pixl.LogiOps.Action.ToggleHiresScroll";
+
 ToggleHiresScroll::ToggleHiresScroll(Device *dev) : Action (dev)
 {
     _hires_scroll = _device->getFeature<features::HiresScroll>("hiresscroll");

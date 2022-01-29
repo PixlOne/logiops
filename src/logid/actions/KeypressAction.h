@@ -27,6 +27,8 @@ namespace actions {
     class KeypressAction : public Action
     {
     public:
+        static const char* interface_name;
+
         KeypressAction(Device* dev, config::KeypressAction& config);
 
         virtual void press();

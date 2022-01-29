@@ -27,6 +27,8 @@ namespace actions
     class ToggleHiresScroll : public Action
     {
     public:
+        static const char* interface_name;
+
         explicit ToggleHiresScroll(Device* dev);
         ToggleHiresScroll(Device* device,
                           [[maybe_unused]] config::ToggleHiresScroll& action) :

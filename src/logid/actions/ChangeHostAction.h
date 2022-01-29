@@ -28,6 +28,8 @@ namespace actions
     class ChangeHostAction : public Action
     {
     public:
+        static const char* interface_name;
+
         ChangeHostAction(Device* device, config::ChangeHost& config);
 
         virtual void press();

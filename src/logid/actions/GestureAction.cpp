@@ -24,6 +24,9 @@ using namespace logid::actions;
 using namespace logid;
 using namespace logid::backend;
 
+const char* GestureAction::interface_name =
+        "pizza.pixl.LogiOps.Action.Gesture";
+
 GestureAction::Direction GestureAction::toDirection(std::string direction)
 {
     std::transform(direction.begin(), direction.end(), direction.begin(),
