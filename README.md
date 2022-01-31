@@ -51,7 +51,10 @@ I'm also looking for contributors to help in my project; feel free to submit a p
 
 [For a list of tested devices, check TESTED.md](TESTED.md)
 
-## Special Thanks
+## Credits
+
+Logitech, Logi, and their logos are trademarks or registered trademarks of Logitech Europe S.A. and/or its affiliates in the United States and/or other countries. This software is an independent product that is not endorsed or created by Logitech.
+
 Thanks to the following people for contributing to this repository.
 
 - [Clément Vuchener & contributors for creating the old HID++ library](https://github.com/cvuchener/hidpp)
