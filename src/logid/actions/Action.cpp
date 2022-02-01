@@ -41,7 +41,7 @@ std::shared_ptr<Action> Action::makeAction(Device *device, libconfig::Setting
     }
 
     try {
-        auto& action_type = setting.lookup("type");
+        auto& action_type = setting["type"];
 
         if(action_type.getType() != libconfig::Setting::TypeString) {
             logPrintf(WARN, "Line %d: Action type must be a string",

@@ -176,7 +176,7 @@ ThumbWheel::Config::Config(Device* dev) : DeviceFeature::Config(dev)
         }
 
         try {
-            auto& divert = config_root.lookup("divert");
+            auto& divert = config_root["divert"];
             if(divert.getType() == libconfig::Setting::TypeBoolean) {
                 _divert = divert;
             } else {
@@ -186,7 +186,7 @@ ThumbWheel::Config::Config(Device* dev) : DeviceFeature::Config(dev)
         } catch(libconfig::SettingNotFoundException& e) { }
 
         try {
-            auto& invert = config_root.lookup("invert");
+            auto& invert = config_root["invert"];
             if(invert.getType() == libconfig::Setting::TypeBoolean) {
                 _invert = invert;
             } else {
@@ -219,7 +219,7 @@ std::shared_ptr<actions::Action> ThumbWheel::Config::_genAction(Device* dev,
         libconfig::Setting& config_root, const std::string& name)
 {
     try {
-        auto& a_group = config_root.lookup(name);
+        auto& a_group = config_root[name.c_str()];
         try {
             return actions::Action::makeAction(dev, a_group);
         } catch(actions::InvalidAction& e) {
@@ -236,7 +236,7 @@ std::shared_ptr<actions::Gesture> ThumbWheel::Config::_genGesture(Device* dev,
         libconfig::Setting& config_root, const std::string& name)
 {
     try {
-        auto& g_group = config_root.lookup(name);
+        auto& g_group = config_root[name.c_str()];
         try {
             auto g = actions::Gesture::makeGesture(dev, g_group);
             if(g->wheelCompatibility()) {

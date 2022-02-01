@@ -35,6 +35,7 @@ void IntervalGesture::release(bool primary)
 {
     // Do nothing
     (void)primary; // Suppress unused warning
+    _config.action()->release();
 }
 
 void IntervalGesture::move(int16_t axis)
@@ -44,10 +45,10 @@ void IntervalGesture::move(int16_t axis)
         return;
 
     int16_t new_interval_count = (_axis - _config.threshold())/
-            _config.interval();
+            _config.interval() + 1;
     if(new_interval_count > _interval_pass_count) {
         _config.action()->press();
-        _config.action()->release();
+        _config.action()->halfRelease();
     }
     _interval_pass_count = new_interval_count;
 }
@@ -66,7 +67,7 @@ IntervalGesture::Config::Config(Device *device, libconfig::Setting &setting) :
     Gesture::Config(device, setting)
 {
     try {
-        auto& interval = setting.lookup("interval");
+        auto& interval = setting["interval"];
         if(interval.getType() != libconfig::Setting::TypeInt) {
             logPrintf(WARN, "Line %d: interval must be an integer, skipping.",
                     interval.getSourceLine());
@@ -76,7 +77,7 @@ IntervalGesture::Config::Config(Device *device, libconfig::Setting &setting) :
     } catch(libconfig::SettingNotFoundException& e) {
         try {
             // pixels is an alias for interval
-            auto& interval = setting.lookup("pixels");
+            auto& interval = setting["pixels"];
             if(interval.getType() != libconfig::Setting::TypeInt) {
                 logPrintf(WARN, "Line %d: pixels must be an integer, skipping.",
                           interval.getSourceLine());
