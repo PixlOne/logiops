@@ -124,6 +124,17 @@ void RemapButton::listen()
     }
 }
 
+bool RemapButton::onHiresScroll(int16_t deltaV)
+{
+    bool handled = false;
+    for(const auto& button : this->_config.buttons())
+        if(button.second->pressed()) {
+            button.second->scroll(deltaV);
+                handled = true;
+        }
+    return handled;
+}
+
 void RemapButton::_buttonEvent(const std::set<uint16_t>& new_state)
 {
     // Ensure I/O doesn't occur while updating button state
@@ -178,7 +189,7 @@ void RemapButton::Config::_parseButton(libconfig::Setting &setting)
 
     uint16_t cid;
     try {
-        auto& cid_setting = setting.lookup("cid");
+        auto& cid_setting = setting["cid"];
         if(!cid_setting.isNumber()) {
             logPrintf(WARN, "Line %d: cid must be a number, ignoring.",
                     cid_setting.getSourceLine());
@@ -193,7 +204,7 @@ void RemapButton::Config::_parseButton(libconfig::Setting &setting)
 
     try {
         _buttons.emplace(cid, Action::makeAction(_device,
-                setting.lookup("action")));
+                setting["action"]));
     } catch(libconfig::SettingNotFoundException& e) {
         logPrintf(WARN, "Line %d: action is required, ignoring.",
                   setting.getSourceLine());

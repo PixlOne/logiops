@@ -38,7 +38,7 @@ Gesture::Config::Config(Device* device, libconfig::Setting& root,
     if(action_required) {
         try {
             _action = Action::makeAction(_device,
-                                         root.lookup("action"));
+                                         root["action"]);
         } catch (libconfig::SettingNotFoundException &e) {
             throw InvalidGesture("action is missing");
         }
@@ -49,7 +49,7 @@ Gesture::Config::Config(Device* device, libconfig::Setting& root,
 
     _threshold = LOGID_GESTURE_DEFAULT_THRESHOLD;
     try {
-        auto& threshold = root.lookup("threshold");
+        auto& threshold = root["threshold"];
         if(threshold.getType() == libconfig::Setting::TypeInt) {
             _threshold = (int)threshold;
             if(_threshold <= 0) {
@@ -76,7 +76,7 @@ std::shared_ptr<Gesture> Gesture::makeGesture(Device *device,
     }
 
     try {
-        auto& gesture_mode = setting.lookup("mode");
+        auto& gesture_mode = setting["mode"];
 
         if(gesture_mode.getType() != libconfig::Setting::TypeString) {
             logPrintf(WARN, "Line %d: Gesture mode must be a string,"
