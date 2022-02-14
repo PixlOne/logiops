@@ -24,15 +24,48 @@
 using namespace logid::actions;
 using namespace logid::backend;
 
-const char* KeypressAction::interface_name =
-        "pizza.pixl.LogiOps.Action.Keypress";
+const char* KeypressAction::interface_name = "Keypress";
 
-KeypressAction::KeypressAction(Device *device, config::KeypressAction& config,
-                               const std::shared_ptr<ipcgull::node>& parent) :
-    Action(device), _config (config)
+KeypressAction::KeypressAction(
+        Device *device, config::KeypressAction& config,
+        [[maybe_unused]] const std::shared_ptr<ipcgull::node>& parent) :
+    Action(device, interface_name, {
+            {
+                    {"GetKeys", {this, &KeypressAction::getKeys, {"keys"}}},
+                    {"SetKeys", {this, &KeypressAction::setKeys, {"keys"}}}
+            }, {}, {}
+    }), _config (config)
 {
-    if(std::holds_alternative<std::string>(_config.keys)) {
-        const auto& key = std::get<std::string>(_config.keys);
+    _setConfig();
+}
+
+void KeypressAction::press()
+{
+    std::lock_guard<std::mutex> lock(_config_lock);
+    _pressed = true;
+    for(auto& key : _keys)
+        _device->virtualInput()->pressKey(key);
+}
+
+void KeypressAction::release()
+{
+    std::lock_guard<std::mutex> lock(_config_lock);
+    _pressed = false;
+    for(auto& key : _keys)
+        _device->virtualInput()->releaseKey(key);
+}
+
+void KeypressAction::_setConfig()
+{
+    _keys.clear();
+
+    if(!_config.keys.has_value())
+        return;
+
+    auto& config = _config.keys.value();
+
+    if(std::holds_alternative<std::string>(config)) {
+        const auto& key = std::get<std::string>(config);
         try {
             auto code = _device->virtualInput()->toKeyCode(key);
             _device->virtualInput()->registerKey(code);
@@ -40,14 +73,14 @@ KeypressAction::KeypressAction(Device *device, config::KeypressAction& config,
         } catch(InputDevice::InvalidEventCode& e) {
             logPrintf(WARN, "Invalid keycode %s, skipping.", key.c_str());
         }
-    } else if(std::holds_alternative<uint>(_config.keys)) {
-        const auto& key = std::get<uint>(_config.keys);
+    } else if(std::holds_alternative<uint>(_config.keys.value())) {
+        const auto& key = std::get<uint>(config);
         _device->virtualInput()->registerKey(key);
         _keys.emplace_back(key);
-    } else if(std::holds_alternative<std::list<std::variant<uint, std::string
-            >>>(_config.keys)) {
-        const auto& keys = std::get<std::list<std::variant<uint, std::string>>>(
-                _config.keys);
+    } else if(std::holds_alternative<
+            std::list<std::variant<uint, std::string>>>(config)) {
+        const auto& keys = std::get<
+                std::list<std::variant<uint, std::string>>>(config);
         for(const auto& key : keys) {
             if(std::holds_alternative<std::string>(key)) {
                 const auto& key_str = std::get<std::string>(key);
@@ -66,22 +99,6 @@ KeypressAction::KeypressAction(Device *device, config::KeypressAction& config,
             }
         }
     }
-
-    _ipc = parent->make_interface<IPC>(this);
-}
-
-void KeypressAction::press()
-{
-    _pressed = true;
-    for(auto& key : _keys)
-        _device->virtualInput()->pressKey(key);
-}
-
-void KeypressAction::release()
-{
-    _pressed = false;
-    for(auto& key : _keys)
-        _device->virtualInput()->releaseKey(key);
 }
 
 uint8_t KeypressAction::reprogFlags() const
@@ -89,7 +106,26 @@ uint8_t KeypressAction::reprogFlags() const
     return hidpp20::ReprogControls::TemporaryDiverted;
 }
 
-KeypressAction::IPC::IPC(KeypressAction *action) : ipcgull::interface(
-        interface_name, {}, {}, {}), _action (*action)
+std::vector<std::string> KeypressAction::getKeys() const
 {
+    std::lock_guard<std::mutex> lock(_config_lock);
+    std::vector<std::string> ret;
+    for(auto& x : _keys)
+        ret.push_back(InputDevice::toKeyName(x));
+
+    return ret;
+}
+
+void KeypressAction::setKeys(const std::vector<std::string> &keys)
+{
+    std::lock_guard<std::mutex> lock(_config_lock);
+    if(_pressed)
+        for(auto& key : _keys)
+            _device->virtualInput()->releaseKey(key);
+    _config.keys = std::list<std::variant<uint, std::string>>();
+    auto& config = std::get<std::list<std::variant<uint, std::string>>>(
+            _config.keys.value());
+    for(auto& x : keys)
+        config.emplace_back(x);
+    _setConfig();
 }

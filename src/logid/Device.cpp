@@ -67,7 +67,7 @@ std::shared_ptr<Device> Device::make(
                                          std::move(manager));
     ret->_self = ret;
     ret->_ipc_node->manage(ret);
-    ret->_ipc_interface = ret->_ipc_node->make_interface<DeviceIPC>(ret.get());
+    ret->_ipc_interface = ret->_ipc_node->make_interface<IPC>(ret.get());
     return ret;
 }
 
@@ -81,7 +81,7 @@ std::shared_ptr<Device> Device::make(
                                          std::move(manager));
     ret->_self = ret;
     ret->_ipc_node->manage(ret);
-    ret->_ipc_interface = ret->_ipc_node->make_interface<DeviceIPC>(ret.get());
+    ret->_ipc_interface = ret->_ipc_node->make_interface<IPC>(ret.get());
     return ret;
 }
 
@@ -92,7 +92,7 @@ std::shared_ptr<Device> Device::make(
     auto ret = std::make_shared<_Device>(receiver, index, std::move(manager));
     ret->_self = ret;
     ret->_ipc_node->manage(ret);
-    ret->_ipc_interface = ret->_ipc_node->make_interface<DeviceIPC>(ret.get());
+    ret->_ipc_interface = ret->_ipc_node->make_interface<IPC>(ret.get());
     return ret;
 }
 
@@ -265,7 +265,7 @@ void Device::_makeResetMechanism()
     }
 }
 
-Device::DeviceIPC::DeviceIPC(Device* device) :
+Device::IPC::IPC(Device* device) :
         ipcgull::interface(
                 "pizza.pixl.LogiOps.Device",
                 {},
@@ -274,7 +274,8 @@ Device::DeviceIPC::DeviceIPC(Device* device) :
                         ipcgull::property_readable, device->name())},
                     {"ProductID", ipcgull::property<uint16_t>(
                             ipcgull::property_readable, device->pid())},
-                    {"Active", device->_awake}
+                    {"Active", device->_awake},
+                    {"DefaultProfile", device->_config.default_profile}
                 }, {
                         {"StatusChanged",
                          ipcgull::signal::make_signal<bool>({"active"})}
@@ -282,7 +283,7 @@ Device::DeviceIPC::DeviceIPC(Device* device) :
 {
 }
 
-void Device::DeviceIPC::notifyStatus() const
+void Device::IPC::notifyStatus() const
 {
     emit_signal("StatusChanged", (bool)(_device._awake));
 }

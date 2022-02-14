@@ -41,16 +41,6 @@ namespace actions
     protected:
         std::shared_ptr<backend::hidpp20::ChangeHost> _change_host;
         config::ChangeHost& _config;
-    private:
-        class IPC : public ipcgull::interface
-        {
-        public:
-            IPC(ChangeHostAction* action);
-        private:
-            ChangeHostAction& _action;
-        };
-
-        std::shared_ptr<IPC> _ipc;
     };
 }}
 

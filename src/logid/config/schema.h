@@ -46,11 +46,14 @@ namespace logid::config {
 
     struct KeypressAction : public signed_group<std::string> {
         typedef actions::KeypressAction action;
-        std::variant<std::string, uint,
-        std::list<std::variant<uint, std::string>>> keys;
+        std::optional<
+                std::variant<std::string, uint,
+                    std::list<std::variant<uint, std::string>>>> keys;
         KeypressAction() : signed_group<std::string>(
                 "type", "Keypress",
-                {"keys"}, &KeypressAction::keys) { }
+                {"keys"}, &KeypressAction::keys)
+        {
+        }
     };
 
     struct ToggleSmartShift : public signed_group<std::string> {
@@ -67,7 +70,7 @@ namespace logid::config {
 
     struct CycleDPI : public signed_group<std::string> {
         typedef actions::CycleDPI action;
-        std::list<int> dpis;
+        std::optional<std::list<int>> dpis;
         std::optional<int> sensor;
         CycleDPI() : signed_group<std::string>(
                 "type", "CycleDPI",
@@ -78,7 +81,7 @@ namespace logid::config {
 
     struct ChangeDPI : public signed_group<std::string> {
         typedef actions::ChangeDPI action;
-        int inc;
+        std::optional<int> inc;
         std::optional<int> sensor;
         ChangeDPI() : signed_group<std::string>(
                 "type", "ChangeDPI",
@@ -89,7 +92,7 @@ namespace logid::config {
 
     struct ChangeHost : public signed_group<std::string> {
         typedef actions::ChangeHostAction action;
-        std::variant<int, std::string> host;
+        std::optional<std::variant<int, std::string>> host;
         ChangeHost() : signed_group<std::string>(
                 "type", "ChangeHost",
                 {"host"}, &ChangeHost::host) { }
@@ -108,7 +111,7 @@ namespace logid::config {
     struct AxisGesture : public signed_group<std::string> {
         typedef actions::AxisGesture gesture;
         std::optional<int> threshold;
-        std::variant<std::string, uint> axis;
+        std::optional<std::variant<std::string, uint>> axis;
         std::optional<double> axis_multiplier;
 
         AxisGesture() : signed_group("mode", "Axis",
@@ -122,7 +125,7 @@ namespace logid::config {
         typedef actions::IntervalGesture gesture;
         std::optional<int> threshold;
         std::optional<BasicAction> action;
-        int interval;
+        std::optional<int> interval;
     protected:
         IntervalGesture(const std::string& name) : signed_group(
                 "mode", name,
@@ -180,7 +183,8 @@ namespace logid::config {
 
     struct GestureAction : public signed_group<std::string> {
         typedef actions::GestureAction action;
-        std::optional<map<std::string, Gesture, "direction">> gestures;
+        std::optional<map<std::string, Gesture, "direction",
+            less_caseless<std::string>>> gestures;
 
         GestureAction() : signed_group<std::string>(
                 "type", "Gestures",
@@ -263,12 +267,15 @@ namespace logid::config {
     };
 
     struct Device : public group {
-        std::string default_profile;
+        ipcgull::property<std::string> default_profile;
         map<std::string, Profile, "name"> profiles;
 
         Device() : group({"default_profile", "profiles"},
                 &Device::default_profile,
-                &Device::profiles) { }
+                &Device::profiles),
+                default_profile(ipcgull::property_full_permissions, "")
+        {
+        }
     };
 
     struct Config : public group {

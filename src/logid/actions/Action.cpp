@@ -43,9 +43,11 @@ struct action_type<T&> : action_type<T> { };
 
 template <typename T>
 std::shared_ptr<Action> _makeAction(
-        Device* device, T action,
-        const std::shared_ptr<ipcgull::node>& parent) {
-    return std::make_shared<typename action_type<T>::type>(device, action, parent);
+        Device* device, T& action,
+        const std::shared_ptr<ipcgull::node>& parent)
+{
+    return parent->make_interface<typename action_type<T>::type>(
+            device, std::forward<T&>(action), parent);
 }
 
 template <typename T>
@@ -75,7 +77,8 @@ std::shared_ptr<Action> _makeAction(
     } else if(name == ToggleSmartShift::interface_name) {
         config = config::ToggleHiresScroll();
         return Action::makeAction(device, config.value(), parent);
-    } else if(name == "pizza.pixl.LogiOps.Action.Default") {
+    } else if(name == "Default") {
+        config.reset();
         return nullptr;
     }
 
@@ -126,4 +129,10 @@ std::shared_ptr<Action> Action::makeAction(
         ret = _makeAction(device, x, parent);
     }, action);
     return ret;
+}
+
+Action::Action(Device* device, const std::string& name, tables t) :
+    ipcgull::interface("pizza.pixl.LogiOps.Action." + name, std::move(t)),
+    _device (device), _pressed (false)
+{
 }

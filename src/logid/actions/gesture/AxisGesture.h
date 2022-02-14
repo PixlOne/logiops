@@ -26,9 +26,10 @@ namespace logid {
         class AxisGesture : public Gesture
         {
         public:
+            static const char* interface_name;
+
             AxisGesture(Device* device, config::AxisGesture& config,
-                        const std::shared_ptr<ipcgull::node>& parent,
-                        const std::string& direction);
+                        const std::shared_ptr<ipcgull::node>& parent);
 
             virtual void press(bool init_threshold=false);
             virtual void release(bool primary=false);
@@ -43,7 +44,7 @@ namespace logid {
             int16_t _axis;
             double _axis_remainder;
             int _hires_remainder;
-            uint _input_axis;
+            std::optional<uint> _input_axis;
             double _multiplier;
             config::AxisGesture& _config;
         };

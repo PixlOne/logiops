@@ -33,6 +33,11 @@ InputDevice::InvalidEventCode::InvalidEventCode(const std::string& name) :
 {
 }
 
+InputDevice::InvalidEventCode::InvalidEventCode(uint code) :
+        _what ("Invalid event code " + std::to_string(code))
+{
+}
+
 const char* InputDevice::InvalidEventCode::what() const noexcept
 {
     return _what.c_str();
@@ -115,9 +120,19 @@ void InputDevice::releaseKey(uint code)
     _sendEvent(EV_KEY, code, 0);
 }
 
+std::string InputDevice::toKeyName(uint code)
+{
+    return _toEventName(EV_KEY, code);
+}
+
 uint InputDevice::toKeyCode(const std::string& name)
 {
     return _toEventCode(EV_KEY, name);
+}
+
+std::string InputDevice::toAxisName(uint code)
+{
+    return _toEventName(EV_REL, code);
 }
 
 uint InputDevice::toAxisCode(const std::string& name)
@@ -139,6 +154,16 @@ int InputDevice::getLowResAxis(const uint axis_code)
 #endif
 
     return -1;
+}
+
+std::string InputDevice::_toEventName(uint type, uint code)
+{
+    const char* ret = libevdev_event_code_get_name(type, code);
+
+    if(!ret)
+        throw InvalidEventCode(code);
+
+    return {ret};
 }
 
 uint InputDevice::_toEventCode(uint type, const std::string& name)

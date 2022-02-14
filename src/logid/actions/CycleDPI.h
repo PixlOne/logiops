@@ -42,16 +42,6 @@ namespace actions {
         config::CycleDPI& _config;
         std::shared_ptr<features::DPI> _dpi;
         std::list<int>::const_iterator _current_dpi;
-    private:
-        class IPC : public ipcgull::interface
-        {
-        public:
-            IPC(CycleDPI* action);
-        private:
-            CycleDPI& _action;
-        };
-
-        std::shared_ptr<IPC> _ipc;
     };
 }}
 

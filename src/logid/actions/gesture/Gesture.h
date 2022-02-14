@@ -39,7 +39,7 @@ namespace actions
         std::string _what;
     };
 
-    class Gesture
+    class Gesture : public ipcgull::interface
     {
     public:
         virtual void press(bool init_threshold=false) = 0;
@@ -53,15 +53,19 @@ namespace actions
 
         static std::shared_ptr<Gesture> makeGesture(Device* device,
                 config::Gesture& gesture,
-                const std::shared_ptr<ipcgull::node>& parent,
-                const std::string& direction);
+                const std::shared_ptr<ipcgull::node>& parent);
+
+        static std::shared_ptr<Gesture> makeGesture(
+                Device* device, const std::string& type,
+                config::Gesture& gesture,
+                const std::shared_ptr<ipcgull::node>& parent);
 
     protected:
-        explicit Gesture(Device* device,
-                         const std::shared_ptr<ipcgull::node>& parent,
-                         const std::string& direction);
+        Gesture(Device* device,
+                std::shared_ptr<ipcgull::node> parent,
+                const std::string& name, tables t={});
+        const std::shared_ptr<ipcgull::node> _node;
         Device* _device;
-        std::shared_ptr<ipcgull::node> _node;
     };
 }}
 

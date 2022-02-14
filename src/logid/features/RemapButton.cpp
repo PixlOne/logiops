@@ -16,6 +16,7 @@
  *
  */
 #include <sstream>
+#include "../actions/GestureAction.h"
 #include "../Device.h"
 #include "RemapButton.h"
 #include "../backend/hidpp20/Error.h"
@@ -67,13 +68,13 @@ RemapButton::RemapButton(Device *dev): DeviceFeature(dev),
             }
             _reprog_controls->setControlReporting(info.controlID, report);
         };
-        _buttons.emplace(std::piecewise_construct,
-                         std::forward_as_tuple(control.second.controlID),
-                         std::forward_as_tuple(control.second, i,
-                                               _device, func,
-                                               _ipc_node,
-                                               _config.value()[control.first]));
+        _buttons.emplace(control.second.controlID,
+                         Button::make(control.second, i,
+                                      _device, func, _ipc_node,
+                                      _config.value()[control.first]));
     }
+
+    _ipc_interface = _device->ipcNode()->make_interface<IPC>(this);
 
     if(global_loglevel <= DEBUG) {
         #define FLAG(x) (control.second.flags & hidpp20::ReprogControls::x ? \
@@ -104,7 +105,7 @@ RemapButton::~RemapButton()
 void RemapButton::configure()
 {
     for(const auto& button : _buttons)
-        button.second.configure();
+        button.second->configure();
 }
 
 void RemapButton::listen()
@@ -127,8 +128,8 @@ void RemapButton::listen()
             else { // RawXY
                 auto divertedXY = _reprog_controls->divertedRawXYEvent(report);
                 for(const auto& button : this->_buttons)
-                    if(button.second.pressed())
-                        button.second.move(divertedXY.x, divertedXY.y);
+                    if(button.second->pressed())
+                        button.second->move(divertedXY.x, divertedXY.y);
             }
         };
 
@@ -149,7 +150,7 @@ void RemapButton::_buttonEvent(const std::set<uint16_t>& new_state)
         } else {
             auto action = _buttons.find(i);
             if(action != _buttons.end())
-                action->second.press();
+                action->second->press();
         }
     }
 
@@ -157,10 +158,32 @@ void RemapButton::_buttonEvent(const std::set<uint16_t>& new_state)
     for(auto& i : _pressed_buttons) {
         auto action = _buttons.find(i);
         if(action != _buttons.end())
-            action->second.release();
+            action->second->release();
     }
 
     _pressed_buttons = new_state;
+}
+
+namespace logid::features {
+    class _Button : public Button {
+    public:
+        template <typename... Args>
+        explicit _Button(Args&&... args) : Button(std::forward<Args&&>(args)...)
+        {
+        }
+    };
+}
+
+std::shared_ptr<Button> Button::make(
+        Info info, int index, Device *device, ConfigFunction conf_func,
+        std::shared_ptr<ipcgull::node> root, config::Button &config)
+{
+    auto ret = std::make_shared<_Button>(info, index, device, std::move(conf_func),
+                                         std::move(root), config);
+    ret->_self = ret;
+    ret->_node->manage(ret);
+
+    return ret;
 }
 
 Button::Button(Info info, int index,
@@ -184,36 +207,55 @@ Button::Button(Info info, int index,
     _interface = _node->make_interface<IPC>(this, _info);
 }
 
-void Button::press() const {
+void Button::press() const
+{
+    std::lock_guard<std::mutex> lock(_action_lock);
     if(_action)
         _action->press();
 }
 
-void Button::release() const {
+void Button::release() const
+{
+    std::lock_guard<std::mutex> lock(_action_lock);
     if(_action)
         _action->release();
 }
 
-void Button::move(int16_t x, int16_t y) const {
+void Button::move(int16_t x, int16_t y) const
+{
+    std::lock_guard<std::mutex> lock(_action_lock);
     if(_action)
         _action->move(x, y);
 }
 
-bool Button::pressed() const {
+bool Button::pressed() const
+{
+    std::lock_guard<std::mutex> lock(_action_lock);
     if(_action)
         return _action->pressed();
     return false;
 }
 
-void Button::configure() const {
+void Button::configure() const
+{
+    std::lock_guard<std::mutex> lock(_action_lock);
     _conf_func(_action);
+}
+
+std::shared_ptr<ipcgull::node> Button::node() const
+{
+    return _node;
 }
 
 Button::IPC::IPC(Button* parent,
                  const Info& info) :
-        ipcgull::interface("pizza.pixl.LogiOps.Device.Button", {}, {
+        ipcgull::interface("pizza.pixl.LogiOps.Device.Button", {
+                {"SetAction", {this, &IPC::setAction, {"type"}}}
+            }, {
                 {"ControlID", ipcgull::property<uint16_t>(
                         ipcgull::property_readable, info.controlID)},
+                {"TaskID", ipcgull::property<uint16_t>(
+                        ipcgull::property_readable, info.taskID)},
                 {"Remappable", ipcgull::property<const bool>(
                         ipcgull::property_readable,
                         info.flags & hidpp20::ReprogControls::TemporaryDivertable)},
@@ -221,6 +263,41 @@ Button::IPC::IPC(Button* parent,
                         ipcgull::property_readable,
                         (info.additionalFlags & hidpp20::ReprogControls::RawXY)
                         )}
-            }, {})
+            }, {}), _button (*parent)
 {
+}
+
+void Button::IPC::setAction(const std::string &type)
+{
+    if(!(_button._info.flags & hidpp20::ReprogControls::TemporaryDivertable))
+        throw std::invalid_argument("Non-remappable");
+
+    if(type == GestureAction::interface_name &&
+        !(_button._info.additionalFlags & hidpp20::ReprogControls::RawXY))
+        throw std::invalid_argument("No gesture support");
+
+    {
+        std::lock_guard<std::mutex> lock(_button._action_lock);
+        _button._action.reset();
+        _button._action = Action::makeAction(
+                _button._device,type,
+                _button._config.action, _button._node);
+    }
+    _button.configure();
+}
+
+RemapButton::IPC::IPC(RemapButton* parent) :
+        ipcgull::interface("pizza.pixl.LogiOps.Buttons", {
+                {"Enumerate", {this, &IPC::enumerate, {"buttons"}}}
+        }, {}, {}),
+    _parent (*parent)
+{
+}
+
+std::vector<std::shared_ptr<Button>> RemapButton::IPC::enumerate() const
+{
+    std::vector<std::shared_ptr<Button>> ret;
+    for(auto& x : _parent._buttons)
+        ret.push_back(x.second);
+    return ret;
 }

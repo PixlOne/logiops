@@ -85,9 +85,7 @@ IOMonitor::~IOMonitor() noexcept
 
 void IOMonitor::_listen()
 {
-    std::unique_lock<std::mutex> run_lock(_run_lock, std::try_to_lock);
-    if(!run_lock.owns_lock())
-        throw std::runtime_error("IOMonitor already listening");
+    std::lock_guard<std::mutex> run_lock(_run_lock);
     std::vector<struct epoll_event> events;
 
     _is_running = true;
@@ -130,7 +128,7 @@ void IOMonitor::_stop() noexcept
 bool IOMonitor::_running() const
 {
     std::unique_lock<std::mutex> run_lock(_run_lock, std::try_to_lock);
-    return !run_lock.owns_lock();
+    return !run_lock.owns_lock() || _is_running;
 }
 
 void IOMonitor::add(int fd, IOHandler handler)

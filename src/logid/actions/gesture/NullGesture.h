@@ -26,10 +26,11 @@ namespace actions
     class NullGesture : public Gesture
     {
     public:
+        static const char* interface_name;
+
         NullGesture(Device* device,
                     config::NoGesture& config,
-                    const std::shared_ptr<ipcgull::node>& parent,
-                    const std::string& direction);
+                    const std::shared_ptr<ipcgull::node>& parent);
 
         virtual void press(bool init_threshold=false);
         virtual void release(bool primary=false);

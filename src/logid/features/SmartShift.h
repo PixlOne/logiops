@@ -18,6 +18,7 @@
 #ifndef LOGID_FEATURE_SMARTSHIFT_H
 #define LOGID_FEATURE_SMARTSHIFT_H
 
+#include <ipcgull/interface.h>
 #include "../backend/hidpp20/features/SmartShift.h"
 #include "DeviceFeature.h"
 #include "../config/schema.h"
@@ -32,12 +33,34 @@ namespace features
         virtual void configure();
         virtual void listen();
 
-        backend::hidpp20::SmartShift::SmartshiftStatus getStatus();
-        void setStatus(backend::hidpp20::SmartShift::SmartshiftStatus status);
+        typedef backend::hidpp20::SmartShift::SmartshiftStatus Status;
+
+        [[nodiscard]] Status getStatus() const;
+        void setStatus(Status status);
 
     private:
         std::optional<config::SmartShift>& _config;
         std::shared_ptr<backend::hidpp20::SmartShift> _smartshift;
+
+        class IPC : public ipcgull::interface
+        {
+        public:
+            IPC(SmartShift* parent);
+
+            [[nodiscard]] std::tuple<bool, uint8_t> getStatus() const;;
+            void setActive(bool active);
+            void setThreshold(uint8_t threshold);
+
+            [[nodiscard]] std::tuple<bool, bool, bool, uint8_t> getDefault() const;
+            void clearDefaultActive();
+            void setDefaultActive(bool active);
+            void clearDefaultThreshold();
+            void setDefaultThreshold(uint8_t threshold);
+        private:
+            SmartShift& _parent;
+        };
+
+        std::shared_ptr<IPC> _ipc;
     };
 }}
 

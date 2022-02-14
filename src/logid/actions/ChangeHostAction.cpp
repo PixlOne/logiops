@@ -24,16 +24,15 @@
 using namespace logid::actions;
 using namespace logid::backend;
 
-const char* ChangeHostAction::interface_name =
-        "pizza.pixl.LogiOps.Action.ChangeHost";
+const char* ChangeHostAction::interface_name = "ChangeHost";
 
 ChangeHostAction::ChangeHostAction(
         Device *device, config::ChangeHost& config,
-        const std::shared_ptr<ipcgull::node>& parent)
-    : Action(device), _config (config)
+        [[maybe_unused]] const std::shared_ptr<ipcgull::node>& parent)
+    : Action(device, interface_name), _config (config)
 {
-    if(std::holds_alternative<std::string>(_config.host)) {
-        auto& host = std::get<std::string>(_config.host);
+    if(std::holds_alternative<std::string>(_config.host.value())) {
+        auto& host = std::get<std::string>(_config.host.value());
         std::transform(host.begin(), host.end(),
                        host.begin(), ::tolower);
     }
@@ -44,8 +43,6 @@ ChangeHostAction::ChangeHostAction(
                         "ChangeHostAction will not work.", device->hidpp20()
                         .devicePath().c_str(), device->hidpp20().deviceIndex());
     }
-
-    _ipc = parent->make_interface<IPC>(this);
 }
 
 void ChangeHostAction::press()
@@ -55,13 +52,13 @@ void ChangeHostAction::press()
 
 void ChangeHostAction::release()
 {
-    if(_change_host) {
+    if(_change_host && _config.host.has_value()) {
         spawn_task(
         [this] {
             auto host_info = _change_host->getHostInfo();
             int next_host;
-            if(std::holds_alternative<std::string>(_config.host)) {
-                const auto& host = std::get<std::string>(_config.host);
+            if(std::holds_alternative<std::string>(_config.host.value())) {
+                const auto& host = std::get<std::string>(_config.host.value());
                 if(host == "next")
                     next_host = host_info.currentHost + 1;
                 else if(host == "prev" || host == "previous")
@@ -69,7 +66,7 @@ void ChangeHostAction::release()
                 else
                     next_host = host_info.currentHost;
             } else {
-                next_host = std::get<int>(_config.host)-1;
+                next_host = std::get<int>(_config.host.value())-1;
             }
             next_host %= host_info.hostCount;
             if(next_host != host_info.currentHost)
@@ -81,9 +78,4 @@ void ChangeHostAction::release()
 uint8_t ChangeHostAction::reprogFlags() const
 {
     return hidpp20::ReprogControls::TemporaryDiverted;
-}
-
-ChangeHostAction::IPC::IPC(ChangeHostAction *action) :
-        ipcgull::interface(interface_name, {}, {}, {}), _action (*action)
-{
 }

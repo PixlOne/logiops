@@ -40,16 +40,6 @@ namespace logid {
         protected:
             config::ChangeDPI& _config;
             std::shared_ptr<features::DPI> _dpi;
-        private:
-            class IPC : public ipcgull::interface
-            {
-            public:
-                IPC(ChangeDPI* action);
-            private:
-                ChangeDPI& _action;
-            };
-
-            std::shared_ptr<IPC> _ipc;
         };
     }}
 

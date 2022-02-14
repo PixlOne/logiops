@@ -41,14 +41,6 @@ namespace actions
         virtual uint8_t reprogFlags() const;
     protected:
         std::shared_ptr<features::HiresScroll> _hires_scroll;
-    private:
-        class IPC : public ipcgull::interface
-        {
-        public:
-            IPC();
-        };
-
-        std::shared_ptr<IPC> _ipc;
     };
 }}
 

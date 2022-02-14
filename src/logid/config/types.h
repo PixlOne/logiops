@@ -24,6 +24,7 @@
 #include <variant>
 #include <list>
 #include <set>
+#include <ipcgull/property.h>
 #include "group.h"
 #include "map.h"
 #include "../util/log.h"
@@ -73,6 +74,9 @@ namespace logid::config {
                 set(x, t);
             }
         };
+
+        template <typename T>
+        struct config_io<ipcgull::property<T>> : public config_io<T> { };
 
         template <typename T, libconfig::Setting::Type TypeEnum>
         struct primitive_io {
@@ -328,11 +332,13 @@ namespace logid::config {
             }
         };
 
-        template <typename K, typename V, string_literal KeyName>
-        struct config_io<map<K, V, KeyName>> {
-            static map<K, V, KeyName> get(const libconfig::Setting& setting) {
+        template <typename K, typename V, string_literal KeyName,
+                  typename Cmp, typename Alloc>
+        struct config_io<map<K, V, KeyName, Cmp, Alloc>> {
+            static map<K, V, KeyName, Cmp, Alloc> get(
+                    const libconfig::Setting& setting) {
                 const auto size = setting.getLength();
-                map<K, V, KeyName> t;
+                map<K, V, KeyName, Cmp, Alloc> t;
                 for(int i = 0; i < size; ++i) {
                     auto& s = setting[i];
                     try {
@@ -343,13 +349,13 @@ namespace logid::config {
                 return t;
             }
 
-            static map<K, V, KeyName> get(const libconfig::Setting& parent,
-                                      const std::string& name) {
+            static map<K, V, KeyName, Cmp, Alloc> get(
+                    const libconfig::Setting& parent, const std::string& name) {
                 return get(parent.lookup(name));
             }
 
             static void set(libconfig::Setting& setting,
-                            const map<K, V, KeyName>& t) {
+                            const map<K, V, KeyName, Cmp, Alloc>& t) {
                 while(setting.getLength() != 0)
                     setting.remove((int)0);
                 for(auto& x : t) {
@@ -361,7 +367,7 @@ namespace logid::config {
 
             static void set(libconfig::Setting& parent,
                             const std::string& name,
-                            const map<K, V, KeyName>& t) {
+                            const map<K, V, KeyName, Cmp, Alloc>& t) {
                 if (!parent.exists(name)) {
                     parent.add(name, libconfig::Setting::TypeList);
                 } else if(!parent.lookup(name).isArray()) {
@@ -372,7 +378,7 @@ namespace logid::config {
             }
 
             static void append(libconfig::Setting& list,
-                               const map<K, V, KeyName>& t) {
+                               const map<K, V, KeyName, Cmp, Alloc>& t) {
                 auto& s = list.add(libconfig::Setting::TypeList);
                 set(s, t);
             }
@@ -428,16 +434,16 @@ namespace logid::config {
 
     template <typename T>
     void append(libconfig::Setting& list, const T& t) {
-        config_io<T>::set(list, t);
+        config_io<T>::append(list, t);
     }
 
     template <typename T>
-    T get(const libconfig::Setting& setting) {
+    auto get(const libconfig::Setting& setting) {
         return config_io<T>::get(setting);
     }
 
     template <typename T>
-    T get(const libconfig::Setting& parent, const std::string& name) {
+    auto get(const libconfig::Setting& parent, const std::string& name) {
         return config_io<T>::get(parent, name);
     }
 }

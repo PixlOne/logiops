@@ -42,14 +42,6 @@ namespace actions {
         virtual uint8_t reprogFlags() const;
     protected:
         std::shared_ptr<features::SmartShift> _smartshift;
-    private:
-        class IPC : public ipcgull::interface
-        {
-        public:
-            IPC();
-        };
-
-        std::shared_ptr<IPC> _ipc;
     };
 }}
 

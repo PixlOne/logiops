@@ -38,12 +38,6 @@ namespace actions
         virtual void release();
 
         virtual uint8_t reprogFlags() const;
-    private:
-        class IPC : public ipcgull::interface {
-        public:
-            IPC();
-        };
-        std::shared_ptr<IPC> _ipc;
     };
 }}
 

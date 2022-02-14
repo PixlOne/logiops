@@ -20,10 +20,11 @@
 
 using namespace logid::actions;
 
+const char* ReleaseGesture::interface_name = "OnRelease";
+
 ReleaseGesture::ReleaseGesture(Device *device, config::ReleaseGesture& config,
-                               const std::shared_ptr<ipcgull::node>& parent,
-                               const std::string& direction) :
-    Gesture (device, parent, direction), _config (config)
+                               const std::shared_ptr<ipcgull::node>& parent) :
+    Gesture (device, parent, interface_name), _config (config)
 {
     if(_config.action.has_value())
         _action = Action::makeAction(device, _config.action.value(), _node);

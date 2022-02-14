@@ -50,7 +50,8 @@ std::shared_ptr<actions::Gesture> _genGesture(
 {
     if(conf.has_value()) {
         try {
-            return actions::Gesture::makeGesture(dev, conf.value(), parent, direction);
+            return actions::Gesture::makeGesture(
+                    dev, conf.value(), parent->make_child(direction));
         } catch (actions::InvalidAction &e) {
             logPrintf(WARN, "Mapping thumb wheel to invalid gesture");
         }
@@ -61,6 +62,7 @@ std::shared_ptr<actions::Gesture> _genGesture(
 
 ThumbWheel::ThumbWheel(Device *dev) : DeviceFeature(dev), _wheel_info(),
     _node (dev->ipcNode()->make_child("thumbwheel")),
+    _gesture_node (_node->make_child("scroll")),
     _proxy_node (_node->make_child("proxy")),
     _tap_node (_node->make_child("tap")),
     _touch_node (_node->make_child("touch")),
@@ -68,8 +70,8 @@ ThumbWheel::ThumbWheel(Device *dev) : DeviceFeature(dev), _wheel_info(),
 {
     if(_config.has_value()) {
         auto& conf = _config.value();
-        _left_action = _genGesture(dev, conf.left, _node, "left");
-        _right_action = _genGesture(dev, conf.right, _node, "right");
+        _left_action = _genGesture(dev, conf.left, _gesture_node, "left");
+        _right_action = _genGesture(dev, conf.right, _gesture_node, "right");
         _touch_action = _genAction(dev, conf.touch, _touch_node);
         _tap_action = _genAction(dev, conf.tap, _tap_node);
         _proxy_action = _genAction(dev, conf.proxy, _proxy_node);
@@ -114,7 +116,8 @@ ThumbWheel::ThumbWheel(Device *dev) : DeviceFeature(dev), _wheel_info(),
     }
 }
 
-ThumbWheel::~ThumbWheel() {
+ThumbWheel::~ThumbWheel()
+{
     _device->hidpp20().removeEventHandler(SCROLL_EVENTHANDLER_NAME);
 }
 

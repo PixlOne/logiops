@@ -24,8 +24,7 @@ using namespace logid::actions;
 using namespace logid;
 using namespace logid::backend;
 
-const char* GestureAction::interface_name =
-        "pizza.pixl.LogiOps.Action.Gesture";
+const char* GestureAction::interface_name = "Gesture";
 
 GestureAction::Direction GestureAction::toDirection(std::string direction)
 {
@@ -78,7 +77,14 @@ GestureAction::Direction GestureAction::toDirection(int16_t x, int16_t y)
 
 GestureAction::GestureAction(Device* dev, config::GestureAction& config,
                              const std::shared_ptr<ipcgull::node>& parent) :
-    Action (dev), _config (config)
+    Action (dev, interface_name,
+            {
+        {
+            {"SetGesture", {this, &GestureAction::setGesture,
+                            {"direction", "type"}}}
+            }, {}, {}
+            }),
+            _node (parent->make_child("gestures")), _config (config)
 {
     if(_config.gestures.has_value()) {
         auto& gestures = _config.gestures.value();
@@ -87,19 +93,20 @@ GestureAction::GestureAction(Device* dev, config::GestureAction& config,
                 auto direction = toDirection(x.first);
                 _gestures.emplace(direction,
                                   Gesture::makeGesture(
-                                          dev, x.second, parent,
-                                          fromDirection(direction)));
+                                          dev, x.second,
+                                          _node->make_child(
+                                                  fromDirection(direction))));
             } catch(std::invalid_argument& e) {
                 logPrintf(WARN, "%s is not a direction", x.first.c_str());
             }
         }
     }
-
-    _ipc = parent->make_interface<IPC>(this);
 }
 
 void GestureAction::press()
 {
+    std::lock_guard<std::mutex> lock(_config_lock);
+
     _pressed = true;
     _x = 0, _y = 0;
     for(auto& gesture : _gestures)
@@ -108,6 +115,8 @@ void GestureAction::press()
 
 void GestureAction::release()
 {
+    std::lock_guard<std::mutex> lock(_config_lock);
+
     _pressed = false;
     bool threshold_met = false;
 
@@ -147,6 +156,8 @@ void GestureAction::release()
 
 void GestureAction::move(int16_t x, int16_t y)
 {
+    std::lock_guard<std::mutex> lock(_config_lock);
+
     auto new_x = _x + x, new_y = _y + y;
 
     if(abs(x) > 0) {
@@ -218,7 +229,34 @@ uint8_t GestureAction::reprogFlags() const
         hidpp20::ReprogControls::RawXYDiverted);
 }
 
-GestureAction::IPC::IPC(GestureAction *action) :
-    ipcgull::interface(interface_name, {}, {}, {}), _action (*action)
+void GestureAction::setGesture(const std::string &direction,
+                               const std::string &type)
 {
+    std::lock_guard<std::mutex> lock(_config_lock);
+
+    Direction d = toDirection(direction);
+
+    auto it = _gestures.find(d);
+
+    if(it != _gestures.end()) {
+        if(pressed()) {
+            auto current = toDirection(_x, _y);
+            if(it->second)
+                it->second->release(current == d);
+        }
+    }
+
+    auto dir_name = fromDirection(d);
+
+    _gestures[d].reset();
+    try {
+        _gestures[d] = Gesture::makeGesture(
+                _device, type, _config.gestures.value()[dir_name],
+                _node->make_child(dir_name));
+    } catch (InvalidGesture& e) {
+        _gestures[d] = Gesture::makeGesture(
+                _device, _config.gestures.value()[dir_name],
+                _node->make_child(dir_name));
+        throw std::invalid_argument("Invalid gesture type");
+    }
 }

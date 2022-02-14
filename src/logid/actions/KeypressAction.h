@@ -36,20 +36,16 @@ namespace actions {
         virtual void press();
         virtual void release();
 
+        [[nodiscard]] std::vector<std::string> getKeys() const;
+        void setKeys(const std::vector<std::string>& keys);
+
         virtual uint8_t reprogFlags() const;
     protected:
+        mutable std::mutex _config_lock;
         config::KeypressAction& _config;
         std::list<uint> _keys;
-    private:
-        class IPC : public ipcgull::interface
-        {
-        public:
-            explicit IPC(KeypressAction* action);
-        private:
-            KeypressAction& _action;
-        };
 
-        std::shared_ptr<IPC> _ipc;
+        void _setConfig();
     };
 }}
 

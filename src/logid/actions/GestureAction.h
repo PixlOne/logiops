@@ -51,21 +51,14 @@ namespace actions {
 
         virtual uint8_t reprogFlags() const;
 
+        void setGesture(const std::string& direction,
+                        const std::string& type);
     protected:
         int16_t _x, _y;
+        std::shared_ptr<ipcgull::node> _node;
         std::map<Direction, std::shared_ptr<Gesture>> _gestures;
         config::GestureAction& _config;
-
-    private:
-        class IPC : public ipcgull::interface
-        {
-        public:
-            explicit IPC(GestureAction* action);
-        private:
-            GestureAction& _action;
-        };
-
-        std::shared_ptr<IPC> _ipc;
+        mutable std::mutex _config_lock;
     };
 }}
 

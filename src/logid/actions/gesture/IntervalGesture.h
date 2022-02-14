@@ -26,9 +26,10 @@ namespace actions
     class IntervalGesture : public Gesture
     {
     public:
+        static const char* interface_name;
+
         IntervalGesture(Device* device, config::IntervalGesture& config,
-                        const std::shared_ptr<ipcgull::node>& parent,
-                        const std::string& direction);
+                        const std::shared_ptr<ipcgull::node>& parent);
 
         virtual void press(bool init_threshold=false);
         virtual void release(bool primary=false);
@@ -42,6 +43,18 @@ namespace actions
         int16_t _interval_pass_count;
         std::shared_ptr<Action> _action;
         config::IntervalGesture& _config;
+    private:
+        class IPC : public ipcgull::interface
+        {
+        public:
+            IPC(IntervalGesture* parent);
+
+            void setAction(const std::string& type);
+            void setInterval(int interval);
+            void setThreshold(int threshold);
+        private:
+            IntervalGesture& parent;
+        };
     };
 }}
 

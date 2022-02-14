@@ -21,10 +21,13 @@
 
 using namespace logid::actions;
 
-IntervalGesture::IntervalGesture(Device *device, config::IntervalGesture& config,
-                                 const std::shared_ptr<ipcgull::node>& parent,
-                                 const std::string& direction) :
-    Gesture (device, parent, direction), _config (config)
+const char* IntervalGesture::interface_name = "OnInterval";
+
+IntervalGesture::IntervalGesture(
+        Device *device, config::IntervalGesture& config,
+        const std::shared_ptr<ipcgull::node>& parent) :
+    Gesture (device, parent, interface_name),
+    _axis (0), _interval_pass_count (0), _config (config)
 {
     if(config.action) {
         try {
@@ -50,6 +53,9 @@ void IntervalGesture::release(bool primary)
 
 void IntervalGesture::move(int16_t axis)
 {
+    if(!_config.interval.has_value())
+        return;
+
     const auto threshold =
             _config.threshold.value_or(defaults::gesture_threshold);
     _axis += axis;
@@ -57,7 +63,7 @@ void IntervalGesture::move(int16_t axis)
         return;
 
     int16_t new_interval_count = (_axis - threshold)/
-            _config.interval;
+            _config.interval.value();
     if(new_interval_count > _interval_pass_count) {
         if(_action) {
             _action->press();

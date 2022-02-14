@@ -24,13 +24,12 @@
 
 using namespace logid::actions;
 
-const char* ChangeDPI::interface_name =
-        "pizza.pixl.LogiOps.Action.ChangeDPI";
+const char* ChangeDPI::interface_name = "ChangeDPI";
 
 ChangeDPI::ChangeDPI(
         Device *device, config::ChangeDPI& config,
         const std::shared_ptr<ipcgull::node>& parent) :
-    Action(device), _config (config)
+    Action(device, interface_name), _config (config)
 {
     _dpi = _device->getFeature<features::DPI>("dpi");
     if(!_dpi)
@@ -38,19 +37,17 @@ ChangeDPI::ChangeDPI(
                         "ChangeDPI action.",
                   _device->hidpp20().devicePath().c_str(),
                   _device->hidpp20().deviceIndex());
-
-    _ipc = parent->make_interface<IPC>(this);
 }
 
 void ChangeDPI::press()
 {
     _pressed = true;
-    if(_dpi) {
+    if(_dpi && _config.inc.has_value()) {
         spawn_task(
         [this]{
             try {
                 uint16_t last_dpi = _dpi->getDPI(_config.sensor.value_or(0));
-                _dpi->setDPI(last_dpi + _config.inc,
+                _dpi->setDPI(last_dpi + _config.inc.value(),
                              _config.sensor.value_or(0));
             } catch (backend::hidpp20::Error& e) {
                 if(e.code() == backend::hidpp20::Error::InvalidArgument)
@@ -74,9 +71,4 @@ void ChangeDPI::release()
 uint8_t ChangeDPI::reprogFlags() const
 {
     return backend::hidpp20::ReprogControls::TemporaryDiverted;
-}
-
-ChangeDPI::IPC::IPC(ChangeDPI *action) :
-        ipcgull::interface(interface_name, {}, {}, {}), _action (*action)
-{
 }

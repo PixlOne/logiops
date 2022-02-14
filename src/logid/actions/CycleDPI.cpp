@@ -25,12 +25,12 @@
 using namespace logid::actions;
 using namespace libconfig;
 
-const char* CycleDPI::interface_name =
-        "pizza.pixl.LogiOps.Action.CycleDPI";
+const char* CycleDPI::interface_name = "CycleDPI";
 
 CycleDPI::CycleDPI(Device* device, config::CycleDPI& config,
                    const std::shared_ptr<ipcgull::node>& parent) :
-    Action (device), _config (config), _current_dpi (_config.dpis.begin())
+    Action (device, interface_name),
+    _config (config)
 {
     _dpi = _device->getFeature<features::DPI>("dpi");
     if(!_dpi)
@@ -39,27 +39,29 @@ CycleDPI::CycleDPI(Device* device, config::CycleDPI& config,
                   _device->hidpp20().devicePath().c_str(),
                   _device->hidpp20().deviceIndex());
 
-    _ipc = parent->make_interface<IPC>(this);
+    if(_config.dpis.has_value()) {
+       _current_dpi = _config.dpis.value().begin();
+    }
 }
 
 void CycleDPI::press()
 {
     _pressed = true;
-    if(_dpi && !_config.dpis.empty()) {
-        spawn_task(
-        [this](){
-            std::lock_guard<std::mutex> lock(_dpi_lock);
-            ++_current_dpi;
-            if(_current_dpi == _config.dpis.end())
-                _current_dpi = _config.dpis.begin();
+    std::lock_guard<std::mutex> lock(_dpi_lock);
+    if(_dpi && _config.dpis.has_value() && _config.dpis.value().empty()) {
+        ++_current_dpi;
+        if(_current_dpi == _config.dpis.value().end())
+            _current_dpi = _config.dpis.value().begin();
+
+        spawn_task([this, dpi=*_current_dpi]{
             try {
-                _dpi->setDPI(*_current_dpi, _config.sensor.value_or(0));
+                _dpi->setDPI(dpi, _config.sensor.value_or(0));
             } catch (backend::hidpp20::Error& e) {
                 if(e.code() == backend::hidpp20::Error::InvalidArgument)
                     logPrintf(WARN, "%s:%d: Could not set DPI to %d for "
-                        "sensor %d", _device->hidpp20().devicePath().c_str(),
-                        _device->hidpp20().deviceIndex(), *_current_dpi,
-                        _config.sensor.value_or(0));
+                                    "sensor %d", _device->hidpp20().devicePath().c_str(),
+                              _device->hidpp20().deviceIndex(), dpi,
+                              _config.sensor.value_or(0));
                 else
                     throw e;
             }
@@ -75,9 +77,4 @@ void CycleDPI::release()
 uint8_t CycleDPI::reprogFlags() const
 {
     return backend::hidpp20::ReprogControls::TemporaryDiverted;
-}
-
-CycleDPI::IPC::IPC(CycleDPI *action) :
-    ipcgull::interface(interface_name, {}, {}, {}), _action (*action)
-{
 }

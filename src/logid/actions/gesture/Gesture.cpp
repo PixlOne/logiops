@@ -17,6 +17,7 @@
  */
 
 #include <algorithm>
+#include <utility>
 #include "Gesture.h"
 #include "ReleaseGesture.h"
 #include "ThresholdGesture.h"
@@ -28,9 +29,10 @@ using namespace logid;
 using namespace logid::actions;
 
 Gesture::Gesture(Device *device,
-                 const std::shared_ptr<ipcgull::node>& parent,
-                 const std::string& direction) : _device (device),
-                 _node (parent->make_child(direction))
+                 std::shared_ptr<ipcgull::node> node,
+                 const std::string& name, tables t) :
+        ipcgull::interface("pizza.pixl.LogiOps.Gesture." + name, std::move(t)),
+        _node (std::move(node)), _device (device)
 {
 }
 
@@ -48,20 +50,41 @@ struct gesture_type<T&> : gesture_type<T> { };
 template <typename T>
 std::shared_ptr<Gesture> _makeGesture(
         Device* device, T gesture,
-        const std::shared_ptr<ipcgull::node>& parent,
-        const std::string& direction) {
-    return std::make_shared<typename gesture_type<T>::type>(
-            device, gesture, parent, std::move(direction));
+        const std::shared_ptr<ipcgull::node>& parent) {
+    return parent->make_interface<typename gesture_type<T>::type>(
+            device, gesture, parent);
 }
 
 std::shared_ptr<Gesture> Gesture::makeGesture(
         Device *device, config::Gesture& gesture,
-        const std::shared_ptr<ipcgull::node>& parent,
-        const std::string& direction)
+        const std::shared_ptr<ipcgull::node>& parent)
 {
-    std::shared_ptr<Gesture> ret;
-    std::visit([&device, &ret, &parent, &direction](auto&& x) {
-        ret = _makeGesture(device, x, parent, direction);
+    return std::visit([&device, &parent](auto&& x) {
+        return _makeGesture(device, x, parent);
     }, gesture);
-    return ret;
+}
+
+std::shared_ptr<Gesture> Gesture::makeGesture(
+        Device *device, const std::string& type,
+        config::Gesture& config,
+        const std::shared_ptr<ipcgull::node> &parent)
+{
+    if(type == AxisGesture::interface_name) {
+        config = config::AxisGesture();
+        return makeGesture(device, config, parent);
+    } else if(type == IntervalGesture::interface_name) {
+        config = config::IntervalGesture();
+        return makeGesture(device, config, parent);
+    } else if(type == ReleaseGesture::interface_name) {
+        config = config::IntervalGesture();
+        return makeGesture(device, config, parent);
+    } else if(type == ThresholdGesture::interface_name) {
+        config = config::ThresholdGesture();
+        return makeGesture(device, config, parent);
+    } else if(type == NullGesture::interface_name) {
+        config = config::NoGesture();
+        return makeGesture(device, config, parent);
+    }
+
+    throw InvalidGesture();
 }

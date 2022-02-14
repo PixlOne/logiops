@@ -88,6 +88,7 @@ namespace logid
         std::shared_ptr<ipcgull::node> _device_node;
         std::shared_ptr<ipcgull::node> _receiver_node;
 
+        std::shared_ptr<Configuration::IPC> _ipc_config;
         std::shared_ptr<DevicesIPC> _ipc_devices;
         std::shared_ptr<ReceiversIPC> _ipc_receivers;
 

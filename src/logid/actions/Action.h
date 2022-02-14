@@ -45,7 +45,7 @@ namespace actions {
         std::string _action;
     };
 
-    class Action
+    class Action : public ipcgull::interface
     {
     public:
         static std::shared_ptr<Action> makeAction(
@@ -84,9 +84,8 @@ namespace actions {
         virtual ~Action() = default;
 
     protected:
-        explicit Action(Device* device) : _device (device), _pressed (false)
-        {
-        }
+        Action(Device* device, const std::string& name, tables t={});
+
         Device* _device;
         std::atomic<bool> _pressed;
     };

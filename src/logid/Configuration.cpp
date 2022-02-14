@@ -63,3 +63,10 @@ void Configuration::save()
         throw;
     }
 }
+
+Configuration::IPC::IPC(Configuration *config) :
+        ipcgull::interface("pizza.pixl.LogiOps.Config", {
+                {"Save", {config, &Configuration::save}}
+        }, {}, {})
+{
+}

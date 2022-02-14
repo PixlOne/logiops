@@ -41,6 +41,7 @@ namespace features
         backend::hidpp20::ThumbWheel::ThumbwheelInfo _wheel_info;
 
         std::shared_ptr<ipcgull::node> _node;
+        std::shared_ptr<ipcgull::node> _gesture_node;
 
         std::shared_ptr<actions::Gesture> _left_action;
         std::shared_ptr<actions::Gesture> _right_action;

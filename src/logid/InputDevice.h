@@ -37,6 +37,7 @@ namespace logid
         {
         public:
             explicit InvalidEventCode(const std::string& name);
+            explicit InvalidEventCode(uint code);
             const char* what() const noexcept override;
         private:
             const std::string _what;
@@ -50,7 +51,9 @@ namespace logid
         void pressKey(uint code);
         void releaseKey(uint code);
 
+        static std::string toKeyName(uint code);
         static uint toKeyCode(const std::string& name);
+        static std::string toAxisName(uint code);
         static uint toAxisCode(const std::string& name);
         static int getLowResAxis(uint axis_code);
 
@@ -58,6 +61,7 @@ namespace logid
         void _sendEvent(uint type, uint code, int value);
         void _enableEvent(uint type, uint name);
 
+        static std::string _toEventName(uint type, uint code);
         static uint _toEventCode(uint type, const std::string& name);
 
         bool registered_keys[KEY_CNT];

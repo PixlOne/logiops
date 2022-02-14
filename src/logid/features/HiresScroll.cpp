@@ -116,7 +116,7 @@ void HiresScroll::_makeAction(std::shared_ptr<actions::Gesture> &gesture,
 {
     if(config.has_value()) {
         gesture = actions::Gesture::makeGesture(_device, config.value(),
-                                                _node, direction);
+                                                _node->make_child(direction));
         try {
             auto axis = std::dynamic_pointer_cast<actions::AxisGesture>(
                     gesture);

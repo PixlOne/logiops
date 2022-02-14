@@ -142,17 +142,17 @@ namespace logid
         const DeviceNickname _nickname;
         std::shared_ptr<ipcgull::node> _ipc_node;
 
-        class DeviceIPC : public ipcgull::interface {
+        class IPC : public ipcgull::interface {
         private:
             Device& _device;
         public:
-            DeviceIPC(Device* device);
+            IPC(Device* device);
             void notifyStatus() const;
         };
 
         ipcgull::property<bool> _awake;
         std::mutex _state_lock;
-        std::shared_ptr<DeviceIPC> _ipc_interface;
+        std::shared_ptr<IPC> _ipc_interface;
 
         std::weak_ptr<Device> _self;
     };

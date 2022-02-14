@@ -24,6 +24,7 @@
 #include <memory>
 #include <chrono>
 #include <set>
+#include <ipcgull/interface.h>
 
 #include "config/schema.h"
 
@@ -44,6 +45,13 @@ namespace logid
         // Reloading is not safe, references will be invalidated
         //void reload();
         void save();
+
+        class IPC : public ipcgull::interface
+        {
+        public:
+            IPC(Configuration* config);
+        };
+
     private:
         std::string _config_file;
         libconfig::Config _config;

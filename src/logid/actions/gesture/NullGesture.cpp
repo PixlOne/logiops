@@ -20,11 +20,12 @@
 
 using namespace logid::actions;
 
+const char* NullGesture::interface_name = "None";
+
 NullGesture::NullGesture(Device *device,
                          config::NoGesture& config,
-                         const std::shared_ptr<ipcgull::node>& parent,
-                         const std::string& direction) :
-    Gesture (device, parent, direction), _config (config)
+                         const std::shared_ptr<ipcgull::node>& parent) :
+    Gesture (device, parent, interface_name), _config (config)
 {
 }
 

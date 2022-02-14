@@ -33,13 +33,27 @@ namespace logid::config {
         char value[N];
     };
 
+    template <class T>
+    struct less_caseless {
+        constexpr bool operator()(const T& a, const T& b) const noexcept {
+            auto a_it = a.begin(), b_it = b.begin();
+            for(; a_it != a.end() && b_it != b.end(); ++a_it, ++b_it) {
+                if(tolower(*a_it) != tolower(*b_it))
+                    return tolower(*a_it) < tolower(*b_it);
+            }
+            return b_it != b.end();
+        }
+    };
+
     // Warning: map must be a variant of groups or a group
-    template <typename K, typename V, string_literal KeyName>
-    class map : public std::map<K, V> {
+    template <typename K, typename V, string_literal KeyName,
+            typename Compare=typename std::map<K, V>::key_compare,
+            typename Allocator=typename std::map<K, V>::allocator_type>
+    class map : public std::map<K, V, Compare, Allocator> {
     public:
         template <typename... Args>
         map(Args... args) :
-            std::map<K, V>(std::forward<Args>(args)...) { }
+            std::map<K, V, Compare, Allocator>(std::forward<Args>(args)...) { }
     };
 }
 

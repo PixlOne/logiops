@@ -52,6 +52,7 @@ DeviceManager::DeviceManager(std::shared_ptr<Configuration> config,
 {
     _ipc_devices = _root_node->make_interface<DevicesIPC>(this);
     _ipc_receivers = _root_node->make_interface<ReceiversIPC>(this);
+    _ipc_config = _root_node->make_interface<Configuration::IPC>(_config.get());
     _device_node->add_server(_server);
     _receiver_node->add_server(_server);
     _root_node->add_server(_server);

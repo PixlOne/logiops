@@ -34,7 +34,7 @@ namespace logid::config {
     void set(libconfig::Setting& parent, const T& t);
 
     template <typename T>
-    T get(const libconfig::Setting& parent, const std::string& name);
+    auto get(const libconfig::Setting& parent, const std::string& name);
 
     template <typename T>
     void append(libconfig::Setting& list, const T& t);
@@ -189,7 +189,7 @@ namespace logid::config {
         }
 
         void _save(libconfig::Setting& setting) const override {
-            set(setting, _signature, _sig_field);
+            set(setting, _sig_field, _signature);
             _setter(setting, this, _names);
         }
 
