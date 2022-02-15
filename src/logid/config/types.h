@@ -39,20 +39,20 @@ namespace logid::config {
         struct config_io {
             static_assert(std::is_base_of<group, T>::value);
 
-            static T get(const libconfig::Setting& parent,
+            static inline T get(const libconfig::Setting& parent,
                          const std::string& name) {
                 T t {};
                 t._load(parent.lookup(name));
                 return t;
             }
 
-            static T get(const libconfig::Setting& setting) {
+            static inline T get(const libconfig::Setting& setting) {
                 T t {};
                 t._load(setting);
                 return t;
             }
 
-            static void set(libconfig::Setting& parent,
+            static inline void set(libconfig::Setting& parent,
                             const std::string& name,
                             const T& t) {
                 if(!parent.exists(name)) {
@@ -65,11 +65,11 @@ namespace logid::config {
                 t._save(parent.lookup(name));
             }
 
-            static void set(libconfig::Setting& setting, const T& t) {
+            static inline void set(libconfig::Setting& setting, const T& t) {
                 t._save(setting);
             }
 
-            static void append(libconfig::Setting& list, const T& t) {
+            static inline void append(libconfig::Setting& list, const T& t) {
                 auto& x = list.add(libconfig::Setting::TypeGroup);
                 set(x, t);
             }
@@ -80,16 +80,16 @@ namespace logid::config {
 
         template <typename T, libconfig::Setting::Type TypeEnum>
         struct primitive_io {
-            static T get(const libconfig::Setting& parent,
+            static inline T get(const libconfig::Setting& parent,
                          const std::string& name) {
                 return parent.lookup(name);
             }
 
-            static T get(const libconfig::Setting& setting) {
+            static inline T get(const libconfig::Setting& setting) {
                 return setting;
             }
 
-            static void set(libconfig::Setting& parent,
+            static inline void set(libconfig::Setting& parent,
                             const std::string& name,
                             const T& t) {
                 if(!parent.exists(name)) {
@@ -101,11 +101,11 @@ namespace logid::config {
                 set(parent.lookup(name), t);
             }
 
-            static void set(libconfig::Setting& setting, const T& t) {
+            static inline void set(libconfig::Setting& setting, const T& t) {
                 setting = t;
             }
 
-            static void append(libconfig::Setting& list, const T& t) {
+            static inline void append(libconfig::Setting& list, const T& t) {
                 auto& x = list.add(TypeEnum);
                 set(x, t);
             }
@@ -113,28 +113,28 @@ namespace logid::config {
 
         template <typename T, typename O, libconfig::Setting::Type TypeEnum>
         struct reinterpret_io {
-            static T get(const libconfig::Setting& parent,
+            static inline T get(const libconfig::Setting& parent,
                          const std::string& name) {
                 return static_cast<T>(primitive_io<O, TypeEnum>::get(parent, name));
             }
 
-            static T get(const libconfig::Setting& setting) {
+            static inline T get(const libconfig::Setting& setting) {
                 return static_cast<T>(primitive_io<O, TypeEnum>::get(setting));
             }
 
-            static void set(libconfig::Setting& parent,
+            static inline void set(libconfig::Setting& parent,
                             const std::string& name,
                             const T& t) {
                 primitive_io<O, TypeEnum>::set(parent, name,
                                                static_cast<O>(t));
             }
 
-            static void set(libconfig::Setting& setting, const T& t) {
+            static inline void set(libconfig::Setting& setting, const T& t) {
                 primitive_io<O, TypeEnum>::set(setting,
                                                static_cast<O>(t));
             }
 
-            static void append(libconfig::Setting& list, const T& t) {
+            static inline void append(libconfig::Setting& list, const T& t) {
                 primitive_io<O, TypeEnum>::append(list,
                                                   static_cast<O>(t));
             }
@@ -188,17 +188,13 @@ namespace logid::config {
         struct config_io<std::variant<T...>> {
         private:
             template <typename Singleton>
-            static std::variant<T...> try_each(
+            static inline std::variant<T...> try_each(
                     const libconfig::Setting& setting) {
-                try {
-                    return config_io<Singleton>::get(setting);
-                } catch(libconfig::SettingTypeException& e) {
-                    throw;
-                }
+                return config_io<Singleton>::get(setting);
             }
 
             template <typename First, typename Next, typename... Rest>
-            static std::variant<T...> try_each(
+            static inline std::variant<T...> try_each(
                     const libconfig::Setting& setting) {
                 try {
                     return config_io<First>::get(setting);
@@ -207,32 +203,34 @@ namespace logid::config {
                 }
             }
         public:
-            static std::variant<T...> get(const libconfig::Setting& setting) {
+            static inline std::variant<T...> get(
+                    const libconfig::Setting& setting) {
                 return try_each<T...>(setting);
             }
 
-            static std::variant<T...> get(const libconfig::Setting& parent,
-                                          const std::string& name) {
+            static inline std::variant<T...> get(
+                    const libconfig::Setting& parent,
+                    const std::string& name) {
                 return get(parent.lookup(name));
             }
 
-            static void set(libconfig::Setting& setting,
-                            const std::variant<T...>& t) {
+            static inline void set(libconfig::Setting& setting,
+                                   const std::variant<T...>& t) {
                 std::visit([&setting](auto&& arg){
                     config::set(setting, arg);
                 }, t);
             }
 
-            static void set(libconfig::Setting& parent,
-                            const std::string& name,
-                            const std::variant<T...>& t) {
+            static inline void set(libconfig::Setting& parent,
+                                   const std::string& name,
+                                   const std::variant<T...>& t) {
                 std::visit([&parent, &name](auto&& arg){
                     config::set(parent, name, arg);
                 }, t);
             }
 
-            static void append(libconfig::Setting& list,
-                               const std::variant<T...>& t) {
+            static inline void append(libconfig::Setting& list,
+                                      const std::variant<T...>& t) {
                 std::visit([&list](auto&& arg){
                     config::append(list, arg);
                 }, t);
@@ -241,7 +239,7 @@ namespace logid::config {
 
         template <typename T>
         struct config_io<std::list<T>> {
-            static std::list<T> get(const libconfig::Setting& setting) {
+            static inline std::list<T> get(const libconfig::Setting& setting) {
                 const auto size = setting.getLength();
                 std::list<T> t {};
                 for(int i = 0; i < size; ++i) {
@@ -252,13 +250,13 @@ namespace logid::config {
                 return t;
             }
 
-            static std::list<T> get(const libconfig::Setting& parent,
+            static inline std::list<T> get(const libconfig::Setting& parent,
                                       const std::string& name) {
                 return get(parent.lookup(name));
             }
 
-            static void set(libconfig::Setting& setting,
-                            const std::list<T>& t) {
+            static inline void set(libconfig::Setting& setting,
+                                   const std::list<T>& t) {
                 while(setting.getLength() != 0)
                     setting.remove((int)0);
                 for(auto& x : t) {
@@ -266,9 +264,9 @@ namespace logid::config {
                 }
             }
 
-            static void set(libconfig::Setting& parent,
-                            const std::string& name,
-                            const std::list<T>& t) {
+            static inline void set(libconfig::Setting& parent,
+                                   const std::string& name,
+                                   const std::list<T>& t) {
                 if (!parent.exists(name)) {
                     parent.add(name, libconfig::Setting::TypeList);
                 } else if(!parent.lookup(name).isList()) {
@@ -278,8 +276,8 @@ namespace logid::config {
                 set(parent.lookup(name), t);
             }
 
-            static void append(libconfig::Setting& list,
-                               const std::list<T>& t) {
+            static inline void append(libconfig::Setting& list,
+                                      const std::list<T>& t) {
                 auto& s = list.add(libconfig::Setting::TypeList);
                 set(s, t);
             }
@@ -287,7 +285,7 @@ namespace logid::config {
 
         template <typename T>
         struct config_io<std::set<T>> {
-            static std::set<T> get(const libconfig::Setting& setting) {
+            static inline std::set<T> get(const libconfig::Setting& setting) {
                 const auto size = setting.getLength();
                 std::set<T> t;
                 for(int i = 0; i < size; ++i) {
@@ -298,13 +296,13 @@ namespace logid::config {
                 return t;
             }
 
-            static std::set<T> get(const libconfig::Setting& parent,
-                                      const std::string& name) {
+            static inline std::set<T> get(const libconfig::Setting& parent,
+                                          const std::string& name) {
                 return get(parent.lookup(name));
             }
 
-            static void set(libconfig::Setting& setting,
-                            const std::set<T>& t) {
+            static inline void set(libconfig::Setting& setting,
+                                   const std::set<T>& t) {
                 while(setting.getLength() != 0)
                     setting.remove((int)0);
                 for(auto& x : t) {
@@ -313,9 +311,9 @@ namespace logid::config {
                 }
             }
 
-            static void set(libconfig::Setting& parent,
-                            const std::string& name,
-                            const std::set<T>& t) {
+            static inline void set(libconfig::Setting& parent,
+                                   const std::string& name,
+                                   const std::set<T>& t) {
                 if (!parent.exists(name)) {
                     parent.add(name, libconfig::Setting::TypeList);
                 } else if(!parent.lookup(name).isArray()) {
@@ -325,8 +323,8 @@ namespace logid::config {
                 set(parent.lookup(name), t);
             }
 
-            static void append(libconfig::Setting& list,
-                               const std::set<T>& t) {
+            static inline void append(libconfig::Setting& list,
+                                      const std::set<T>& t) {
                 auto& s = list.add(libconfig::Setting::TypeList);
                 set(s, t);
             }
@@ -335,7 +333,7 @@ namespace logid::config {
         template <typename K, typename V, string_literal KeyName,
                   typename Cmp, typename Alloc>
         struct config_io<map<K, V, KeyName, Cmp, Alloc>> {
-            static map<K, V, KeyName, Cmp, Alloc> get(
+            static inline map<K, V, KeyName, Cmp, Alloc> get(
                     const libconfig::Setting& setting) {
                 const auto size = setting.getLength();
                 map<K, V, KeyName, Cmp, Alloc> t;
@@ -349,13 +347,13 @@ namespace logid::config {
                 return t;
             }
 
-            static map<K, V, KeyName, Cmp, Alloc> get(
+            static inline map<K, V, KeyName, Cmp, Alloc> get(
                     const libconfig::Setting& parent, const std::string& name) {
                 return get(parent.lookup(name));
             }
 
-            static void set(libconfig::Setting& setting,
-                            const map<K, V, KeyName, Cmp, Alloc>& t) {
+            static inline void set(libconfig::Setting& setting,
+                                   const map<K, V, KeyName, Cmp, Alloc>& t) {
                 while(setting.getLength() != 0)
                     setting.remove((int)0);
                 for(auto& x : t) {
@@ -365,9 +363,9 @@ namespace logid::config {
                 }
             }
 
-            static void set(libconfig::Setting& parent,
-                            const std::string& name,
-                            const map<K, V, KeyName, Cmp, Alloc>& t) {
+            static inline void set(libconfig::Setting& parent,
+                                   const std::string& name,
+                                   const map<K, V, KeyName, Cmp, Alloc>& t) {
                 if (!parent.exists(name)) {
                     parent.add(name, libconfig::Setting::TypeList);
                 } else if(!parent.lookup(name).isArray()) {
@@ -377,8 +375,8 @@ namespace logid::config {
                 set(parent.lookup(name), t);
             }
 
-            static void append(libconfig::Setting& list,
-                               const map<K, V, KeyName, Cmp, Alloc>& t) {
+            static inline void append(libconfig::Setting& list,
+                                      const map<K, V, KeyName, Cmp, Alloc>& t) {
                 auto& s = list.add(libconfig::Setting::TypeList);
                 set(s, t);
             }
@@ -386,17 +384,17 @@ namespace logid::config {
 
         template <typename T>
         struct config_io<std::optional<T>> {
-            static std::optional<T> get(const libconfig::Setting& parent,
-                                      const std::string& name) {
+            static inline std::optional<T> get(const libconfig::Setting& parent,
+                                               const std::string& name) {
                 if(parent.exists(name))
                     return config_io<T>::get(parent.lookup(name));
                 else
                     return {};
             }
 
-            static void set(libconfig::Setting& parent,
-                            const std::string& name,
-                            const std::optional<T>& t) {
+            static inline void set(libconfig::Setting& parent,
+                                   const std::string& name,
+                                   const std::optional<T>& t) {
                 if (t.has_value())
                     config_io<T>::set(parent, name, t.value());
             }

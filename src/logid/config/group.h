@@ -45,12 +45,12 @@ namespace logid::config {
 
         template <typename T>
         struct group_io<T> {
-            static void get(
+            static inline void get(
                     [[maybe_unused]] const libconfig::Setting& s,
                     [[maybe_unused]] T* t,
                     [[maybe_unused]] const std::vector<std::string>& names,
                     [[maybe_unused]] const std::size_t index) { }
-            static void set(
+            static inline void set(
                     [[maybe_unused]] libconfig::Setting& s,
                     [[maybe_unused]] const T* t,
                     [[maybe_unused]] const std::vector<std::string>& names,
@@ -59,7 +59,7 @@ namespace logid::config {
 
         template <typename T, typename A, typename... M>
         struct group_io<T, A, M...> {
-            static void get(
+            static inline void get(
                     const libconfig::Setting& s, T* t,
                     const std::vector<std::string>& names,
                     const std::size_t index, A T::* arg, M T::*... rest) {
@@ -77,7 +77,7 @@ namespace logid::config {
                 }
             }
 
-            static void set(
+            static inline void set(
                     libconfig::Setting& s, const T* t,
                     const std::vector<std::string>& names,
                     const std::size_t index, A T::* arg, M T::*... rest) {
@@ -102,7 +102,7 @@ namespace logid::config {
         friend struct signed_group;
     protected:
         template <typename T, typename... M>
-        group(const std::array<std::string, sizeof...(M)>& names,
+        explicit group(const std::array<std::string, sizeof...(M)>& names,
               M T::*... args) :
                 _names (names.begin(), names.end()),
                 _getter ([args...](const libconfig::Setting& s, group* g,
@@ -147,12 +147,12 @@ namespace logid::config {
     namespace {
         template <typename T>
         struct normalize_signature {
-            static const T& make(const T& ret) { return ret; }
+            static inline const T& make(const T& ret) { return ret; }
         };
 
         template <>
         struct normalize_signature<std::string> {
-            static std::string make(const std::string& data) {
+            static inline std::string make(const std::string& data) {
                 std::string ret = data;
                 std::transform(ret.begin(), ret.end(),
                                ret.begin(), ::tolower);
