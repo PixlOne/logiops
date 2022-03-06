@@ -30,9 +30,11 @@ namespace features
     {
     public:
         explicit DeviceStatus(Device* dev);
+        ~DeviceStatus();
         virtual void configure();
         virtual void listen();
     private:
+        std::optional<backend::hidpp::Device::EvHandlerId> _ev_handler;
         std::shared_ptr<backend::hidpp20::WirelessDeviceStatus>
                 _wireless_device_status;
     };

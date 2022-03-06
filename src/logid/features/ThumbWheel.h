@@ -56,6 +56,8 @@ namespace features
         bool _last_proxy = false;
         bool _last_touch = false;
         std::optional<config::ThumbWheel>& _config;
+
+        std::optional<backend::hidpp::Device::EvHandlerId> _ev_handler;
     };
 }}
 

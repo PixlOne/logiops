@@ -108,6 +108,7 @@ namespace features
         };
 
         std::shared_ptr<IPC> _ipc_interface;
+        std::optional<backend::hidpp::Device::EvHandlerId> _ev_handler;
     };
 }}
 

@@ -69,7 +69,8 @@ ThumbWheel::ThumbwheelStatus ThumbWheel::setStatus(bool divert, bool invert)
     return status;
 }
 
-ThumbWheel::ThumbwheelEvent ThumbWheel::thumbwheelEvent(hidpp::Report& report)
+ThumbWheel::ThumbwheelEvent ThumbWheel::thumbwheelEvent(
+        const hidpp::Report& report)
 {
     assert(report.function() == Event);
     ThumbwheelEvent event{};

@@ -46,6 +46,8 @@ namespace hidpp
     class Device
     {
     public:
+        typedef std::list<EventHandler>::const_iterator EvHandlerId;
+
         class InvalidDevice : std::exception
         {
         public:
@@ -80,11 +82,8 @@ namespace hidpp
         std::string name() const;
         uint16_t pid() const;
 
-        void addEventHandler(const std::string& nickname,
-                const std::shared_ptr<EventHandler>& handler);
-        void removeEventHandler(const std::string& nickname);
-        const std::map<std::string, std::shared_ptr<EventHandler>>&
-            eventHandlers();
+        EvHandlerId addEventHandler(EventHandler handler);
+        void removeEventHandler(EvHandlerId id);
 
         virtual Report sendReport(const Report& report);
         void sendReportNoResponse(Report report);
@@ -117,7 +116,8 @@ namespace hidpp
         std::mutex _slot_lock;
         std::optional<Report> _report_slot;
 
-        std::map<std::string, std::shared_ptr<EventHandler>> _event_handlers;
+        std::mutex _event_handler_lock;
+        std::list<EventHandler> _event_handlers;
     };
 } } }
 

@@ -18,8 +18,6 @@
 #include "DeviceStatus.h"
 #include "../util/task.h"
 
-#define EVENTHANDLER_NAME "devicestatus"
-
 using namespace logid::features;
 using namespace logid::backend;
 
@@ -41,6 +39,12 @@ DeviceStatus::DeviceStatus(logid::Device *dev) : DeviceFeature(dev)
     }
 }
 
+DeviceStatus::~DeviceStatus() noexcept
+{
+    if(_ev_handler.has_value())
+        _device->hidpp20().removeEventHandler(_ev_handler.value());
+}
+
 void DeviceStatus::configure()
 {
     // Do nothing
@@ -48,23 +52,19 @@ void DeviceStatus::configure()
 
 void DeviceStatus::listen()
 {
-    if(_device->hidpp20().eventHandlers().find(EVENTHANDLER_NAME) ==
-       _device->hidpp20().eventHandlers().end()) {
-        auto handler = std::make_shared<hidpp::EventHandler>();
-        handler->condition = [index=_wireless_device_status->featureIndex()](
-                const hidpp::Report& report)->bool {
-            return report.feature() == index && report.function() ==
-                hidpp20::WirelessDeviceStatus::StatusBroadcast;
-        };
-
-        handler->callback = [dev=this->_device](
-                const hidpp::Report& report)->void {
-            auto event = hidpp20::WirelessDeviceStatus::statusBroadcastEvent(
-                    report);
-            if(event.reconfNeeded)
-                spawn_task( [dev](){ dev->wakeup(); });
-        };
-
-        _device->hidpp20().addEventHandler(EVENTHANDLER_NAME, handler);
+    if(!_ev_handler.has_value()) {
+        _ev_handler = _device->hidpp20().addEventHandler({
+            [index=_wireless_device_status->featureIndex()](
+                    const hidpp::Report& report)->bool {
+                return report.feature() == index && report.function() ==
+                    hidpp20::WirelessDeviceStatus::StatusBroadcast;
+            },
+            [dev=this->_device](const hidpp::Report& report) {
+                auto event =
+                        hidpp20::WirelessDeviceStatus::statusBroadcastEvent(report);
+                if(event.reconfNeeded)
+                    spawn_task( [dev](){ dev->wakeup(); });
+            }
+        });
     }
 }

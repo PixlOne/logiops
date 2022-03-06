@@ -27,7 +27,6 @@ using namespace logid;
 #define FLAG_STR(b) (_wheel_info.capabilities & _thumb_wheel->b ? "YES" : \
     "NO")
 
-#define SCROLL_EVENTHANDLER_NAME "THUMB_WHEEL"
 
 std::shared_ptr<actions::Action> _genAction(
         Device* dev, std::optional<config::BasicAction>& conf,
@@ -118,7 +117,8 @@ ThumbWheel::ThumbWheel(Device *dev) : DeviceFeature(dev), _wheel_info(),
 
 ThumbWheel::~ThumbWheel()
 {
-    _device->hidpp20().removeEventHandler(SCROLL_EVENTHANDLER_NAME);
+    if(_ev_handler.has_value())
+        _device->hidpp20().removeEventHandler(_ev_handler.value());
 }
 
 void ThumbWheel::configure()
@@ -132,20 +132,17 @@ void ThumbWheel::configure()
 
 void ThumbWheel::listen()
 {
-    if(_device->hidpp20().eventHandlers().find(SCROLL_EVENTHANDLER_NAME) ==
-       _device->hidpp20().eventHandlers().end()) {
-        auto handler = std::make_shared<hidpp::EventHandler>();
-        handler->condition = [index=_thumb_wheel->featureIndex()]
-                (hidpp::Report& report)->bool {
-            return (report.feature() == index) && (report.function() ==
-                hidpp20::ThumbWheel::Event);
-        };
-
-        handler->callback = [this](hidpp::Report& report)->void {
-            this->_handleEvent(_thumb_wheel->thumbwheelEvent(report));
-        };
-
-        _device->hidpp20().addEventHandler(SCROLL_EVENTHANDLER_NAME, handler);
+    if(!_ev_handler.has_value()) {
+        _ev_handler = _device->hidpp20().addEventHandler({
+            [index=_thumb_wheel->featureIndex()]
+                    (const hidpp::Report& report)->bool {
+                return (report.feature() == index) &&
+                (report.function() == hidpp20::ThumbWheel::Event);
+            },
+            [this](const hidpp::Report& report)->void {
+                _handleEvent(_thumb_wheel->thumbwheelEvent(report));
+            }
+        });
     }
 }
 

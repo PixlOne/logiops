@@ -86,7 +86,8 @@ namespace hidpp20
 
         ThumbwheelStatus setStatus(bool divert, bool invert);
 
-        ThumbwheelEvent thumbwheelEvent(hidpp::Report& report);
+        [[nodiscard]] ThumbwheelEvent thumbwheelEvent(
+                const hidpp::Report& report);
     };
 }}}
 

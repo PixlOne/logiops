@@ -31,8 +31,8 @@ namespace dj
 {
     struct EventHandler
     {
-        std::function<bool(Report&)> condition;
-        std::function<void(Report&)> callback;
+        std::function<bool(const Report&)> condition;
+        std::function<void(const Report&)> callback;
     };
 
     class InvalidReceiver : public std::exception

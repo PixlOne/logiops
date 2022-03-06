@@ -36,6 +36,8 @@ namespace features
         uint8_t getMode();
         void setMode(uint8_t mode);
     private:
+        std::optional<backend::hidpp::Device::EvHandlerId> _ev_handler;
+
         void _makeAction(std::shared_ptr<actions::Gesture>& gesture,
                          std::optional<config::Gesture>& config,
                          const std::string& direction);

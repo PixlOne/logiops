@@ -28,8 +28,6 @@ using namespace logid::actions;
 #define HIDPP20_REPROG_REBIND (hidpp20::ReprogControls::ChangeTemporaryDivert \
 | hidpp20::ReprogControls::ChangeRawXYDivert)
 
-#define EVENTHANDLER_NAME "REMAP_BUTTON"
-
 RemapButton::RemapButton(Device *dev): DeviceFeature(dev),
     _config (dev->activeProfile().buttons),
     _ipc_node (dev->ipcNode()->make_child("buttons"))
@@ -99,7 +97,8 @@ RemapButton::RemapButton(Device *dev): DeviceFeature(dev),
 
 RemapButton::~RemapButton()
 {
-    _device->hidpp20().removeEventHandler(EVENTHANDLER_NAME);
+    if(_ev_handler.has_value())
+        _device->hidpp20().removeEventHandler(_ev_handler.value());
 }
 
 void RemapButton::configure()
@@ -110,30 +109,35 @@ void RemapButton::configure()
 
 void RemapButton::listen()
 {
-    if(_device->hidpp20().eventHandlers().find(EVENTHANDLER_NAME) ==
-       _device->hidpp20().eventHandlers().end()) {
-        auto handler = std::make_shared<hidpp::EventHandler>();
-        handler->condition = [index=_reprog_controls->featureIndex()]
-                                      (hidpp::Report& report)->bool {
-            return (report.feature() == index) && ((report.function() ==
-                hidpp20::ReprogControls::DivertedButtonEvent) || (report
-                .function() == hidpp20::ReprogControls::DivertedRawXYEvent));
-        };
-
-        handler->callback = [this](hidpp::Report& report)->void {
-            if(report.function() ==
-                hidpp20::ReprogControls::DivertedButtonEvent)
-                this->_buttonEvent(_reprog_controls->divertedButtonEvent(
-                        report));
-            else { // RawXY
-                auto divertedXY = _reprog_controls->divertedRawXYEvent(report);
-                for(const auto& button : this->_buttons)
-                    if(button.second->pressed())
-                        button.second->move(divertedXY.x, divertedXY.y);
+    if(!_ev_handler.has_value()) {
+        _ev_handler = _device->hidpp20().addEventHandler({
+            [index=_reprog_controls->featureIndex()](const hidpp::Report& report)->bool {
+                if(report.feature() == index) {
+                    switch(report.function()) {
+                        case hidpp20::ReprogControls::DivertedButtonEvent:
+                            return true;
+                        case hidpp20::ReprogControls::DivertedRawXYEvent: return true;
+                        default: return false;
+                    }
+                }
+                return false;
+            },
+            [this](const hidpp::Report& report)->void {
+                switch(report.function()) {
+                    case hidpp20::ReprogControls::DivertedButtonEvent:
+                        this->_buttonEvent(_reprog_controls->divertedButtonEvent(report));
+                        break;
+                    case hidpp20::ReprogControls::DivertedRawXYEvent: {
+                        auto divertedXY = _reprog_controls->divertedRawXYEvent(report);
+                        for(const auto& button : this->_buttons)
+                            if(button.second->pressed())
+                                button.second->move(divertedXY.x, divertedXY.y);
+                        break;
+                    }
+                    default: break;
+                }
             }
-        };
-
-        _device->hidpp20().addEventHandler(EVENTHANDLER_NAME, handler);
+        });
     }
 }
 

@@ -70,7 +70,8 @@ HiresScroll::HiresScroll(Device *dev) : DeviceFeature(dev),
 
 HiresScroll::~HiresScroll()
 {
-    _device->hidpp20().removeEventHandler(MOVE_EVENTHANDLER_NAME);
+    if(_ev_handler.has_value())
+        _device->hidpp20().removeEventHandler(_ev_handler.value());
 }
 
 void HiresScroll::configure()
@@ -83,20 +84,17 @@ void HiresScroll::configure()
 
 void HiresScroll::listen()
 {
-    if(_device->hidpp20().eventHandlers().find(MOVE_EVENTHANDLER_NAME) ==
-       _device->hidpp20().eventHandlers().end()) {
-        auto handler = std::make_shared<hidpp::EventHandler>();
-        handler->condition = [index=_hires_scroll->featureIndex()]
-                (hidpp::Report& report)->bool {
-            return (report.feature() == index) && (report.function() ==
-                hidpp20::HiresScroll::WheelMovement);
-        };
-
-        handler->callback = [this](hidpp::Report& report)->void {
-            this->_handleScroll(_hires_scroll->wheelMovementEvent(report));
-        };
-
-        _device->hidpp20().addEventHandler(MOVE_EVENTHANDLER_NAME, handler);
+    if(!_ev_handler.has_value()) {
+        _ev_handler = _device->hidpp20().addEventHandler({
+            [index=_hires_scroll->featureIndex()](
+                    const hidpp::Report& report)->bool {
+                return (report.feature() == index) && (report.function() ==
+                                                       hidpp20::HiresScroll::WheelMovement);
+            },
+            [this](const hidpp::Report& report) {
+                _handleScroll(_hires_scroll->wheelMovementEvent(report));
+            }
+        });
     }
 }
 

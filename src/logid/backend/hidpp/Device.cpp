@@ -213,23 +213,17 @@ Device::~Device()
     _raw_device->removeEventHandler(_raw_handler);
 }
 
-void Device::addEventHandler(const std::string& nickname,
-        const std::shared_ptr<EventHandler>& handler)
+Device::EvHandlerId Device::addEventHandler(EventHandler handler)
 {
-    assert(_event_handlers.find(nickname) == _event_handlers.end());
-
-    _event_handlers.emplace(nickname, handler);
+    std::lock_guard<std::mutex> lock(_event_handler_lock);
+    _event_handlers.emplace_front(std::move(handler));
+    return _event_handlers.cbegin();
 }
 
-void Device::removeEventHandler(const std::string& nickname)
+void Device::removeEventHandler(EvHandlerId id)
 {
-    _event_handlers.erase(nickname);
-}
-
-const std::map<std::string, std::shared_ptr<EventHandler>>&
-    Device::eventHandlers()
-{
-    return _event_handlers;
+    std::lock_guard<std::mutex> lock(_event_handler_lock);
+    _event_handlers.erase(id);
 }
 
 void Device::handleEvent(Report& report)
@@ -237,9 +231,10 @@ void Device::handleEvent(Report& report)
     if(responseReport(report))
         return;
 
+    std::lock_guard<std::mutex> lock(_event_handler_lock);
     for(auto& handler : _event_handlers)
-        if(handler.second->condition(report))
-            handler.second->callback(report);
+        if(handler.condition(report))
+            handler.callback(report);
 }
 
 Report Device::sendReport(const Report &report)
