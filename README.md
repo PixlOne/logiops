@@ -27,6 +27,61 @@ This project requires a C++14 compiler, `cmake`, `libevdev`, `libudev`, and `lib
 
 **openSUSE:** `sudo zypper install cmake libevdev-devel systemd-devel libconfig-devel gcc-c++ libconfig++-devel libudev-devel`
 
+## Initial setup
+
+A critical item is to determine the name your device reports to the computer
+which will placed in the [name field](https://github.com/pixlone/logiops/wiki/configuration#name)
+of the configuration file.
+
+[Build](#building) `logid` and from the repository root run it (use `Ctrl+C` to stop `logid`).
+You should see something like the following:
+```
+$ sudo ./build/logid
+[ERROR] I/O Error while reading /etc/logid.cfg: FileIOException
+[INFO] Device MX Anywhere 3 not configured, using default config.
+[INFO] Device found: MX Anywhere 3 on /dev/hidraw3:255
+^C
+```
+
+Next, create a configuration file that contains the name, `MX Anywhere 3`, of the
+device determined from executing `logid` above. A starting point is [logid.example.cfg](./logid.example.cfg),
+located in the root of the repo. And copy it to `/etc/logid.cfg`, the default configuration location:
+```
+sudo cp ./logid.example.cfg /etc/logid.cfg
+```
+
+Now edit `/etc/logid.cfg` referring to the
+[Configuration section of the wiki](https://github.com/pixlone/logiops/wiki/configuration)
+for details. At a minimum change the name field to match above.
+Such `name: "MX Anywhere 3"`, here is the diff:
+```
+$ diff -u1 logid.example.cfg /etc/logid.cfg
+--- logid.example.cfg   2022-04-26 10:41:59.650418368 -0700
++++ /etc/logid.cfg      2022-04-26 10:47:49.033924388 -0700
+@@ -4,3 +4,3 @@
+     #   https://github.com/PixlOne/logiops/wiki/Configuration#name
+-    name: "Wireless Mouse MX Master";
++    name: "MX Anywhere 3";
+     smartshift:
+```
+
+Next verify that your configuration is used. Run `logid` again
+and this time you should **not have** `[ERROR] I/O Error while reading /etc/logid.cfg: FileIOException`.
+And instead should it look something like:
+```
+$ sudo ./build/logid
+[INFO] Device found: MX Anywhere 3 on /dev/hidraw3:255
+[WARN] /dev/hidraw3:255: SmartShift feature not found, cannot use ToggleSmartShift action.
+[WARN] MX Anywhere 3: CID 0xc3 does not exist.
+^C
+```
+
+The two `[WARN]` lines indicate tweaks maybe needed to your
+[configuration file](https://github.com/pixlone/logiops/wiki/configuration).
+
+
+Now [install](#install) `logid` and use `systemctl` so it runs as a daemon.
+
 ## Building
 
 To build this project, run:
@@ -37,6 +92,8 @@ cd build
 cmake ..
 make
 ```
+
+## Install
 
 To install, run `sudo make install` after building. You can set the daemon to start at boot by running `sudo systemctl enable logid` or `sudo systemctl enable --now logid` if you want to enable and start the daemon.
 
