@@ -17,7 +17,7 @@ This project requires a C++14 compiler, `cmake`, `libevdev`, `libudev`, and `lib
 
 **Arch Linux:** `sudo pacman -S cmake libevdev libconfig pkgconf`
 
-**Debian/Ubuntu:** `sudo apt install cmake libevdev-dev libudev-dev libconfig++-dev`
+**Debian/Ubuntu:** `sudo apt install cmake libevdev-dev libudev-dev libconfig++-dev build-essential`
 
 **Fedora:** `sudo dnf install cmake libevdev-devel systemd-devel libconfig-devel gcc-c++`
 
