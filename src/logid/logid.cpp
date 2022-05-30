@@ -135,6 +135,12 @@ int main(int argc, char** argv) {
     std::shared_ptr<Configuration> config;
     std::shared_ptr<InputDevice> virtual_input;
 
+
+    /* Set stdout buff to Null so that loging system like journal
+     * can actually read it.
+     */
+    setbuf(stdout, NULL);
+
     // Read config
     try {
         config = std::make_shared<Configuration>(options.config_file);
