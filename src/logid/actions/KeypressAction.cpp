@@ -85,7 +85,7 @@ KeypressAction::Config::Config(Device* device, libconfig::Setting& config) :
     }
 }
 
-std::vector<uint>& KeypressAction::Config::keys()
+std::vector<unsigned int>& KeypressAction::Config::keys()
 {
     return _keys;
 }
