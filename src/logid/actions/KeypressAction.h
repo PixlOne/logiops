@@ -38,9 +38,9 @@ namespace actions {
         {
         public:
             explicit Config(Device* device, libconfig::Setting& root);
-            std::vector<uint>& keys();
+            std::vector<unsigned int>& keys();
         protected:
-            std::vector<uint> _keys;
+            std::vector<unsigned int> _keys;
         };
     protected:
         Config _config;
