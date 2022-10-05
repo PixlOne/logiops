@@ -4,6 +4,7 @@ This is not by any means an exhaustive list. Many more devices are supported but
 
 |     Device     | Compatible? |              Config Name               |
 | :------------: | :---------: | :------------------------------------: |
+|  MX Master 3s  |     Yes     |            `MX Master 3S`              |
 |  MX Master 3   |     Yes     |      `Wireless Mouse MX Master 3`      |
 |  MX Master 2S  |     Yes     |     `Wireless Mouse MX Master 2S`      |
 |   MX Master    |     Yes     |       `Wireless Mouse MX Master`       |
