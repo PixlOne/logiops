@@ -51,7 +51,7 @@ void IntervalGesture::move(int16_t axis, int16_t secondary_axis)
     if(_axis < _config.threshold())
         return;
 
-    if(abs(_abs_axis) <= abs(_abs_secondary_axis))
+    if(_abs_axis <= _abs_secondary_axis)
         // If the total movement in secondary_axis is more than primary axis.
         // Don't do anything as this is most likely not intentional
         return;

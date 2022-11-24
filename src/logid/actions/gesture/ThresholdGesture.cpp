@@ -27,21 +27,21 @@ ThresholdGesture::ThresholdGesture(Device *device, libconfig::Setting &root) :
 void ThresholdGesture::press(bool init_threshold)
 {
     _axis = init_threshold ? _config.threshold() : 0;
+    _abs_secondary_axis = 0;
     this->_executed = false;
 }
 
 bool ThresholdGesture::release()
 {
-    this->_executed = false;
-    return _executed;
+    return this->_executed;
 }
 
 void ThresholdGesture::move(int16_t axis, int16_t secondary_axis)
 {
-    (void)secondary_axis; // Suppress unused warning
     _axis += axis;
+    _abs_secondary_axis += abs(secondary_axis);
 
-    if(!this->_executed && _axis >= _config.threshold()) {
+    if(!this->_executed && _axis >= _config.threshold() && _axis > _abs_secondary_axis) {
         _config.action()->press();
         _config.action()->release();
         this->_executed = true;

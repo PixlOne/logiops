@@ -36,6 +36,7 @@ namespace actions
 
     protected:
         int16_t _axis;
+        int16_t _abs_secondary_axis;
         Gesture::Config _config;
 
     private:
