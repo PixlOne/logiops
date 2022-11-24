@@ -30,27 +30,22 @@ void ThresholdGesture::press(bool init_threshold)
     this->_executed = false;
 }
 
-void ThresholdGesture::release(bool primary)
+bool ThresholdGesture::release()
 {
-    (void)primary; // Suppress unused warning
-    
     this->_executed = false;
+    return _executed;
 }
 
-void ThresholdGesture::move(int16_t axis)
+void ThresholdGesture::move(int16_t axis, int16_t secondary_axis)
 {
+    (void)secondary_axis; // Suppress unused warning
     _axis += axis;
 
-    if(!this->_executed && metThreshold()) {
+    if(!this->_executed && _axis >= _config.threshold()) {
         _config.action()->press();
         _config.action()->release();
         this->_executed = true;
     }
-}
-
-bool ThresholdGesture::metThreshold() const
-{
-    return _axis >= _config.threshold();
 }
 
 bool ThresholdGesture::wheelCompatibility() const

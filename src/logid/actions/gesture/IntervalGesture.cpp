@@ -28,19 +28,32 @@ IntervalGesture::IntervalGesture(Device *device, libconfig::Setting &root) :
 void IntervalGesture::press(bool init_threshold)
 {
     _axis = init_threshold ? _config.threshold() : 0;
+    _abs_axis = 0;
+    _abs_secondary_axis = 0;
     _interval_pass_count = 0;
 }
 
-void IntervalGesture::release(bool primary)
+bool IntervalGesture::release()
 {
     // Do nothing
-    (void)primary; // Suppress unused warning
+    return _interval_pass_count > 0;
 }
 
-void IntervalGesture::move(int16_t axis)
+void IntervalGesture::move(int16_t axis, int16_t secondary_axis)
 {
+    _abs_axis += abs(axis);
+    _abs_secondary_axis += abs(secondary_axis);
+
+    if (axis < 0)
+        return;
+
     _axis += axis;
     if(_axis < _config.threshold())
+        return;
+
+    if(abs(_abs_axis) <= abs(_abs_secondary_axis))
+        // If the total movement in secondary_axis is more than primary axis.
+        // Don't do anything as this is most likely not intentional
         return;
 
     int16_t new_interval_count = (_axis - _config.threshold())/
@@ -55,11 +68,6 @@ void IntervalGesture::move(int16_t axis)
 bool IntervalGesture::wheelCompatibility() const
 {
     return true;
-}
-
-bool IntervalGesture::metThreshold() const
-{
-    return _axis >= _config.threshold();
 }
 
 IntervalGesture::Config::Config(Device *device, libconfig::Setting &setting) :

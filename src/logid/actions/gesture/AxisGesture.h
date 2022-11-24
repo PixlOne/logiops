@@ -21,41 +21,40 @@
 #include "Gesture.h"
 
 namespace logid {
-    namespace actions
+namespace actions
+{
+    class AxisGesture : public Gesture
     {
-        class AxisGesture : public Gesture
+    public:
+        AxisGesture(Device* device, libconfig::Setting& root);
+
+        virtual void press(bool init_threshold=false);
+        virtual bool release();
+        virtual void move(int16_t primary_axis, int16_t secondary_axis);
+
+        virtual bool wheelCompatibility() const;
+
+        void setHiresMultiplier(double multiplier);
+
+        class Config : public Gesture::Config
         {
         public:
-            AxisGesture(Device* device, libconfig::Setting& root);
-
-            virtual void press(bool init_threshold=false);
-            virtual void release(bool primary=false);
-            virtual void move(int16_t axis);
-
-            virtual bool wheelCompatibility() const;
-            virtual bool metThreshold() const;
-
+            Config(Device* device, libconfig::Setting& setting);
+            unsigned int axis() const;
+            double multiplier() const;
             void setHiresMultiplier(double multiplier);
-
-            class Config : public Gesture::Config
-            {
-            public:
-                Config(Device* device, libconfig::Setting& setting);
-                unsigned int axis() const;
-                double multiplier() const;
-                void setHiresMultiplier(double multiplier);
-            private:
-                unsigned int _axis;
-                double _multiplier = 1;
-                double _hires_multiplier = 1;
-            };
-
-        protected:
-            int16_t _axis;
-            double _axis_remainder;
-            int _hires_remainder;
-            Config _config;
+        private:
+            unsigned int _axis;
+            double _multiplier = 1;
+            double _hires_multiplier = 1;
         };
-    }}
+
+    protected:
+        int16_t _axis;
+        double _axis_remainder;
+        int _hires_remainder;
+        Config _config;
+    };
+}}
 
 #endif //LOGID_ACTION_AXISGESTURE_H

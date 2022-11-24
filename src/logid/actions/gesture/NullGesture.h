@@ -29,11 +29,10 @@ namespace actions
         NullGesture(Device* device, libconfig::Setting& setting);
 
         virtual void press(bool init_threshold=false);
-        virtual void release(bool primary=false);
-        virtual void move(int16_t axis);
+        virtual bool release();
+        virtual void move(int16_t axis, int16_t secondary_axis);
 
         virtual bool wheelCompatibility() const;
-        virtual bool metThreshold() const;
     protected:
         int16_t _axis;
         Gesture::Config _config;

@@ -27,27 +27,27 @@ ReleaseGesture::ReleaseGesture(Device *device, libconfig::Setting &root) :
 void ReleaseGesture::press(bool init_threshold)
 {
     _axis = init_threshold ? _config.threshold() : 0;
+    _secondary_axis = 0;
 }
 
-void ReleaseGesture::release(bool primary)
+bool ReleaseGesture::release()
 {
-    if(metThreshold() && primary) {
+    if(_axis >= _config.threshold() && abs(_axis) > abs(_secondary_axis)) {
         _config.action()->press();
         _config.action()->release();
+        return true;
     }
+    return false;
 }
 
-void ReleaseGesture::move(int16_t axis)
+void ReleaseGesture::move(int16_t axis, int16_t secondary_axis)
 {
+
     _axis += axis;
+    _secondary_axis += secondary_axis;
 }
 
 bool ReleaseGesture::wheelCompatibility() const
 {
     return false;
-}
-
-bool ReleaseGesture::metThreshold() const
-{
-    return _axis >= _config.threshold();
 }

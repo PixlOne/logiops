@@ -42,18 +42,6 @@ GestureAction::Direction GestureAction::toDirection(std::string direction)
         throw std::invalid_argument("direction");
 }
 
-GestureAction::Direction GestureAction::toDirection(int16_t x, int16_t y)
-{
-    if(x >= 0 && y >= 0)
-        return x >= y ? Right : Down;
-    else if(x < 0 && y >= 0)
-        return -x <= y ? Down : Left;
-    else if(x <= 0 && y < 0)
-        return x <= y ? Left : Up;
-    else
-        return x <= -y ? Up : Right;
-}
-
 GestureAction::GestureAction(Device* dev, libconfig::Setting& config) :
     Action (dev), _config (dev, config)
 {
@@ -70,32 +58,15 @@ void GestureAction::press()
 void GestureAction::release()
 {
     _pressed = false;
-    bool threshold_met = false;
-
-    auto d = toDirection(_x, _y);
-    auto primary_gesture = _config.gestures().find(d);
-    if(primary_gesture != _config.gestures().end()) {
-        threshold_met = primary_gesture->second->metThreshold();
-        primary_gesture->second->release(true);
-    }
+    bool action_performed = false;
 
     for(auto& gesture : _config.gestures()) {
-        if(gesture.first == d)
-            continue;
-        if(!threshold_met) {
-            if(gesture.second->metThreshold()) {
-                // If the primary gesture did not meet its threshold, use the
-                // secondary one.
-                threshold_met = true;
-                gesture.second->release(true);
-                break;
-            }
-        } else {
-            gesture.second->release(false);
+        if (gesture.second->release()) {
+            action_performed = true;
         }
     }
 
-    if(!threshold_met) {
+    if(!action_performed) {
         if(_config.noneAction()) {
             _config.noneAction()->press();
             _config.noneAction()->release();
@@ -105,69 +76,23 @@ void GestureAction::release()
 
 void GestureAction::move(int16_t x, int16_t y)
 {
-    auto new_x = _x + x, new_y = _y + y;
-
-    if(abs(x) > 0) {
-        if(_x < 0 && new_x >= 0) { // Left -> Origin/Right
-            auto left = _config.gestures().find(Left);
-            if(left != _config.gestures().end())
-                left->second->move(_x);
-            if(new_x) { // Ignore to origin
-                auto right = _config.gestures().find(Right);
-                if(right != _config.gestures().end())
-                    right->second->move(new_x);
-            }
-        } else if(_x > 0 && new_x <= 0) { // Right -> Origin/Left
-            auto right = _config.gestures().find(Right);
-            if(right != _config.gestures().end())
-                right->second->move(-_x);
-            if(new_x) { // Ignore to origin
-                auto left = _config.gestures().find(Left);
-                if(left != _config.gestures().end())
-                    left->second->move(-new_x);
-            }
-        } else if(new_x < 0) { // Origin/Left to Left
-            auto left = _config.gestures().find(Left);
-            if(left != _config.gestures().end())
-                left->second->move(-x);
-        } else if(new_x > 0) { // Origin/Right to Right
-            auto right = _config.gestures().find(Right);
-            if(right != _config.gestures().end())
-                right->second->move(x);
-        }
+    auto not_found = _config.gestures().end();
+    auto left = _config.gestures().find(Left);
+    if (left != not_found) {
+        left->second->move(-x, y);
     }
-
-    if(abs(y) > 0) {
-        if(_y > 0 && new_y <= 0) { // Up -> Origin/Down
-            auto up = _config.gestures().find(Up);
-            if(up != _config.gestures().end())
-                up->second->move(_y);
-            if(new_y) { // Ignore to origin
-                auto down = _config.gestures().find(Down);
-                if(down != _config.gestures().end())
-                    down->second->move(new_y);
-            }
-        } else if(_y < 0 && new_y >= 0) { // Down -> Origin/Up
-            auto down = _config.gestures().find(Down);
-            if(down != _config.gestures().end())
-                down->second->move(-_y);
-            if(new_y) { // Ignore to origin
-                auto up = _config.gestures().find(Up);
-                if(up != _config.gestures().end())
-                    up->second->move(-new_y);
-            }
-        } else if(new_y < 0) { // Origin/Up to Up
-            auto up = _config.gestures().find(Up);
-            if(up != _config.gestures().end())
-                up->second->move(-y);
-        } else if(new_y > 0) {// Origin/Down to Down
-            auto down = _config.gestures().find(Down);
-            if(down != _config.gestures().end())
-                down->second->move(y);
-        }
+    auto right = _config.gestures().find(Right);
+    if (right != not_found) {
+        right->second->move(x, y);
     }
-
-    _x = new_x; _y = new_y;
+    auto up = _config.gestures().find(Up);
+    if (up != not_found) {
+        up->second->move(-y, x);
+    }
+    auto down = _config.gestures().find(Down);
+    if (down != not_found) {
+        down->second->move(y, x);
+    }
 }
 
 uint8_t GestureAction::reprogFlags() const

@@ -128,7 +128,7 @@ void HiresScroll::_handleScroll(hidpp20::HiresScroll::WheelStatus event)
             }
         }
         if(_config.upAction())
-            _config.upAction()->move(event.deltaV);
+            _config.upAction()->move(event.deltaV, 0);
         _last_direction = 1;
     } else if(event.deltaV < 0) {
         if(_last_direction == 1) {
@@ -138,7 +138,7 @@ void HiresScroll::_handleScroll(hidpp20::HiresScroll::WheelStatus event)
             }
         }
         if(_config.downAction())
-            _config.downAction()->move(-event.deltaV);
+            _config.downAction()->move(-event.deltaV, 0);
         _last_direction = -1;
     }
 

@@ -150,7 +150,7 @@ void ThumbWheel::_handleEvent(hidpp20::ThumbWheel::ThumbwheelEvent event)
 
             if(scroll_action) {
                 scroll_action->press(true);
-                scroll_action->move(direction * event.rotation);
+                scroll_action->move(direction * event.rotation, 0);
             }
 
             _last_direction = direction;
