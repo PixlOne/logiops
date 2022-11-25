@@ -149,7 +149,6 @@ void ThumbWheel::_handleEvent(hidpp20::ThumbWheel::ThumbwheelEvent event)
                 scroll_action = _config.leftAction();
 
             if(scroll_action) {
-                scroll_action->press(true);
                 scroll_action->move(direction * event.rotation, 0);
             }
 
