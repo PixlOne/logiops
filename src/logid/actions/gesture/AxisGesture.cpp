@@ -32,12 +32,13 @@ void AxisGesture::press(bool init_threshold)
     _axis = init_threshold ? _config.threshold() : 0;
     _axis_remainder = 0;
     _hires_remainder = 0;
+    _executed = false;
 }
 
 bool AxisGesture::release()
 {
     // Do nothing
-    return _axis >= _config.threshold();
+    return _executed;
 }
 
 void AxisGesture::move(int16_t axis, int16_t secondary_axis)
@@ -86,6 +87,8 @@ void AxisGesture::move(int16_t axis, int16_t secondary_axis)
         } else {
             virtual_input->moveAxis(_config.axis(), move_floor);
         }
+
+        _executed = true;
     }
     _axis = new_axis;
 }

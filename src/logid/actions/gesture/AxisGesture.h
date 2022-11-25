@@ -53,6 +53,7 @@ namespace actions
         int16_t _axis;
         double _axis_remainder;
         int _hires_remainder;
+        bool _executed;
         Config _config;
     };
 }}
