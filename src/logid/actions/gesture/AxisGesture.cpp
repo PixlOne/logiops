@@ -32,16 +32,19 @@ void AxisGesture::press(bool init_threshold)
     _axis = init_threshold ? _config.threshold() : 0;
     _axis_remainder = 0;
     _hires_remainder = 0;
+    _executed = false;
 }
 
-void AxisGesture::release(bool primary)
+bool AxisGesture::release()
 {
     // Do nothing
-    (void)primary; // Suppress unused warning
+    return _executed;
 }
 
-void AxisGesture::move(int16_t axis)
+void AxisGesture::move(int16_t axis, int16_t secondary_axis)
 {
+    (void)secondary_axis; // Suppress unused warning
+
     int16_t new_axis = _axis+axis;
     int low_res_axis = InputDevice::getLowResAxis(_config.axis());
     int hires_remainder = _hires_remainder;
@@ -50,6 +53,7 @@ void AxisGesture::move(int16_t axis)
         double move = axis;
         if(_axis < _config.threshold())
             move = new_axis - _config.threshold();
+
         bool negative_multiplier = _config.multiplier() < 0;
         if(negative_multiplier)
             move *= -_config.multiplier();
@@ -83,13 +87,10 @@ void AxisGesture::move(int16_t axis)
         } else {
             virtual_input->moveAxis(_config.axis(), move_floor);
         }
+
+        _executed = true;
     }
     _axis = new_axis;
-}
-
-bool AxisGesture::metThreshold() const
-{
-    return _axis >= _config.threshold();
 }
 
 void AxisGesture::setHiresMultiplier(double multiplier)

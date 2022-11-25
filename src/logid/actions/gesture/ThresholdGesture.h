@@ -29,15 +29,14 @@ namespace actions
         ThresholdGesture(Device* device, libconfig::Setting& root);
 
         virtual void press(bool init_threshold=false);
-        virtual void release(bool primary=false);
-        virtual void move(int16_t axis);
-
-        virtual bool metThreshold() const;
+        virtual bool release();
+        virtual void move(int16_t axis, int16_t secondary_axis);
 
         virtual bool wheelCompatibility() const;
 
     protected:
         int16_t _axis;
+        int16_t _abs_secondary_axis;
         Gesture::Config _config;
 
     private:

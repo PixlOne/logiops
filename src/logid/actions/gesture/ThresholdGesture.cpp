@@ -27,30 +27,25 @@ ThresholdGesture::ThresholdGesture(Device *device, libconfig::Setting &root) :
 void ThresholdGesture::press(bool init_threshold)
 {
     _axis = init_threshold ? _config.threshold() : 0;
+    _abs_secondary_axis = 0;
     this->_executed = false;
 }
 
-void ThresholdGesture::release(bool primary)
+bool ThresholdGesture::release()
 {
-    (void)primary; // Suppress unused warning
-    
-    this->_executed = false;
+    return this->_executed;
 }
 
-void ThresholdGesture::move(int16_t axis)
+void ThresholdGesture::move(int16_t axis, int16_t secondary_axis)
 {
     _axis += axis;
+    _abs_secondary_axis += abs(secondary_axis);
 
-    if(!this->_executed && metThreshold()) {
+    if(!this->_executed && _axis >= _config.threshold() && _axis > _abs_secondary_axis) {
         _config.action()->press();
         _config.action()->release();
         this->_executed = true;
     }
-}
-
-bool ThresholdGesture::metThreshold() const
-{
-    return _axis >= _config.threshold();
 }
 
 bool ThresholdGesture::wheelCompatibility() const

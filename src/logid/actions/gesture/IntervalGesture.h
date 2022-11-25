@@ -29,11 +29,10 @@ namespace actions
         IntervalGesture(Device* device, libconfig::Setting& root);
 
         virtual void press(bool init_threshold=false);
-        virtual void release(bool primary=false);
-        virtual void move(int16_t axis);
+        virtual bool release();
+        virtual void move(int16_t axis, int16_t secondary_axis);
 
         virtual bool wheelCompatibility() const;
-        virtual bool metThreshold() const;
 
         class Config : public Gesture::Config
         {
@@ -46,6 +45,8 @@ namespace actions
 
     protected:
         int16_t _axis;
+        int16_t _abs_axis;
+        int16_t _abs_secondary_axis;
         int16_t _interval_pass_count;
         Config _config;
     };

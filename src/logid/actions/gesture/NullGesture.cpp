@@ -29,23 +29,19 @@ void NullGesture::press(bool init_threshold)
     _axis = init_threshold ? _config.threshold() : 0;
 }
 
-void NullGesture::release(bool primary)
+bool NullGesture::release()
 {
     // Do nothing
-    (void)primary; // Suppress unused warning
+    return _axis > _config.threshold();
 }
 
-void NullGesture::move(int16_t axis)
+void NullGesture::move(int16_t axis, int16_t secondary_axis)
 {
+    (void)secondary_axis; // Suppress unused warning
     _axis += axis;
 }
 
 bool NullGesture::wheelCompatibility() const
 {
     return true;
-}
-
-bool NullGesture::metThreshold() const
-{
-    return _axis > _config.threshold();
 }
