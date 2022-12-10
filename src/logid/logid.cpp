@@ -168,7 +168,8 @@ int main(int argc, char** argv)
         global_config = std::make_shared<Configuration>(options.config_file);
     }
     catch (std::exception &e) {
-        global_config = std::make_shared<Configuration>();
+        logPrintf(ERROR, "%s", e.what());
+        return EXIT_FAILURE;
     }
     global_workqueue = std::make_shared<workqueue>(
             global_config->workerCount());

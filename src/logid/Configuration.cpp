@@ -34,11 +34,11 @@ Configuration::Configuration(const std::string& config_file)
     } catch(const FileIOException &e) {
         logPrintf(ERROR, "I/O Error while reading %s: %s", config_file.c_str(),
                 e.what());
-        throw e;
+        exit(EXIT_FAILURE);
     } catch(const ParseException &e) {
         logPrintf(ERROR, "Parse error in %s, line %d: %s", e.getFile(),
                 e.getLine(), e.getError());
-        throw e;
+        exit(EXIT_FAILURE);
     }
 
     const Setting &root = _config.getRoot();
