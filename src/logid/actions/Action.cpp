@@ -22,6 +22,7 @@
 #include "KeypressAction.h"
 #include "ToggleSmartShift.h"
 #include "ToggleHiresScroll.h"
+#include "ToggleHiresScrollAndSmartShift.h"
 #include "GestureAction.h"
 #include "NullAction.h"
 #include "CycleDPI.h"
@@ -58,6 +59,8 @@ std::shared_ptr<Action> Action::makeAction(Device *device, libconfig::Setting
             return std::make_shared<ToggleSmartShift>(device);
         else if(type == "togglehiresscroll")
             return std::make_shared<ToggleHiresScroll>(device);
+        else if(type == "togglehiresscrollandsmartshift")
+            return std::make_shared<ToggleHiresScrollAndSmartShift>(device);
         else if(type == "gestures")
             return std::make_shared<GestureAction>(device, setting);
         else if(type == "cycledpi")
