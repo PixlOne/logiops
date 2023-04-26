@@ -16,7 +16,6 @@
  *
  */
 
-#include <algorithm>
 #include <utility>
 #include "Gesture.h"
 #include "ReleaseGesture.h"
@@ -71,20 +70,17 @@ std::shared_ptr<Gesture> Gesture::makeGesture(
 {
     if(type == AxisGesture::interface_name) {
         config = config::AxisGesture();
-        return makeGesture(device, config, parent);
     } else if(type == IntervalGesture::interface_name) {
         config = config::IntervalGesture();
-        return makeGesture(device, config, parent);
     } else if(type == ReleaseGesture::interface_name) {
-        config = config::IntervalGesture();
-        return makeGesture(device, config, parent);
+        config = config::ReleaseGesture();
     } else if(type == ThresholdGesture::interface_name) {
         config = config::ThresholdGesture();
-        return makeGesture(device, config, parent);
     } else if(type == NullGesture::interface_name) {
         config = config::NoGesture();
-        return makeGesture(device, config, parent);
+    } else {
+        throw InvalidGesture();
     }
 
-    throw InvalidGesture();
+    return makeGesture(device, config, parent);
 }

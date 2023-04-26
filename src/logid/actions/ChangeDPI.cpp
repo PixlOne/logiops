@@ -29,7 +29,12 @@ const char* ChangeDPI::interface_name = "ChangeDPI";
 ChangeDPI::ChangeDPI(
         Device *device, config::ChangeDPI& config,
         const std::shared_ptr<ipcgull::node>& parent) :
-    Action(device, interface_name), _config (config)
+    Action(device, interface_name, {
+        {
+            {"GetConfig", {this, &ChangeDPI::getConfig, {"change", "sensor"}}},
+            {"SetChange", {this, &ChangeDPI::setChange, {"change"}}},
+            {"SetSensor", {this, &ChangeDPI::setSensor, {"sensor", "reset"}}},
+        }, {}, {} }), _config (config)
 {
     _dpi = _device->getFeature<features::DPI>("dpi");
     if(!_dpi)
@@ -37,6 +42,25 @@ ChangeDPI::ChangeDPI(
                         "ChangeDPI action.",
                   _device->hidpp20().devicePath().c_str(),
                   _device->hidpp20().deviceIndex());
+}
+
+std::tuple<int16_t, uint16_t> ChangeDPI::getConfig()
+{
+    return {_config.inc.value_or(0), _config.sensor.value_or(0)};
+}
+
+void ChangeDPI::setChange(int16_t change)
+{
+    _config.inc = change;
+}
+
+void ChangeDPI::setSensor(uint8_t sensor, bool reset)
+{
+    if (reset) {
+        _config.sensor.reset();
+    } else {
+        _config.sensor = sensor;
+    }
 }
 
 void ChangeDPI::press()

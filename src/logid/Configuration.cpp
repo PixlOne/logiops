@@ -27,8 +27,8 @@ using namespace logid;
 using namespace libconfig;
 using namespace logid::config;
 
-Configuration::Configuration(const std::string& config_file) :
-    _config_file (config_file)
+Configuration::Configuration(std::string config_file) :
+    _config_file (std::move(config_file))
 {
     try {
         _config.readFile(_config_file);

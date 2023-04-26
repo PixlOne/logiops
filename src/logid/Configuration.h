@@ -39,7 +39,7 @@ namespace logid
     class Configuration : public config::Config
     {
     public:
-        explicit Configuration(const std::string& config_file);
+        explicit Configuration(std::string config_file);
         Configuration() = default;
 
         // Reloading is not safe, references will be invalidated

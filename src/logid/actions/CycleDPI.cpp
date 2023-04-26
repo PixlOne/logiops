@@ -28,8 +28,13 @@ using namespace libconfig;
 const char* CycleDPI::interface_name = "CycleDPI";
 
 CycleDPI::CycleDPI(Device* device, config::CycleDPI& config,
-                   const std::shared_ptr<ipcgull::node>& parent) :
-    Action (device, interface_name),
+                   [[maybe_unused]] const std::shared_ptr<ipcgull::node>& parent) :
+    Action (device, interface_name, {
+            {
+                    {"GetDPIs", {this, &CycleDPI::getDPIs, {"dpis"}}},
+                    {"SetDPIs", {this, &CycleDPI::setDPIs, {"dpis"}}}
+            }, {}, {}
+    }),
     _config (config)
 {
     _dpi = _device->getFeature<features::DPI>("dpi");
@@ -42,6 +47,20 @@ CycleDPI::CycleDPI(Device* device, config::CycleDPI& config,
     if(_config.dpis.has_value()) {
        _current_dpi = _config.dpis.value().begin();
     }
+}
+
+std::vector<int> CycleDPI::getDPIs()
+{
+    std::lock_guard<std::mutex> lock(_dpi_lock);
+    auto dpis = _config.dpis.value_or(std::list<int>());
+    return {dpis.begin(), dpis.end()};
+}
+
+void CycleDPI::setDPIs(const std::vector<int>& dpis)
+{
+    std::lock_guard<std::mutex> lock(_dpi_lock);
+    _config.dpis.emplace(dpis.begin(), dpis.end());
+    _current_dpi = _config.dpis->cbegin();
 }
 
 void CycleDPI::press()

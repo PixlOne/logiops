@@ -35,6 +35,10 @@ namespace logid {
             virtual void press();
             virtual void release();
 
+            std::tuple<int16_t, uint16_t> getConfig();
+            void setChange(int16_t change);
+            void setSensor(uint8_t sensor, bool reset);
+
             virtual uint8_t reprogFlags() const;
 
         protected:

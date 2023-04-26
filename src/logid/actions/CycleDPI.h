@@ -35,6 +35,9 @@ namespace actions {
         virtual void press();
         virtual void release();
 
+        std::vector<int> getDPIs();
+        void setDPIs(const std::vector<int>& dpis);
+
         virtual uint8_t reprogFlags() const;
 
     protected:
