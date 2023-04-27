@@ -77,8 +77,7 @@ GestureAction::GestureAction(Device* dev, config::GestureAction& config,
         Action(dev, interface_name,
                {
                        {
-                               {"SetGesture", {this, &GestureAction::setGesture,
-                                                      {"direction", "type"}}}
+                               {"SetGesture", {this, &GestureAction::setGesture, {"direction", "type"}}}
                        },
                        {},
                        {}
@@ -86,14 +85,13 @@ GestureAction::GestureAction(Device* dev, config::GestureAction& config,
         _node(parent->make_child("gestures")), _config(config) {
     if (_config.gestures.has_value()) {
         auto& gestures = _config.gestures.value();
-        for (auto& x: gestures) {
+        for (auto&& x: gestures) {
             try {
                 auto direction = toDirection(x.first);
-                _gestures.emplace(direction,
-                                  Gesture::makeGesture(
-                                          dev, x.second,
-                                          _node->make_child(
-                                                  fromDirection(direction))));
+                _gestures.emplace(
+                        direction,Gesture::makeGesture(
+                                dev, x.second,
+                                _node->make_child(fromDirection(direction))));
             } catch (std::invalid_argument& e) {
                 logPrintf(WARN, "%s is not a direction", x.first.c_str());
             }

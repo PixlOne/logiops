@@ -112,11 +112,9 @@ void HiresScroll::_makeAction(std::shared_ptr<actions::Gesture>& gesture,
         gesture = actions::Gesture::makeGesture(_device, config.value(),
                                                 _node->make_child(direction));
         try {
-            auto axis = std::dynamic_pointer_cast<actions::AxisGesture>(
-                    gesture);
+            auto axis = std::dynamic_pointer_cast<actions::AxisGesture>(gesture);
             if (axis)
-                axis->setHiresMultiplier(
-                        _hires_scroll->getCapabilities().multiplier);
+                axis->setHiresMultiplier(_hires_scroll->getCapabilities().multiplier);
         } catch (std::bad_cast& e) {}
         if (gesture)
             gesture->press(true);

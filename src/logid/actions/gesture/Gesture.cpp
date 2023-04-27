@@ -50,10 +50,10 @@ namespace {
 
     template<typename T>
     std::shared_ptr<Gesture> _makeGesture(
-            Device* device, T gesture,
+            Device* device, T& gesture,
             const std::shared_ptr<ipcgull::node>& parent) {
         return parent->make_interface<typename gesture_type<T>::type>(
-                device, gesture, parent);
+                device, std::forward<T&>(gesture), parent);
     }
 }
 
