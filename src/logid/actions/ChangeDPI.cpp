@@ -18,8 +18,6 @@
 #include "ChangeDPI.h"
 #include "../Device.h"
 #include "../util/task.h"
-#include "../util/log.h"
-#include "../backend/hidpp20/Error.h"
 #include "../backend/hidpp20/features/ReprogControls.h"
 
 using namespace logid::actions;
@@ -28,7 +26,7 @@ const char* ChangeDPI::interface_name = "ChangeDPI";
 
 ChangeDPI::ChangeDPI(
         Device *device, config::ChangeDPI& config,
-        const std::shared_ptr<ipcgull::node>& parent) :
+        [[maybe_unused]] const std::shared_ptr<ipcgull::node>& parent) :
     Action(device, interface_name, {
         {
             {"GetConfig", {this, &ChangeDPI::getConfig, {"change", "sensor"}}},
@@ -44,7 +42,7 @@ ChangeDPI::ChangeDPI(
                   _device->hidpp20().deviceIndex());
 }
 
-std::tuple<int16_t, uint16_t> ChangeDPI::getConfig()
+std::tuple<int16_t, uint16_t> ChangeDPI::getConfig() const
 {
     return {_config.inc.value_or(0), _config.sensor.value_or(0)};
 }

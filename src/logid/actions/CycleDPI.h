@@ -22,8 +22,7 @@
 #include "Action.h"
 #include "../features/DPI.h"
 
-namespace logid {
-namespace actions {
+namespace logid::actions {
     class CycleDPI : public Action
     {
     public:
@@ -35,7 +34,7 @@ namespace actions {
         virtual void press();
         virtual void release();
 
-        std::vector<int> getDPIs();
+        [[nodiscard]] std::vector<int> getDPIs() const;
         void setDPIs(const std::vector<int>& dpis);
 
         virtual uint8_t reprogFlags() const;
@@ -46,6 +45,6 @@ namespace actions {
         std::shared_ptr<features::DPI> _dpi;
         std::list<int>::const_iterator _current_dpi;
     };
-}}
+}
 
 #endif //LOGID_ACTION_CYCLEDPI_H

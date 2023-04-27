@@ -22,8 +22,7 @@
 #include "Action.h"
 #include "../backend/hidpp20/features/ChangeHost.h"
 
-namespace logid {
-namespace actions
+namespace logid::actions
 {
     class ChangeHostAction : public Action
     {
@@ -36,12 +35,16 @@ namespace actions
         virtual void press();
         virtual void release();
 
+
+        [[nodiscard]] std::string getHost() const;
+        void setHost(std::string host);
+
         virtual uint8_t reprogFlags() const;
 
     protected:
         std::shared_ptr<backend::hidpp20::ChangeHost> _change_host;
         config::ChangeHost& _config;
     };
-}}
+}
 
 #endif //LOGID_ACTION_CHANGEHOSTACTION_H

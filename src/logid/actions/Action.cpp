@@ -58,31 +58,26 @@ std::shared_ptr<Action> _makeAction(
 {
     if(name == ChangeDPI::interface_name) {
         config = config::ChangeDPI();
-        return Action::makeAction(device, config.value(), parent);
     } else if(name == ChangeHostAction::interface_name) {
         config = config::ChangeHost();
-        return Action::makeAction(device, config.value(), parent);
     } else if(name == CycleDPI::interface_name) {
         config = config::CycleDPI();
-        return Action::makeAction(device, config.value(), parent);
     } else if(name == KeypressAction::interface_name) {
         config = config::KeypressAction();
-        return Action::makeAction(device, config.value(), parent);
     } else if(name == NullAction::interface_name) {
         config = config::NoAction();
-        return Action::makeAction(device, config.value(), parent);
+    } else if(name == ChangeHostAction::interface_name) {
+        config = config::ChangeHost();
     } else if(name == ToggleHiresScroll::interface_name) {
         config = config::ToggleHiresScroll();
-        return Action::makeAction(device, config.value(), parent);
     } else if(name == ToggleSmartShift::interface_name) {
         config = config::ToggleHiresScroll();
-        return Action::makeAction(device, config.value(), parent);
     } else if(name == "Default") {
         config.reset();
         return nullptr;
     }
 
-    throw InvalidAction();
+    return Action::makeAction(device, config.value(), parent);
 }
 
 std::shared_ptr<Action> Action::makeAction(

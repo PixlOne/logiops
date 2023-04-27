@@ -49,9 +49,8 @@ CycleDPI::CycleDPI(Device* device, config::CycleDPI& config,
     }
 }
 
-std::vector<int> CycleDPI::getDPIs()
+std::vector<int> CycleDPI::getDPIs() const
 {
-    std::lock_guard<std::mutex> lock(_dpi_lock);
     auto dpis = _config.dpis.value_or(std::list<int>());
     return {dpis.begin(), dpis.end()};
 }

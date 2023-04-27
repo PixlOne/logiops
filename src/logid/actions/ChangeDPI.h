@@ -22,8 +22,7 @@
 #include "Action.h"
 #include "../features/DPI.h"
 
-namespace logid {
-    namespace actions {
+namespace logid::actions {
         class ChangeDPI : public Action
         {
         public:
@@ -35,7 +34,7 @@ namespace logid {
             virtual void press();
             virtual void release();
 
-            std::tuple<int16_t, uint16_t> getConfig();
+            [[nodiscard]] std::tuple<int16_t, uint16_t> getConfig() const;
             void setChange(int16_t change);
             void setSensor(uint8_t sensor, bool reset);
 
@@ -45,6 +44,6 @@ namespace logid {
             config::ChangeDPI& _config;
             std::shared_ptr<features::DPI> _dpi;
         };
-    }}
+    }
 
 #endif //LOGID_ACTION_CHANGEDPI_H

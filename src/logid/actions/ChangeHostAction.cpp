@@ -29,12 +29,19 @@ const char* ChangeHostAction::interface_name = "ChangeHost";
 ChangeHostAction::ChangeHostAction(
         Device *device, config::ChangeHost& config,
         [[maybe_unused]] const std::shared_ptr<ipcgull::node>& parent)
-    : Action(device, interface_name), _config (config)
+    : Action(device, interface_name, {
+        {
+                {"GetHost", {this, &ChangeHostAction::getHost, {"host"}}},
+                {"SetHost", {this, &ChangeHostAction::setHost, {"host"}}}
+        }, {}, {}
+    }), _config (config)
 {
-    if(std::holds_alternative<std::string>(_config.host.value())) {
-        auto& host = std::get<std::string>(_config.host.value());
-        std::transform(host.begin(), host.end(),
-                       host.begin(), ::tolower);
+    if (_config.host.has_value()) {
+        if(std::holds_alternative<std::string>(_config.host.value())) {
+            auto& host = std::get<std::string>(_config.host.value());
+            std::transform(host.begin(), host.end(),
+                           host.begin(), ::tolower);
+        }
     }
     try {
         _change_host = std::make_shared<hidpp20::ChangeHost>(&device->hidpp20());
@@ -42,6 +49,29 @@ ChangeHostAction::ChangeHostAction(
         logPrintf(WARN, "%s:%d: ChangeHost feature not supported, "
                         "ChangeHostAction will not work.", device->hidpp20()
                         .devicePath().c_str(), device->hidpp20().deviceIndex());
+    }
+}
+
+std::string ChangeHostAction::getHost() const
+{
+    if(_config.host.has_value()) {
+        if (std::holds_alternative<std::string>(_config.host.value()))
+            return std::get<std::string>(_config.host.value());
+        else
+            return std::to_string(std::get<int>(_config.host.value()));
+    } else {
+        return "";
+    }
+}
+
+void ChangeHostAction::setHost(std::string host)
+{
+    std::transform(host.begin(), host.end(),
+                   host.begin(), ::tolower);
+    if (host == "next" || host == "prev" || host == "previous") {
+        _config.host = std::move(host);
+    } else {
+        _config.host = std::stoi(host);
     }
 }
 
@@ -70,7 +100,7 @@ void ChangeHostAction::release()
             }
             next_host %= host_info.hostCount;
             if(next_host != host_info.currentHost)
-                _change_host->setHost(next_host-1);
+                _change_host->setHost(next_host);
         });
     }
 }
