@@ -21,32 +21,27 @@
 #include "../Feature.h"
 #include "../feature_defs.h"
 
-namespace logid {
-namespace backend {
-namespace hidpp20
-{
-    class WirelessDeviceStatus : public Feature
-    {
+namespace logid::backend::hidpp20 {
+    class WirelessDeviceStatus : public Feature {
     public:
         static constexpr uint16_t ID = FeatureID::WIRELESS_DEVICE_STATUS;
-        virtual uint16_t getID() { return ID; }
 
-        WirelessDeviceStatus(Device* dev);
+        [[nodiscard]] uint16_t getID() final { return ID; }
 
-        enum Event : uint8_t
-        {
+        explicit WirelessDeviceStatus(Device* dev);
+
+        enum Event : uint8_t {
             StatusBroadcast = 0
         };
 
-        struct Status
-        {
+        struct Status {
             bool reconnection;
             bool reconfNeeded;
             bool powerSwitch;
         };
 
-        static Status statusBroadcastEvent(const hidpp::Report &report);
+        static Status statusBroadcastEvent(const hidpp::Report& report);
     };
-}}}
+}
 
 #endif //LOGID_BACKEND_HIDPP20_FEATURE_WIRELESSDEVICESTATUS_H

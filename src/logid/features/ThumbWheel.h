@@ -23,16 +23,16 @@
 #include "../actions/gesture/Gesture.h"
 #include "../config/schema.h"
 
-namespace logid {
-namespace features
-{
-    class ThumbWheel : public DeviceFeature
-    {
+namespace logid::features {
+    class ThumbWheel : public DeviceFeature {
     public:
         explicit ThumbWheel(Device* dev);
-        ~ThumbWheel();
-        virtual void configure();
-        virtual void listen();
+
+        ~ThumbWheel() noexcept override;
+
+        void configure() final;
+
+        void listen() final;
 
     private:
         void _handleEvent(backend::hidpp20::ThumbWheel::ThumbwheelEvent event);
@@ -59,6 +59,6 @@ namespace features
 
         std::optional<backend::hidpp::Device::EvHandlerId> _ev_handler;
     };
-}}
+}
 
 #endif //LOGID_FEATURE_THUMBWHEEL_H

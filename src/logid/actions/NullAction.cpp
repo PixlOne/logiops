@@ -26,21 +26,17 @@ const char* NullAction::interface_name = "None";
 NullAction::NullAction(
         Device* device,
         [[maybe_unused]] const std::shared_ptr<ipcgull::node>& parent) :
-    Action(device, interface_name)
-{
+        Action(device, interface_name) {
 }
 
-void NullAction::press()
-{
+void NullAction::press() {
     _pressed = true;
 }
 
-void NullAction::release()
-{
+void NullAction::release() {
     _pressed = false;
 }
 
-uint8_t NullAction::reprogFlags() const
-{
+uint8_t NullAction::reprogFlags() const {
     return backend::hidpp20::ReprogControls::TemporaryDiverted;
 }

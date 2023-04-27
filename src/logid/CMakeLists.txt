@@ -76,7 +76,7 @@ pkg_check_modules(LIBCONFIG libconfig REQUIRED)
 pkg_check_modules(LIBUDEV libudev REQUIRED)
 
 find_path(EVDEV_INCLUDE_DIR libevdev/libevdev.h
-          HINTS ${PC_EVDEV_INCLUDE_DIRS} ${PC_EVDEV_INCLUDEDIR})
+        HINTS ${PC_EVDEV_INCLUDE_DIRS} ${PC_EVDEV_INCLUDEDIR})
 find_library(EVDEV_LIBRARY
         NAMES evdev libevdev)
 
@@ -92,15 +92,15 @@ install(TARGETS logid DESTINATION bin)
 
 if (SYSTEMD_FOUND AND "${SYSTEMD_SERVICES_INSTALL_DIR}" STREQUAL "")
     execute_process(COMMAND ${PKG_CONFIG_EXECUTABLE}
-        --variable=systemdsystemunitdir systemd
-        OUTPUT_VARIABLE SYSTEMD_SERVICES_INSTALL_DIR)
+            --variable=systemdsystemunitdir systemd
+            OUTPUT_VARIABLE SYSTEMD_SERVICES_INSTALL_DIR)
     string(REGEX REPLACE "[ \t\n]+" "" SYSTEMD_SERVICES_INSTALL_DIR
-           "${SYSTEMD_SERVICES_INSTALL_DIR}")
+            "${SYSTEMD_SERVICES_INSTALL_DIR}")
     configure_file(logid.service.cmake ${CMAKE_BINARY_DIR}/logid.service)
     message(STATUS "systemd units will be installed at ${SYSTEMD_SERVICES_INSTALL_DIR}")
     install(FILES ${CMAKE_BINARY_DIR}/logid.service
             DESTINATION ${SYSTEMD_SERVICES_INSTALL_DIR}
             COMPONENT cp)
-elseif(NOT SYSTEMD_FOUND AND SYSTEMD_SERVICES_INSTALL_DIR)
+elseif (NOT SYSTEMD_FOUND AND SYSTEMD_SERVICES_INSTALL_DIR)
     message(FATAL_ERROR "systemd is not found w/ pkg-config but SYSTEMD_SERVICES_INSTALL_DIR is defined.")
-endif()
+endif ()

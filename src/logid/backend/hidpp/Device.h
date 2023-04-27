@@ -28,72 +28,80 @@
 #include "Report.h"
 #include "defs.h"
 
-namespace logid {
-namespace backend {
-namespace dj
-{
+namespace logid::backend::dj {
     // Need to define here for a constructor
     class Receiver;
 }
-namespace hidpp
-{
+
+namespace logid::backend::hidpp {
     struct DeviceConnectionEvent;
-    struct EventHandler
-    {
+    struct EventHandler {
         std::function<bool(Report&)> condition;
         std::function<void(Report&)> callback;
     };
-    class Device
-    {
+
+    class Device {
     public:
         typedef std::list<EventHandler>::const_iterator EvHandlerId;
 
-        class InvalidDevice : std::exception
-        {
+        class InvalidDevice : std::exception {
         public:
-            enum Reason
-            {
+            enum Reason {
                 NoHIDPPReport,
                 InvalidRawDevice,
                 Asleep,
                 VirtualNode
             };
-            InvalidDevice(Reason reason) : _reason (reason) {}
-            virtual const char* what() const noexcept;
-            virtual Reason code() const noexcept;
+
+            explicit InvalidDevice(Reason reason) : _reason(reason) {}
+
+            [[nodiscard]] const char* what() const noexcept override;
+
+            [[nodiscard]] virtual Reason code() const noexcept;
+
         private:
             Reason _reason;
         };
 
         Device(const std::string& path, DeviceIndex index,
                std::shared_ptr<raw::DeviceMonitor> monitor, double timeout);
+
         Device(std::shared_ptr<raw::RawDevice> raw_device, DeviceIndex index,
                double timeout);
-        Device(std::shared_ptr<dj::Receiver> receiver,
+
+        Device(const std::shared_ptr<dj::Receiver>& receiver,
                hidpp::DeviceConnectionEvent event, double timeout);
-        Device(std::shared_ptr<dj::Receiver> receiver,
+
+        Device(const std::shared_ptr<dj::Receiver>& receiver,
                DeviceIndex index, double timeout);
+
         virtual ~Device();
 
-        std::string devicePath() const;
-        DeviceIndex deviceIndex() const;
-        std::tuple<uint8_t, uint8_t> version() const;
+        [[nodiscard]] const std::string& devicePath() const;
 
-        std::string name() const;
-        uint16_t pid() const;
+        [[nodiscard]] DeviceIndex deviceIndex() const;
+
+        [[nodiscard]] const std::tuple<uint8_t, uint8_t>& version() const;
+
+        [[nodiscard]] const std::string& name() const;
+
+        [[nodiscard]] uint16_t pid() const;
 
         EvHandlerId addEventHandler(EventHandler handler);
+
         void removeEventHandler(EvHandlerId id);
 
         virtual Report sendReport(const Report& report);
+
         void sendReportNoResponse(Report report);
 
         void handleEvent(Report& report);
+
     protected:
         // Returns whether the report is a response
         virtual bool responseReport(const Report& report);
 
-        void reportFixup(Report& report);
+        void reportFixup(Report& report) const;
 
         const std::chrono::milliseconds io_timeout;
         uint8_t supported_reports;
@@ -119,6 +127,6 @@ namespace hidpp
         std::mutex _event_handler_lock;
         std::list<EventHandler> _event_handlers;
     };
-} } }
+}
 
 #endif //LOGID_BACKEND_HIDPP_DEVICE_H

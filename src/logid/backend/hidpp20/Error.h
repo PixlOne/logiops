@@ -22,15 +22,12 @@
 #include <stdexcept>
 #include <cstdint>
 
-namespace logid {
-namespace backend {
-namespace hidpp20 {
+namespace logid::backend::hidpp20 {
     static constexpr uint8_t ErrorID = 0xFF;
 
-    class Error: public std::exception
-    {
+    class Error : public std::exception {
     public:
-        enum ErrorCode: uint8_t {
+        enum ErrorCode : uint8_t {
             NoError = 0,
             Unknown = 1,
             InvalidArgument = 2,
@@ -46,12 +43,13 @@ namespace hidpp20 {
 
         explicit Error(uint8_t code);
 
-        const char* what() const noexcept override;
-        uint8_t code() const noexcept;
+        [[nodiscard]] const char* what() const noexcept override;
+
+        [[nodiscard]] uint8_t code() const noexcept;
 
     private:
         uint8_t _code;
     };
-}}}
+}
 
 #endif //LOGID_BACKEND_HIDPP20_ERROR_H

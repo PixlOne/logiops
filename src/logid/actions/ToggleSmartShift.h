@@ -22,27 +22,28 @@
 #include "Action.h"
 #include "../features/SmartShift.h"
 
-namespace logid {
-namespace actions {
-    class ToggleSmartShift : public Action
-    {
+namespace logid::actions {
+    class ToggleSmartShift : public Action {
     public:
         static const char* interface_name;
 
         ToggleSmartShift(Device* dev,
                          const std::shared_ptr<ipcgull::node>& parent);
+
         ToggleSmartShift(Device* device,
                          [[maybe_unused]] config::ToggleSmartShift& action,
                          const std::shared_ptr<ipcgull::node>& parent) :
-            ToggleSmartShift(device, parent) { }
+                ToggleSmartShift(device, parent) {}
 
-        virtual void press();
-        virtual void release();
+        void press() final;
 
-        virtual uint8_t reprogFlags() const;
+        void release() final;
+
+        [[nodiscard]] uint8_t reprogFlags() const final;
+
     protected:
         std::shared_ptr<features::SmartShift> _smartshift;
     };
-}}
+}
 
 #endif //LOGID_ACTION_TOGGLESMARTSHIFT_H

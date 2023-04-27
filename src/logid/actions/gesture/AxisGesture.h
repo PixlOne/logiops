@@ -20,34 +20,34 @@
 
 #include "Gesture.h"
 
-namespace logid {
-    namespace actions
-    {
-        class AxisGesture : public Gesture
-        {
-        public:
-            static const char* interface_name;
+namespace logid::actions {
+    class AxisGesture : public Gesture {
+    public:
+        static const char* interface_name;
 
-            AxisGesture(Device* device, config::AxisGesture& config,
-                        const std::shared_ptr<ipcgull::node>& parent);
+        AxisGesture(Device* device, config::AxisGesture& config,
+                    const std::shared_ptr<ipcgull::node>& parent);
 
-            virtual void press(bool init_threshold=false);
-            virtual void release(bool primary=false);
-            virtual void move(int16_t axis);
+        void press(bool init_threshold) final;
 
-            virtual bool wheelCompatibility() const;
-            virtual bool metThreshold() const;
+        void release(bool primary) final;
 
-            void setHiresMultiplier(double multiplier);
+        void move(int16_t axis) final;
 
-        protected:
-            int16_t _axis;
-            double _axis_remainder;
-            int _hires_remainder;
-            std::optional<uint> _input_axis;
-            double _multiplier;
-            config::AxisGesture& _config;
-        };
-    }}
+        [[nodiscard]] bool wheelCompatibility() const final;
+
+        [[nodiscard]] bool metThreshold() const final;
+
+        void setHiresMultiplier(double multiplier);
+
+    protected:
+        int32_t _axis{};
+        double _axis_remainder{};
+        int _hires_remainder{};
+        std::optional<uint> _input_axis;
+        double _multiplier;
+        config::AxisGesture& _config;
+    };
+}
 
 #endif //LOGID_ACTION_AXISGESTURE_H

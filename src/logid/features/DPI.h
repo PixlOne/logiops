@@ -22,23 +22,24 @@
 #include "DeviceFeature.h"
 #include "../config/schema.h"
 
-namespace logid {
-namespace features
-{
-    class DPI : public DeviceFeature
-    {
+namespace logid::features {
+    class DPI : public DeviceFeature {
     public:
         explicit DPI(Device* dev);
-        virtual void configure();
-        virtual void listen();
 
-        uint16_t getDPI(uint8_t sensor=0);
-        void setDPI(uint16_t dpi, uint8_t sensor=0);
+        void configure() final;
+
+        void listen() final;
+
+        uint16_t getDPI(uint8_t sensor = 0);
+
+        void setDPI(uint16_t dpi, uint8_t sensor = 0);
+
     private:
         std::optional<config::DPI>& _config;
         std::shared_ptr<backend::hidpp20::AdjustableDPI> _adjustable_dpi;
         std::vector<backend::hidpp20::AdjustableDPI::SensorDPIList> _dpi_lists;
     };
- }}
+}
 
 #endif //LOGID_FEATURE_DPI_H

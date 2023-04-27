@@ -22,19 +22,21 @@
 #include "DeviceFeature.h"
 #include "../actions/gesture/Gesture.h"
 
-namespace logid {
-namespace features
-{
-    class HiresScroll : public DeviceFeature
-    {
+namespace logid::features {
+    class HiresScroll : public DeviceFeature {
     public:
         explicit HiresScroll(Device* dev);
-        ~HiresScroll();
-        virtual void configure();
-        virtual void listen();
 
-        uint8_t getMode();
+        ~HiresScroll() noexcept override;
+
+        void configure() final;
+
+        void listen() final;
+
+        [[nodiscard]] uint8_t getMode();
+
         void setMode(uint8_t mode);
+
     private:
         std::optional<backend::hidpp::Device::EvHandlerId> _ev_handler;
 
@@ -43,6 +45,7 @@ namespace features
                          const std::string& direction);
 
         void _handleScroll(backend::hidpp20::HiresScroll::WheelStatus event);
+
         std::shared_ptr<backend::hidpp20::HiresScroll> _hires_scroll;
         std::chrono::time_point<std::chrono::system_clock> _last_scroll;
         int16_t _last_direction = 0;
@@ -57,6 +60,6 @@ namespace features
 
         std::shared_ptr<ipcgull::node> _node;
     };
-}}
+}
 
 #endif //LOGID_FEATURE_HIRESSCROLL_H

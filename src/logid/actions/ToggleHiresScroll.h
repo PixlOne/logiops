@@ -21,27 +21,27 @@
 #include "Action.h"
 #include "../features/HiresScroll.h"
 
-namespace logid {
-namespace actions
-{
-    class ToggleHiresScroll : public Action
-    {
+namespace logid::actions {
+    class ToggleHiresScroll : public Action {
     public:
         static const char* interface_name;
 
         ToggleHiresScroll(Device* dev, const std::shared_ptr<ipcgull::node>& parent);
+
         ToggleHiresScroll(Device* device,
                           [[maybe_unused]] config::ToggleHiresScroll& action,
                           const std::shared_ptr<ipcgull::node>& parent) :
-                          ToggleHiresScroll(device, parent) { }
+                ToggleHiresScroll(device, parent) {}
 
-        virtual void press();
-        virtual void release();
+        void press() final;
 
-        virtual uint8_t reprogFlags() const;
+        void release() final;
+
+        [[nodiscard]] uint8_t reprogFlags() const final;
+
     protected:
         std::shared_ptr<features::HiresScroll> _hires_scroll;
     };
-}}
+}
 
 #endif //LOGID_ACTION_TOGGLEHIRESSCROLL_H

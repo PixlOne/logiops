@@ -30,73 +30,73 @@
 using namespace logid;
 using namespace logid::actions;
 
-template <typename T>
-struct action_type {
-    typedef typename T::action type;
-};
+namespace logid::actions {
+    template<typename T>
+    struct action_type {
+        typedef typename T::action type;
+    };
 
-template <typename T>
-struct action_type<const T> : action_type<T> { };
+    template<typename T>
+    struct action_type<const T> : action_type<T> {
+    };
 
-template <typename T>
-struct action_type<T&> : action_type<T> { };
+    template<typename T>
+    struct action_type<T&> : action_type<T> {
+    };
 
-template <typename T>
-std::shared_ptr<Action> _makeAction(
-        Device* device, T& action,
-        const std::shared_ptr<ipcgull::node>& parent)
-{
-    return parent->make_interface<typename action_type<T>::type>(
-            device, std::forward<T&>(action), parent);
-}
-
-template <typename T>
-std::shared_ptr<Action> _makeAction(
-        Device *device, const std::string &name,
-        std::optional<T>& config,
-        const std::shared_ptr<ipcgull::node>& parent)
-{
-    if(name == ChangeDPI::interface_name) {
-        config = config::ChangeDPI();
-    } else if(name == ChangeHostAction::interface_name) {
-        config = config::ChangeHost();
-    } else if(name == CycleDPI::interface_name) {
-        config = config::CycleDPI();
-    } else if(name == KeypressAction::interface_name) {
-        config = config::KeypressAction();
-    } else if(name == NullAction::interface_name) {
-        config = config::NoAction();
-    } else if(name == ChangeHostAction::interface_name) {
-        config = config::ChangeHost();
-    } else if(name == ToggleHiresScroll::interface_name) {
-        config = config::ToggleHiresScroll();
-    } else if(name == ToggleSmartShift::interface_name) {
-        config = config::ToggleHiresScroll();
-    } else if(name == "Default") {
-        config.reset();
-        return nullptr;
+    template<typename T>
+    std::shared_ptr<Action> _makeAction(
+            Device* device, T& action,
+            const std::shared_ptr<ipcgull::node>& parent) {
+        return parent->make_interface<typename action_type<T>::type>(
+                device, std::forward<T&>(action), parent);
     }
 
-    return Action::makeAction(device, config.value(), parent);
+    template<typename T>
+    std::shared_ptr<Action> _makeAction(
+            Device* device, const std::string& name,
+            std::optional<T>& config,
+            const std::shared_ptr<ipcgull::node>& parent) {
+        if (name == ChangeDPI::interface_name) {
+            config = config::ChangeDPI();
+        } else if (name == CycleDPI::interface_name) {
+            config = config::CycleDPI();
+        } else if (name == KeypressAction::interface_name) {
+            config = config::KeypressAction();
+        } else if (name == NullAction::interface_name) {
+            config = config::NoAction();
+        } else if (name == ChangeHostAction::interface_name) {
+            config = config::ChangeHost();
+        } else if (name == ToggleHiresScroll::interface_name) {
+            config = config::ToggleHiresScroll();
+        } else if (name == ToggleSmartShift::interface_name) {
+            config = config::ToggleSmartShift();
+        } else if (name == "Default") {
+            config.reset();
+            return nullptr;
+        } else {
+            throw InvalidAction(name);
+        }
+
+        return Action::makeAction(device, config.value(), parent);
+    }
 }
 
 std::shared_ptr<Action> Action::makeAction(
-        Device *device, const std::string &name,
-        std::optional<config::BasicAction> &config,
-        const std::shared_ptr<ipcgull::node>& parent)
-{
+        Device* device, const std::string& name,
+        std::optional<config::BasicAction>& config,
+        const std::shared_ptr<ipcgull::node>& parent) {
     return _makeAction(device, name, config, parent);
 }
 
 std::shared_ptr<Action> Action::makeAction(
-        Device *device, const std::string &name,
-        std::optional<config::Action> &config,
-        const std::shared_ptr<ipcgull::node>& parent)
-{
+        Device* device, const std::string& name,
+        std::optional<config::Action>& config,
+        const std::shared_ptr<ipcgull::node>& parent) {
     try {
         return _makeAction(device, name, config, parent);
-    } catch(actions::InvalidAction& e) {
-        if(name == GestureAction::interface_name) {
+    } catch (actions::InvalidAction& e) {
+        if (name == GestureAction::interface_name) {
             config = config::GestureAction();
             return makeAction(device, config.value(), parent);
         }
@@ -105,9 +105,8 @@ std::shared_ptr<Action> Action::makeAction(
 }
 
 std::shared_ptr<Action> Action::makeAction(
-        Device *device, config::BasicAction& action,
-        const std::shared_ptr<ipcgull::node>& parent)
-{
+        Device* device, config::BasicAction& action,
+        const std::shared_ptr<ipcgull::node>& parent) {
     std::shared_ptr<Action> ret;
     std::visit([&device, &ret, &parent](auto&& x) {
         ret = _makeAction(device, x, parent);
@@ -116,9 +115,8 @@ std::shared_ptr<Action> Action::makeAction(
 }
 
 std::shared_ptr<Action> Action::makeAction(
-        Device *device, config::Action& action,
-        const std::shared_ptr<ipcgull::node>& parent)
-{
+        Device* device, config::Action& action,
+        const std::shared_ptr<ipcgull::node>& parent) {
     std::shared_ptr<Action> ret;
     std::visit([&device, &ret, &parent](auto&& x) {
         ret = _makeAction(device, x, parent);
@@ -127,7 +125,6 @@ std::shared_ptr<Action> Action::makeAction(
 }
 
 Action::Action(Device* device, const std::string& name, tables t) :
-    ipcgull::interface("pizza.pixl.LogiOps.Action." + name, std::move(t)),
-    _device (device), _pressed (false)
-{
+        ipcgull::interface("pizza.pixl.LogiOps.Action." + name, std::move(t)),
+        _device(device), _pressed(false) {
 }

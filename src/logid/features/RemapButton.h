@@ -22,13 +22,10 @@
 #include "DeviceFeature.h"
 #include "../actions/Action.h"
 
-namespace logid {
-namespace features
-{
+namespace logid::features {
     class RemapButton;
 
-    class Button : public ipcgull::object
-    {
+    class Button : public ipcgull::object {
     public:
         typedef backend::hidpp20::ReprogControls::ControlInfo Info;
         typedef std::function<void(std::shared_ptr<actions::Action>)>
@@ -36,10 +33,12 @@ namespace features
 
         static std::shared_ptr<Button> make(
                 Info info, int index, Device* device, ConfigFunction conf_func,
-                std::shared_ptr<ipcgull::node> root, config::Button& config);
+                const std::shared_ptr<ipcgull::node>& root, config::Button& config);
 
         void press() const;
+
         void release() const;
+
         void move(int16_t x, int16_t y) const;
 
         [[nodiscard]] std::shared_ptr<ipcgull::node> node() const;
@@ -47,20 +46,22 @@ namespace features
         void configure() const;
 
         bool pressed() const;
+
     private:
-        friend class _Button;
+        friend class ButtonWrapper;
 
         Button(Info info, int index,
                Device* device, ConfigFunction conf_func,
-               std::shared_ptr<ipcgull::node> root,
+               const std::shared_ptr<ipcgull::node>& root,
                config::Button& config);
 
-        class IPC : public ipcgull::interface
-        {
+        class IPC : public ipcgull::interface {
         public:
             IPC(Button* parent,
                 const Info& info);
+
             void setAction(const std::string& type);
+
         private:
             Button& _button;
         };
@@ -79,16 +80,19 @@ namespace features
         std::weak_ptr<Button> _self;
     };
 
-    class RemapButton : public DeviceFeature
-    {
+    class RemapButton : public DeviceFeature {
     public:
         explicit RemapButton(Device* dev);
-        ~RemapButton();
-        virtual void configure();
-        virtual void listen();
+
+        ~RemapButton() noexcept override;
+
+        void configure() final;
+
+        void listen() final;
 
     private:
         void _buttonEvent(const std::set<uint16_t>& new_state);
+
         std::shared_ptr<backend::hidpp20::ReprogControls> _reprog_controls;
         std::set<uint16_t> _pressed_buttons;
         std::mutex _button_lock;
@@ -98,11 +102,12 @@ namespace features
 
         std::shared_ptr<ipcgull::node> _ipc_node;
 
-        class IPC : public ipcgull::interface
-        {
+        class IPC : public ipcgull::interface {
         public:
-            IPC(RemapButton* parent);
-            std::vector<std::shared_ptr<Button>> enumerate() const;
+            explicit IPC(RemapButton* parent);
+
+            [[nodiscard]] std::vector<std::shared_ptr<Button>> enumerate() const;
+
         private:
             RemapButton& _parent;
         };
@@ -110,6 +115,6 @@ namespace features
         std::shared_ptr<IPC> _ipc_interface;
         std::optional<backend::hidpp::Device::EvHandlerId> _ev_handler;
     };
-}}
+}
 
 #endif //LOGID_FEATURE_REMAPBUTTON_H

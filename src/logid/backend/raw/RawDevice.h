@@ -28,15 +28,14 @@
 #include <set>
 #include <list>
 
-#include "defs.h"
+#include "EventHandler.h"
 
-namespace logid::backend::raw
-{
+namespace logid::backend::raw {
     class DeviceMonitor;
+
     class IOMonitor;
 
-    class RawDevice
-    {
+    class RawDevice {
     public:
         static constexpr int max_data_length = 32;
         typedef std::list<RawEventHandler>::const_iterator EvHandlerId;
@@ -47,22 +46,29 @@ namespace logid::backend::raw
         };
 
         RawDevice(std::string path,
-                  std::shared_ptr<DeviceMonitor> monitor);
+                  const std::shared_ptr<DeviceMonitor>& monitor);
+
         ~RawDevice() noexcept;
 
         [[nodiscard]] const std::string& rawPath() const;
 
         [[nodiscard]] const std::string& name() const;
+
+        [[maybe_unused]]
         [[nodiscard]] int16_t vendorId() const;
+
         [[nodiscard]] int16_t productId() const;
 
-        static std::vector<uint8_t> getReportDescriptor(std::string path);
+        static std::vector<uint8_t> getReportDescriptor(const std::string& path);
+
         static std::vector<uint8_t> getReportDescriptor(int fd);
+
         [[nodiscard]] const std::vector<uint8_t>& reportDescriptor() const;
 
         void sendReport(const std::vector<uint8_t>& report);
 
         EvHandlerId addEventHandler(RawEventHandler handler);
+
         void removeEventHandler(EvHandlerId id);
 
     private:
@@ -72,14 +78,15 @@ namespace logid::backend::raw
 
         const std::string _path;
         const int _fd;
-        const dev_info _devinfo;
+        const dev_info _dev_info;
         const std::string _name;
-        const std::vector<uint8_t> _rdesc;
+        const std::vector<uint8_t> _report_desc;
 
         std::shared_ptr<IOMonitor> _io_monitor;
 
         std::list<RawEventHandler> _event_handlers;
         std::mutex _event_handler_lock;
+
         void _handleEvent(const std::vector<uint8_t>& report);
     };
 }

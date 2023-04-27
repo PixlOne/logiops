@@ -24,30 +24,34 @@
 #include "defs.h"
 #include "../hidpp/defs.h"
 
-namespace logid::backend::dj
-{
-    namespace Offset
-    {
+namespace logid::backend::dj {
+    namespace Offset {
         static constexpr uint8_t Type = 0;
         static constexpr uint8_t DeviceIndex = 1;
         static constexpr uint8_t Feature = 2;
         static constexpr uint8_t Parameters = 3;
     }
 
-    bool supportsDjReports(const std::vector<uint8_t>& rdesc);
-    class Report
-    {
+    bool supportsDjReports(const std::vector<uint8_t>& report_desc);
+
+    class Report {
     public:
         typedef ReportType::ReportType Type;
 
         explicit Report(const std::vector<uint8_t>& data);
+
         Report(Type type, hidpp::DeviceIndex index, uint8_t feature);
 
-        Type type() const;
-        hidpp::DeviceIndex index() const;
-        uint8_t feature() const;
+        [[nodiscard]] Type type() const;
+
+        [[nodiscard]] hidpp::DeviceIndex index() const;
+
+        [[nodiscard]] uint8_t feature() const;
+
         std::vector<uint8_t>::iterator paramBegin();
-        std::vector<uint8_t> rawData() const;
+
+        [[nodiscard]] const std::vector<uint8_t>& rawData() const;
+
     private:
         std::vector<uint8_t> _data;
     };

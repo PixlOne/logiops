@@ -23,21 +23,16 @@
 #include <cstdint>
 #include <vector>
 
-namespace logid {
-namespace backend {
-namespace raw
-{
-    struct RawEventHandler
-    {
+namespace logid::backend::raw {
+    struct RawEventHandler {
         std::function<bool(const std::vector<uint8_t>&)> condition;
         std::function<void(const std::vector<uint8_t>&)> callback;
 
         RawEventHandler(std::function<bool(const std::vector<uint8_t>&)> cond,
                         std::function<void(const std::vector<uint8_t>&)> call) :
-                        condition (std::move(cond)), callback (std::move(call))
-        {
+                condition(std::move(cond)), callback(std::move(call)) {
         }
     };
-}}}
+}
 
 #endif //LOGID_BACKEND_RAW_DEFS_H

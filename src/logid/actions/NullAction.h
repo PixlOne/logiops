@@ -20,26 +20,25 @@
 
 #include "Action.h"
 
-namespace logid {
-namespace actions
-{
-    class NullAction : public Action
-    {
+namespace logid::actions {
+    class NullAction : public Action {
     public:
         static const char* interface_name;
 
         NullAction(Device* device,
                    const std::shared_ptr<ipcgull::node>& parent);
+
         NullAction(Device* device, [[maybe_unused]] config::NoAction& config,
                    const std::shared_ptr<ipcgull::node>& parent) :
-            NullAction(device, parent) { }
+                NullAction(device, parent) {}
 
-        virtual void press();
-        virtual void release();
+        void press() final;
 
-        virtual uint8_t reprogFlags() const;
+        void release() final;
+
+        [[nodiscard]] uint8_t reprogFlags() const final;
     };
-}}
+}
 
 
 #endif //LOGID_ACTION_NULL_H

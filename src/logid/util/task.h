@@ -23,8 +23,7 @@
 #include <future>
 #include "ExceptionHandler.h"
 
-namespace logid
-{
+namespace logid {
     /* This function spawns a new task into the least used worker queue
     * and forgets about it.
     */

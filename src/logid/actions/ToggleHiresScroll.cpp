@@ -26,38 +26,33 @@ using namespace logid::backend;
 const char* ToggleHiresScroll::interface_name = "ToggleHiresScroll";
 
 ToggleHiresScroll::ToggleHiresScroll(
-        Device *dev,
+        Device* dev,
         [[maybe_unused]] const std::shared_ptr<ipcgull::node>& parent) :
-        Action (dev, interface_name)
-{
+        Action(dev, interface_name) {
     _hires_scroll = _device->getFeature<features::HiresScroll>("hiresscroll");
-    if(!_hires_scroll)
+    if (!_hires_scroll)
         logPrintf(WARN, "%s:%d: HiresScroll feature not found, cannot use "
                         "ToggleHiresScroll action.",
                   _device->hidpp20().devicePath().c_str(),
                   _device->hidpp20().devicePath().c_str());
 }
 
-void ToggleHiresScroll::press()
-{
+void ToggleHiresScroll::press() {
     _pressed = true;
-    if(_hires_scroll)
-    {
+    if (_hires_scroll) {
         spawn_task(
-        [hires=this->_hires_scroll](){
-            auto mode = hires->getMode();
-            mode ^= backend::hidpp20::HiresScroll::HiRes;
-            hires->setMode(mode);
-        });
+                [hires = this->_hires_scroll]() {
+                    auto mode = hires->getMode();
+                    mode ^= backend::hidpp20::HiresScroll::HiRes;
+                    hires->setMode(mode);
+                });
     }
 }
 
-void ToggleHiresScroll::release()
-{
+void ToggleHiresScroll::release() {
     _pressed = false;
 }
 
-uint8_t ToggleHiresScroll::reprogFlags() const
-{
+uint8_t ToggleHiresScroll::reprogFlags() const {
     return hidpp20::ReprogControls::TemporaryDiverted;
 }

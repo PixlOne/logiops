@@ -23,15 +23,13 @@
 using namespace logid::features;
 using namespace logid::backend;
 
-#define MOVE_EVENTHANDLER_NAME "HIRES_SCROLL"
-
-HiresScroll::HiresScroll(Device *dev) : DeviceFeature(dev),
-    _config (dev->activeProfile().hiresscroll), _mode (0), _mask (0),
-    _node (dev->ipcNode()->make_child("hires"))
-{
-    if(_config.has_value()) {
-        if(std::holds_alternative<bool>(_config.value())) {
-            config::HiresScroll conf {};
+HiresScroll::HiresScroll(Device* dev) : DeviceFeature(dev),
+                                        _config(dev->activeProfile().hiresscroll), _mode(0),
+                                        _mask(0),
+                                        _node(dev->ipcNode()->make_child("hires")) {
+    if (_config.has_value()) {
+        if (std::holds_alternative<bool>(_config.value())) {
+            config::HiresScroll conf{};
             conf.hires = std::get<bool>(_config.value());
             conf.invert = false;
             conf.target = false;
@@ -39,19 +37,19 @@ HiresScroll::HiresScroll(Device *dev) : DeviceFeature(dev),
             _config.value() = conf;
         }
         auto& conf = std::get<config::HiresScroll>(_config.value());
-        if(conf.hires.has_value()) {
+        if (conf.hires.has_value()) {
             _mask |= hidpp20::HiresScroll::Mode::HiRes;
-            if(conf.hires.value())
+            if (conf.hires.value())
                 _mode |= hidpp20::HiresScroll::Mode::HiRes;
         }
-        if(conf.invert.has_value()) {
+        if (conf.invert.has_value()) {
             _mask |= hidpp20::HiresScroll::Mode::Inverted;
-            if(conf.invert.value())
+            if (conf.invert.value())
                 _mode |= hidpp20::HiresScroll::Mode::Inverted;
         }
-        if(conf.target.has_value()) {
+        if (conf.target.has_value()) {
             _mask |= hidpp20::HiresScroll::Mode::Target;
-            if(conf.target.value())
+            if (conf.target.value())
                 _mode |= hidpp20::HiresScroll::Mode::Target;
         }
 
@@ -61,110 +59,107 @@ HiresScroll::HiresScroll(Device *dev) : DeviceFeature(dev),
 
     try {
         _hires_scroll = std::make_shared<hidpp20::HiresScroll>(&dev->hidpp20());
-    } catch(hidpp20::UnsupportedFeature& e) {
+    } catch (hidpp20::UnsupportedFeature& e) {
         throw UnsupportedFeature();
     }
 
     _last_scroll = std::chrono::system_clock::now();
 }
 
-HiresScroll::~HiresScroll()
-{
-    if(_ev_handler.has_value())
+HiresScroll::~HiresScroll() noexcept {
+    if (_ev_handler.has_value())
         _device->hidpp20().removeEventHandler(_ev_handler.value());
 }
 
-void HiresScroll::configure()
-{
+void HiresScroll::configure() {
     auto mode = _hires_scroll->getMode();
     mode &= ~_mask;
     mode |= (_mode & _mask);
     _hires_scroll->setMode(mode);
 }
 
-void HiresScroll::listen()
-{
-    if(!_ev_handler.has_value()) {
+void HiresScroll::listen() {
+    if (!_ev_handler.has_value()) {
         _ev_handler = _device->hidpp20().addEventHandler({
-            [index=_hires_scroll->featureIndex()](
-                    const hidpp::Report& report)->bool {
-                return (report.feature() == index) && (report.function() ==
-                                                       hidpp20::HiresScroll::WheelMovement);
-            },
-            [this](const hidpp::Report& report) {
-                _handleScroll(_hires_scroll->wheelMovementEvent(report));
-            }
-        });
+                                                                 [index = _hires_scroll->featureIndex()](
+                                                                         const hidpp::Report& report) -> bool {
+                                                                     return (report.feature() ==
+                                                                             index) &&
+                                                                            (report.function() ==
+                                                                             hidpp20::HiresScroll::WheelMovement);
+                                                                 },
+                                                                 [this](const hidpp::Report& report) {
+                                                                     _handleScroll(
+                                                                             _hires_scroll->wheelMovementEvent(
+                                                                                     report));
+                                                                 }
+                                                         });
     }
 }
 
-uint8_t HiresScroll::getMode()
-{
+uint8_t HiresScroll::getMode() {
     return _hires_scroll->getMode();
 }
 
-void HiresScroll::setMode(uint8_t mode)
-{
+void HiresScroll::setMode(uint8_t mode) {
     _hires_scroll->setMode(mode);
 }
 
-void HiresScroll::_makeAction(std::shared_ptr<actions::Gesture> &gesture,
-                              std::optional<config::Gesture> &config,
-                              const std::string& direction)
-{
-    if(config.has_value()) {
+void HiresScroll::_makeAction(std::shared_ptr<actions::Gesture>& gesture,
+                              std::optional<config::Gesture>& config,
+                              const std::string& direction) {
+    if (config.has_value()) {
         gesture = actions::Gesture::makeGesture(_device, config.value(),
                                                 _node->make_child(direction));
         try {
             auto axis = std::dynamic_pointer_cast<actions::AxisGesture>(
                     gesture);
-            if(axis)
+            if (axis)
                 axis->setHiresMultiplier(
                         _hires_scroll->getCapabilities().multiplier);
-        } catch(std::bad_cast& e) { }
-        if(gesture)
+        } catch (std::bad_cast& e) {}
+        if (gesture)
             gesture->press(true);
     } else {
         gesture.reset();
     }
 }
 
-void HiresScroll::_handleScroll(hidpp20::HiresScroll::WheelStatus event)
-{
+void HiresScroll::_handleScroll(hidpp20::HiresScroll::WheelStatus event) {
     auto now = std::chrono::system_clock::now();
-    if(std::chrono::duration_cast<std::chrono::seconds>(
+    if (std::chrono::duration_cast<std::chrono::seconds>(
             now - _last_scroll).count() >= 1) {
-        if(_up_action) {
-            _up_action->release();
+        if (_up_action) {
+            _up_action->release(false);
             _up_action->press(true);
         }
-        if(_down_action) {
-            _down_action->release();
+        if (_down_action) {
+            _down_action->release(false);
             _down_action->press(true);
         }
 
         _last_direction = 0;
     }
 
-    if(event.deltaV > 0) {
-        if(_last_direction == -1) {
-            if(_down_action){
-                _down_action->release();
+    if (event.deltaV > 0) {
+        if (_last_direction == -1) {
+            if (_down_action) {
+                _down_action->release(false);
                 _down_action->press(true);
             }
         }
-        if(_up_action)
+        if (_up_action)
             _up_action->move(event.deltaV);
         _last_direction = 1;
-    } else if(event.deltaV < 0) {
-        if(_last_direction == 1) {
-            if(_up_action){
-                _up_action->release();
+    } else if (event.deltaV < 0) {
+        if (_last_direction == 1) {
+            if (_up_action) {
+                _up_action->release(false);
                 _up_action->press(true);
             }
         }
-        if(_down_action)
-            _down_action->move(-event.deltaV);
+        if (_down_action)
+            _down_action->move((int16_t) -event.deltaV);
         _last_direction = -1;
     }
 

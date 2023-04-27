@@ -18,8 +18,6 @@
 #include "CycleDPI.h"
 #include "../Device.h"
 #include "../util/task.h"
-#include "../util/log.h"
-#include "../backend/hidpp20/Error.h"
 #include "../backend/hidpp20/features/ReprogControls.h"
 
 using namespace logid::actions;
@@ -29,53 +27,51 @@ const char* CycleDPI::interface_name = "CycleDPI";
 
 CycleDPI::CycleDPI(Device* device, config::CycleDPI& config,
                    [[maybe_unused]] const std::shared_ptr<ipcgull::node>& parent) :
-    Action (device, interface_name, {
-            {
-                    {"GetDPIs", {this, &CycleDPI::getDPIs, {"dpis"}}},
-                    {"SetDPIs", {this, &CycleDPI::setDPIs, {"dpis"}}}
-            }, {}, {}
-    }),
-    _config (config)
-{
+        Action(device, interface_name, {
+                {
+                        {"GetDPIs", {this, &CycleDPI::getDPIs, {"dpis"}}},
+                        {"SetDPIs", {this, &CycleDPI::setDPIs, {"dpis"}}}
+                },
+                {},
+                {}
+        }),
+        _config(config) {
     _dpi = _device->getFeature<features::DPI>("dpi");
-    if(!_dpi)
+    if (!_dpi)
         logPrintf(WARN, "%s:%d: DPI feature not found, cannot use "
                         "CycleDPI action.",
                   _device->hidpp20().devicePath().c_str(),
                   _device->hidpp20().deviceIndex());
 
-    if(_config.dpis.has_value()) {
-       _current_dpi = _config.dpis.value().begin();
+    if (_config.dpis.has_value()) {
+        _current_dpi = _config.dpis.value().begin();
     }
 }
 
-std::vector<int> CycleDPI::getDPIs() const
-{
+std::vector<int> CycleDPI::getDPIs() const {
     auto dpis = _config.dpis.value_or(std::list<int>());
     return {dpis.begin(), dpis.end()};
 }
 
-void CycleDPI::setDPIs(const std::vector<int>& dpis)
-{
+void CycleDPI::setDPIs(const std::vector<int>& dpis) {
     std::lock_guard<std::mutex> lock(_dpi_lock);
     _config.dpis.emplace(dpis.begin(), dpis.end());
     _current_dpi = _config.dpis->cbegin();
 }
 
-void CycleDPI::press()
-{
+void CycleDPI::press() {
     _pressed = true;
     std::lock_guard<std::mutex> lock(_dpi_lock);
-    if(_dpi && _config.dpis.has_value() && _config.dpis.value().empty()) {
+    if (_dpi && _config.dpis.has_value() && _config.dpis.value().empty()) {
         ++_current_dpi;
-        if(_current_dpi == _config.dpis.value().end())
+        if (_current_dpi == _config.dpis.value().end())
             _current_dpi = _config.dpis.value().begin();
 
-        spawn_task([this, dpi=*_current_dpi]{
+        spawn_task([this, dpi = *_current_dpi] {
             try {
                 _dpi->setDPI(dpi, _config.sensor.value_or(0));
             } catch (backend::hidpp20::Error& e) {
-                if(e.code() == backend::hidpp20::Error::InvalidArgument)
+                if (e.code() == backend::hidpp20::Error::InvalidArgument)
                     logPrintf(WARN, "%s:%d: Could not set DPI to %d for "
                                     "sensor %d", _device->hidpp20().devicePath().c_str(),
                               _device->hidpp20().deviceIndex(), dpi,
@@ -87,12 +83,10 @@ void CycleDPI::press()
     }
 }
 
-void CycleDPI::release()
-{
+void CycleDPI::release() {
     _pressed = false;
 }
 
-uint8_t CycleDPI::reprogFlags() const
-{
+uint8_t CycleDPI::reprogFlags() const {
     return backend::hidpp20::ReprogControls::TemporaryDiverted;
 }

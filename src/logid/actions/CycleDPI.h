@@ -23,21 +23,22 @@
 #include "../features/DPI.h"
 
 namespace logid::actions {
-    class CycleDPI : public Action
-    {
+    class CycleDPI : public Action {
     public:
         static const char* interface_name;
 
         CycleDPI(Device* device, config::CycleDPI& setting,
                  const std::shared_ptr<ipcgull::node>& parent);
 
-        virtual void press();
-        virtual void release();
+        void press() final;
+
+        void release() final;
 
         [[nodiscard]] std::vector<int> getDPIs() const;
+
         void setDPIs(const std::vector<int>& dpis);
 
-        virtual uint8_t reprogFlags() const;
+        [[nodiscard]] uint8_t reprogFlags() const final;
 
     protected:
         std::mutex _dpi_lock;

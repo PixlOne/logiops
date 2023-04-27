@@ -16,16 +16,13 @@
  *
  */
 #include "ChangeHost.h"
-#include "../Error.h"
 
 using namespace logid::backend::hidpp20;
 
-ChangeHost::ChangeHost(Device *dev) : Feature(dev, ID), _host_count (0)
-{
+ChangeHost::ChangeHost(Device* dev) : Feature(dev, ID), _host_count(0) {
 }
 
-ChangeHost::HostInfo ChangeHost::getHostInfo()
-{
+ChangeHost::HostInfo ChangeHost::getHostInfo() {
     std::vector<uint8_t> params(0);
     auto response = callFunction(GetHostInfo, params);
 
@@ -34,23 +31,22 @@ ChangeHost::HostInfo ChangeHost::getHostInfo()
     info.currentHost = response[1];
     info.enhancedHostSwitch = response[2] & 1;
 
-    if(!_host_count)
+    if (!_host_count)
         _host_count = info.hostCount;
 
     return info;
 }
 
-void ChangeHost::setHost(uint8_t host)
-{
+void ChangeHost::setHost(uint8_t host) {
     /* Expect connection to be severed here, send without response
      *
      * Since there is no response, we have to emulate any kind of
      * error that may be returned (i.e. InvalidArgument as per the docs)
      */
-    if(!_host_count)
+    if (!_host_count)
         getHostInfo();
 
-    if(host >= _host_count)
+    if (host >= _host_count)
         throw hidpp20::Error(hidpp20::Error::InvalidArgument);
 
     std::vector<uint8_t> params = {host};
@@ -58,9 +54,9 @@ void ChangeHost::setHost(uint8_t host)
     callFunctionNoResponse(SetCurrentHost, params);
 }
 
-std::vector<uint8_t> ChangeHost::getCookies()
-{
-    if(!_host_count)
+[[maybe_unused]]
+std::vector<uint8_t> ChangeHost::getCookies() {
+    if (!_host_count)
         getHostInfo();
 
     std::vector<uint8_t> params(0);
@@ -71,8 +67,8 @@ std::vector<uint8_t> ChangeHost::getCookies()
     return response;
 }
 
-void ChangeHost::setCookie(uint8_t host, uint8_t cookie)
-{
+[[maybe_unused]]
+void ChangeHost::setCookie(uint8_t host, uint8_t cookie) {
     std::vector<uint8_t> params = {host, cookie};
     callFunction(SetCookie, params);
 }

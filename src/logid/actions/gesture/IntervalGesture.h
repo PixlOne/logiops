@@ -20,42 +20,44 @@
 
 #include "Gesture.h"
 
-namespace logid {
-namespace actions
-{
-    class IntervalGesture : public Gesture
-    {
+namespace logid::actions {
+    class IntervalGesture : public Gesture {
     public:
         static const char* interface_name;
 
         IntervalGesture(Device* device, config::IntervalGesture& config,
                         const std::shared_ptr<ipcgull::node>& parent);
 
-        virtual void press(bool init_threshold=false);
-        virtual void release(bool primary=false);
-        virtual void move(int16_t axis);
+        void press(bool init_threshold) final;
 
-        virtual bool wheelCompatibility() const;
-        virtual bool metThreshold() const;
+        void release(bool primary) final;
+
+        void move(int16_t axis) final;
+
+        [[nodiscard]] bool wheelCompatibility() const final;
+
+        [[nodiscard]] bool metThreshold() const final;
 
     protected:
-        int16_t _axis;
-        int16_t _interval_pass_count;
+        int32_t _axis;
+        int32_t _interval_pass_count;
         std::shared_ptr<Action> _action;
         config::IntervalGesture& _config;
     private:
-        class IPC : public ipcgull::interface
-        {
+        class IPC : public ipcgull::interface {
         public:
-            IPC(IntervalGesture* parent);
+            explicit IPC(IntervalGesture* parent);
 
             void setAction(const std::string& type);
+
             void setInterval(int interval);
+
             void setThreshold(int threshold);
+
         private:
             IntervalGesture& parent;
         };
     };
-}}
+}
 
 #endif //LOGID_ACTION_INTERVALGESTURE_H

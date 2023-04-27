@@ -23,39 +23,34 @@ using namespace logid::actions;
 const char* ThresholdGesture::interface_name = "OnRelease";
 
 ThresholdGesture::ThresholdGesture(
-        Device *device, config::ThresholdGesture& config,
-        const std::shared_ptr<ipcgull::node>& parent ) :
-    Gesture (device, parent, interface_name), _config (config)
-{
-    if(config.action) {
+        Device* device, config::ThresholdGesture& config,
+        const std::shared_ptr<ipcgull::node>& parent) :
+        Gesture(device, parent, interface_name), _config(config) {
+    if (config.action) {
         try {
             _action = Action::makeAction(device, config.action.value(), _node);
-        } catch(InvalidAction& e) {
+        } catch (InvalidAction& e) {
             logPrintf(WARN, "Mapping gesture to invalid action");
         }
     }
 }
 
-void ThresholdGesture::press(bool init_threshold)
-{
-    _axis = init_threshold ?
-            _config.threshold.value_or(defaults::gesture_threshold) : 0;
+void ThresholdGesture::press(bool init_threshold) {
+    _axis = init_threshold ? (int32_t) _config.threshold.value_or(defaults::gesture_threshold) : 0;
     this->_executed = false;
 }
 
-void ThresholdGesture::release(bool primary)
-{
-    (void)primary; // Suppress unused warning
-    
+void ThresholdGesture::release(bool primary) {
+    (void) primary; // Suppress unused warning
+
     this->_executed = false;
 }
 
-void ThresholdGesture::move(int16_t axis)
-{
+void ThresholdGesture::move(int16_t axis) {
     _axis += axis;
 
-    if(!this->_executed && metThreshold()) {
-        if(_action) {
+    if (!this->_executed && metThreshold()) {
+        if (_action) {
             _action->press();
             _action->release();
         }
@@ -63,12 +58,10 @@ void ThresholdGesture::move(int16_t axis)
     }
 }
 
-bool ThresholdGesture::metThreshold() const
-{
+bool ThresholdGesture::metThreshold() const {
     return _axis >= _config.threshold.value_or(defaults::gesture_threshold);
 }
 
-bool ThresholdGesture::wheelCompatibility() const
-{
+bool ThresholdGesture::wheelCompatibility() const {
     return false;
 }

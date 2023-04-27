@@ -20,29 +20,29 @@
 
 #include "Gesture.h"
 
-namespace logid {
-namespace actions
-{
-    class ReleaseGesture : public Gesture
-    {
+namespace logid::actions {
+    class ReleaseGesture : public Gesture {
     public:
         static const char* interface_name;
 
         ReleaseGesture(Device* device, config::ReleaseGesture& config,
                        const std::shared_ptr<ipcgull::node>& parent);
 
-        virtual void press(bool init_threshold=false);
-        virtual void release(bool primary=false);
-        virtual void move(int16_t axis);
+        void press(bool init_threshold) final;
 
-        virtual bool wheelCompatibility() const;
-        virtual bool metThreshold() const;
+        void release(bool primary) final;
+
+        void move(int16_t axis) final;
+
+        [[nodiscard]] bool wheelCompatibility() const final;
+
+        [[nodiscard]] bool metThreshold() const final;
 
     protected:
-        int16_t _axis;
+        int32_t _axis{};
         std::shared_ptr<Action> _action;
         config::ReleaseGesture& _config;
     };
-}}
+}
 
 #endif //LOGID_ACTION_RELEASEGESTURE_H

@@ -23,27 +23,29 @@
 #include "../features/DPI.h"
 
 namespace logid::actions {
-        class ChangeDPI : public Action
-        {
-        public:
-            static const char* interface_name;
+    class ChangeDPI : public Action {
+    public:
+        static const char* interface_name;
 
-            ChangeDPI(Device* device, config::ChangeDPI& setting,
-                      const std::shared_ptr<ipcgull::node>& parent);
+        ChangeDPI(Device* device, config::ChangeDPI& setting,
+                  const std::shared_ptr<ipcgull::node>& parent);
 
-            virtual void press();
-            virtual void release();
+        void press() final;
 
-            [[nodiscard]] std::tuple<int16_t, uint16_t> getConfig() const;
-            void setChange(int16_t change);
-            void setSensor(uint8_t sensor, bool reset);
+        void release() final;
 
-            virtual uint8_t reprogFlags() const;
+        [[nodiscard]] std::tuple<int16_t, uint16_t> getConfig() const;
 
-        protected:
-            config::ChangeDPI& _config;
-            std::shared_ptr<features::DPI> _dpi;
-        };
-    }
+        void setChange(int16_t change);
+
+        void setSensor(uint8_t sensor, bool reset);
+
+        [[nodiscard]] uint8_t reprogFlags() const final;
+
+    protected:
+        config::ChangeDPI& _config;
+        std::shared_ptr<features::DPI> _dpi;
+    };
+}
 
 #endif //LOGID_ACTION_CHANGEDPI_H

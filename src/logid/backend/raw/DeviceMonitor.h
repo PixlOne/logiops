@@ -27,28 +27,32 @@
 
 extern "C"
 {
-    struct udev;
-    struct udev_monitor;
+struct udev;
+struct udev_monitor;
 }
 
-namespace logid::backend::raw
-{
-    class DeviceMonitor
-    {
+namespace logid::backend::raw {
+    class DeviceMonitor {
     public:
         virtual ~DeviceMonitor();
 
         void enumerate();
+
         [[nodiscard]] std::shared_ptr<IOMonitor> ioMonitor() const;
 
     protected:
         DeviceMonitor();
+
         // This should be run once the derived class is ready
         void ready();
+
         virtual void addDevice(std::string device) = 0;
+
         virtual void removeDevice(std::string device) = 0;
+
     private:
         void _addHandler(const std::string& device);
+
         void _removeHandler(const std::string& device);
 
         std::shared_ptr<IOMonitor> _io_monitor;

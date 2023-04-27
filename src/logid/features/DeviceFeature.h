@@ -23,31 +23,32 @@
 
 namespace logid {
     class Device;
-namespace features
-{
-    class UnsupportedFeature : public std::exception
-    {
+}
+
+namespace logid::features {
+    class UnsupportedFeature : public std::exception {
     public:
         UnsupportedFeature() = default;
-        virtual const char* what() const noexcept
-        {
+
+        [[nodiscard]] const char* what() const noexcept override {
             return "Unsupported feature";
         }
     };
 
-    class DeviceFeature
-    {
+    class DeviceFeature {
     public:
-        explicit DeviceFeature(Device* dev) : _device (dev)
-        {
+        explicit DeviceFeature(Device* dev) : _device(dev) {
         }
+
         virtual void configure() = 0;
+
         virtual void listen() = 0;
+
         virtual ~DeviceFeature() = default;
 
     protected:
         Device* _device;
     };
-}}
+}
 
 #endif //LOGID_FEATURES_DEVICEFEATURE_H

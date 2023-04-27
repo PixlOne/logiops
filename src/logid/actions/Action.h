@@ -21,32 +21,31 @@
 #include <atomic>
 #include <libconfig.h++>
 #include <memory>
+#include <utility>
 #include <ipcgull/node.h>
 #include <ipcgull/interface.h>
 #include "../config/schema.h"
 
 namespace logid {
     class Device;
-namespace actions {
-    class InvalidAction : public std::exception
-    {
+}
+
+namespace logid::actions {
+    class InvalidAction : public std::exception {
     public:
-        InvalidAction()
-        {
-        }
-        explicit InvalidAction(std::string& action) : _action (action)
-        {
-        }
-        const char* what() const noexcept override
-        {
+        InvalidAction() = default;
+
+        InvalidAction(std::string action) : _action(std::move(action)) {}
+
+        [[nodiscard]] const char* what() const noexcept override {
             return _action.c_str();
         }
+
     private:
         std::string _action;
     };
 
-    class Action : public ipcgull::interface
-    {
+    class Action : public ipcgull::interface {
     public:
         static std::shared_ptr<Action> makeAction(
                 Device* device, const std::string& name,
@@ -67,28 +66,29 @@ namespace actions {
                 const std::shared_ptr<ipcgull::node>& parent);
 
         virtual void press() = 0;
+
         virtual void release() = 0;
-        virtual void move(int16_t x, int16_t y)
-        {
+
+        virtual void move(int16_t x, int16_t y) {
             // Suppress unused warning
-            (void)x; (void)y;
+            (void) x;
+            (void) y;
         }
 
-        virtual bool pressed()
-        {
+        virtual bool pressed() {
             return _pressed;
         }
 
-        virtual uint8_t reprogFlags() const = 0;
+        [[nodiscard]] virtual uint8_t reprogFlags() const = 0;
 
         virtual ~Action() = default;
 
     protected:
-        Action(Device* device, const std::string& name, tables t={});
+        Action(Device* device, const std::string& name, tables t = {});
 
         Device* _device;
         std::atomic<bool> _pressed;
     };
-}}
+}
 
 #endif //LOGID_ACTION_H

@@ -24,38 +24,42 @@
 #include "Receiver.h"
 #include "../hidpp/defs.h"
 
-namespace logid {
-namespace backend {
-namespace dj
-{
+namespace logid::backend::dj {
     // This class will run on the RawDevice thread,
-    class ReceiverMonitor
-    {
+    class ReceiverMonitor {
     public:
         ReceiverMonitor(std::string path,
-                        std::shared_ptr<raw::DeviceMonitor> monitor,
+                        const std::shared_ptr<raw::DeviceMonitor>& monitor,
                         double timeout);
+
         virtual ~ReceiverMonitor();
 
         void enumerate();
+
     protected:
         void ready();
+
         virtual void addDevice(hidpp::DeviceConnectionEvent event) = 0;
+
         virtual void removeDevice(hidpp::DeviceIndex index) = 0;
 
         void waitForDevice(hidpp::DeviceIndex index);
 
         // Internal methods for derived class
         void _pair(uint8_t timeout = 0);
+
         void _stopPairing();
 
         void _unpair();
 
         [[nodiscard]] std::shared_ptr<Receiver> receiver() const;
+
     private:
+        static constexpr const char* ev_handler_name = "receiver_monitor";
+
         std::shared_ptr<Receiver> _receiver;
     };
 
-}}}
+}
 
 #endif //LOGID_BACKEND_DJ_RECEIVERMONITOR_H

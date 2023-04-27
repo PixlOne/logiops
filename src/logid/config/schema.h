@@ -22,18 +22,29 @@
 
 namespace logid::actions {
     class ChangeDPI;
+
     class ChangeHostAction;
+
     class CycleDPI;
+
     class GestureAction;
+
     class KeypressAction;
+
     class NullAction;
+
     class ToggleHiresScroll;
+
     class ToggleSmartShift;
 
     class AxisGesture;
+
     class IntervalGesture;
+
     class NullGesture;
+
     class ReleaseGesture;
+
     class ThresholdGesture;
 }
 
@@ -41,61 +52,67 @@ namespace logid::config {
 
     struct NoAction : public signed_group<std::string> {
         typedef actions::NullAction action;
-        NoAction() : signed_group<std::string>("type", "None") { }
+
+        NoAction() : signed_group<std::string>("type", "None") {}
     };
 
     struct KeypressAction : public signed_group<std::string> {
         typedef actions::KeypressAction action;
         std::optional<
                 std::variant<std::string, uint,
-                    std::list<std::variant<uint, std::string>>>> keys;
+                        std::list<std::variant<uint, std::string>>>> keys;
+
         KeypressAction() : signed_group<std::string>(
                 "type", "Keypress",
-                {"keys"}, &KeypressAction::keys)
-        {
+                {"keys"}, &KeypressAction::keys) {
         }
     };
 
     struct ToggleSmartShift : public signed_group<std::string> {
         typedef actions::ToggleSmartShift action;
+
         ToggleSmartShift() :
-        signed_group<std::string>("type", "ToggleSmartShift") { }
+                signed_group<std::string>("type", "ToggleSmartShift") {}
     };
 
     struct ToggleHiresScroll : public signed_group<std::string> {
         typedef actions::ToggleHiresScroll action;
+
         ToggleHiresScroll() :
-        signed_group<std::string>("type", "ToggleHiresScroll") { }
+                signed_group<std::string>("type", "ToggleHiresScroll") {}
     };
 
     struct CycleDPI : public signed_group<std::string> {
         typedef actions::CycleDPI action;
         std::optional<std::list<int>> dpis;
         std::optional<int> sensor;
+
         CycleDPI() : signed_group<std::string>(
                 "type", "CycleDPI",
                 {"dpis", "sensor"},
                 &CycleDPI::dpis,
-                &CycleDPI::sensor) { }
+                &CycleDPI::sensor) {}
     };
 
     struct ChangeDPI : public signed_group<std::string> {
         typedef actions::ChangeDPI action;
         std::optional<int> inc;
         std::optional<int> sensor;
+
         ChangeDPI() : signed_group<std::string>(
                 "type", "ChangeDPI",
                 {"inc", "sensor"},
                 &ChangeDPI::inc,
-                &ChangeDPI::sensor) { }
+                &ChangeDPI::sensor) {}
     };
 
     struct ChangeHost : public signed_group<std::string> {
         typedef actions::ChangeHostAction action;
         std::optional<std::variant<int, std::string>> host;
+
         ChangeHost() : signed_group<std::string>(
                 "type", "ChangeHost",
-                {"host"}, &ChangeHost::host) { }
+                {"host"}, &ChangeHost::host) {}
     };
 
     typedef std::variant<
@@ -118,7 +135,7 @@ namespace logid::config {
                                      {"threshold", "axis", "axis_multiplier"},
                                      &AxisGesture::threshold,
                                      &AxisGesture::axis,
-                                     &AxisGesture::axis_multiplier) { }
+                                     &AxisGesture::axis_multiplier) {}
     };
 
     struct IntervalGesture : public signed_group<std::string> {
@@ -127,18 +144,19 @@ namespace logid::config {
         std::optional<BasicAction> action;
         std::optional<int> interval;
     protected:
-        IntervalGesture(const std::string& name) : signed_group(
+        explicit IntervalGesture(const std::string& name) : signed_group(
                 "mode", name,
                 {"threshold", "action", "interval"},
                 &IntervalGesture::threshold,
                 &IntervalGesture::action,
-                &IntervalGesture::interval) { }
+                &IntervalGesture::interval) {}
+
     public:
-        IntervalGesture() : IntervalGesture("OnInterval") { }
+        IntervalGesture() : IntervalGesture("OnInterval") {}
     };
 
     struct FewPixelsGesture : public IntervalGesture {
-        FewPixelsGesture() : IntervalGesture("OnFewPixels") { }
+        FewPixelsGesture() : IntervalGesture("OnFewPixels") {}
     };
 
     struct ReleaseGesture : public signed_group<std::string> {
@@ -149,7 +167,7 @@ namespace logid::config {
         ReleaseGesture() : signed_group("mode", "OnRelease",
                                         {"threshold", "action"},
                                         &ReleaseGesture::threshold,
-                                        &ReleaseGesture::action) { }
+                                        &ReleaseGesture::action) {}
     };
 
     struct ThresholdGesture : public signed_group<std::string> {
@@ -160,15 +178,16 @@ namespace logid::config {
         ThresholdGesture() : signed_group("mode", "OnThreshold",
                                           {"threshold", "action"},
                                           &ThresholdGesture::threshold,
-                                          &ThresholdGesture::action) { }
+                                          &ThresholdGesture::action) {}
     };
 
     struct NoGesture : public signed_group<std::string> {
         typedef actions::NullGesture gesture;
         std::optional<int> threshold;
+
         NoGesture() : signed_group("mode", "NoPress",
                                    {"threshold"},
-                                   &NoGesture::threshold) { }
+                                   &NoGesture::threshold) {}
     };
 
     typedef std::variant<
@@ -184,36 +203,38 @@ namespace logid::config {
     struct GestureAction : public signed_group<std::string> {
         typedef actions::GestureAction action;
         std::optional<map<std::string, Gesture, "direction",
-            less_caseless<std::string>>> gestures;
+                less_caseless<std::string>>> gestures;
 
         GestureAction() : signed_group<std::string>(
                 "type", "Gestures",
                 {"gestures"},
-                &GestureAction::gestures) { }
+                &GestureAction::gestures) {}
     };
 
     typedef std::variant<
-        NoAction,
-        KeypressAction,
-        ToggleSmartShift,
-        ToggleHiresScroll,
-        CycleDPI,
-        ChangeDPI,
-        ChangeHost,
-        GestureAction
+            NoAction,
+            KeypressAction,
+            ToggleSmartShift,
+            ToggleHiresScroll,
+            CycleDPI,
+            ChangeDPI,
+            ChangeHost,
+            GestureAction
     > Action;
 
     struct Button : public group {
         std::optional<Action> action;
+
         Button() : group({"action"},
-                         &Button::action) { }
+                         &Button::action) {}
     };
 
     struct SmartShift : public group {
         std::optional<bool> on;
         std::optional<unsigned int> threshold;
+
         SmartShift() : group({"on", "threshold"},
-                             &SmartShift::on, &SmartShift::threshold) { }
+                             &SmartShift::on, &SmartShift::threshold) {}
     };
 
 
@@ -223,12 +244,13 @@ namespace logid::config {
         std::optional<bool> target;
         std::optional<Gesture> up;
         std::optional<Gesture> down;
+
         HiresScroll() : group({"hires", "invert", "target", "up", "down"},
                               &HiresScroll::hires,
                               &HiresScroll::invert,
                               &HiresScroll::target,
                               &HiresScroll::up,
-                              &HiresScroll::down) { }
+                              &HiresScroll::down) {}
     };
 
     typedef std::variant<int, std::list<int>> DPI;
@@ -243,11 +265,11 @@ namespace logid::config {
         std::optional<BasicAction> tap;
 
         ThumbWheel() : group({"divert", "invert", "left", "right",
-                              "proxy", "touch", "tap" },
+                              "proxy", "touch", "tap"},
                              &ThumbWheel::divert, &ThumbWheel::invert,
                              &ThumbWheel::left, &ThumbWheel::right,
                              &ThumbWheel::proxy, &ThumbWheel::touch,
-                             &ThumbWheel::tap) { }
+                             &ThumbWheel::tap) {}
     };
 
     typedef map<uint16_t, Button, "cid"> RemapButton;
@@ -263,7 +285,7 @@ namespace logid::config {
                            "buttons", "thumbwheel"},
                           &Profile::dpi, &Profile::smartshift,
                           &Profile::hiresscroll, &Profile::buttons,
-                          &Profile::thumbwheel) { }
+                          &Profile::thumbwheel) {}
     };
 
     struct Device : public group {
@@ -271,22 +293,22 @@ namespace logid::config {
         map<std::string, Profile, "name"> profiles;
 
         Device() : group({"default_profile", "profiles"},
-                &Device::default_profile,
-                &Device::profiles),
-                default_profile(ipcgull::property_full_permissions, "")
-        {
+                         &Device::default_profile,
+                         &Device::profiles),
+                   default_profile(ipcgull::property_full_permissions, "") {
         }
     };
 
     struct Config : public group {
         std::optional<map<std::string,
-            std::variant<Device, Profile>, "name">> devices;
+                std::variant<Device, Profile>, "name">> devices;
         std::optional<std::set<uint16_t>> ignore;
         std::optional<double> io_timeout;
+
         Config() : group({"devices", "ignore", "io_timeout"},
                          &Config::devices,
                          &Config::ignore,
-                         &Config::io_timeout) { }
+                         &Config::io_timeout) {}
     };
 }
 

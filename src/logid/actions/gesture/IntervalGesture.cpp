@@ -16,7 +16,6 @@
  *
  */
 #include "IntervalGesture.h"
-#include "../../util/log.h"
 #include "../../Configuration.h"
 
 using namespace logid::actions;
@@ -24,48 +23,46 @@ using namespace logid::actions;
 const char* IntervalGesture::interface_name = "OnInterval";
 
 IntervalGesture::IntervalGesture(
-        Device *device, config::IntervalGesture& config,
+        Device* device, config::IntervalGesture& config,
         const std::shared_ptr<ipcgull::node>& parent) :
-    Gesture (device, parent, interface_name),
-    _axis (0), _interval_pass_count (0), _config (config)
-{
-    if(config.action) {
+        Gesture(device, parent, interface_name),
+        _axis(0), _interval_pass_count(0), _config(config) {
+    if (config.action) {
         try {
             _action = Action::makeAction(device, config.action.value(), _node);
-        } catch(InvalidAction& e) {
+        } catch (InvalidAction& e) {
             logPrintf(WARN, "Mapping gesture to invalid action");
         }
     }
 }
 
-void IntervalGesture::press(bool init_threshold)
-{
-    _axis = init_threshold ?
-            _config.threshold.value_or(defaults::gesture_threshold) : 0;
+void IntervalGesture::press(bool init_threshold) {
+    if (init_threshold) {
+        _axis = (int32_t) _config.threshold.value_or(defaults::gesture_threshold);
+    } else {
+        _axis = 0;
+    }
     _interval_pass_count = 0;
 }
 
-void IntervalGesture::release(bool primary)
-{
+void IntervalGesture::release(bool primary) {
     // Do nothing
-    (void)primary; // Suppress unused warning
+    (void) primary; // Suppress unused warning
 }
 
-void IntervalGesture::move(int16_t axis)
-{
-    if(!_config.interval.has_value())
+void IntervalGesture::move(int16_t axis) {
+    if (!_config.interval.has_value())
         return;
 
     const auto threshold =
             _config.threshold.value_or(defaults::gesture_threshold);
     _axis += axis;
-    if(_axis < threshold)
+    if (_axis < threshold)
         return;
 
-    int16_t new_interval_count = (_axis - threshold)/
-            _config.interval.value();
-    if(new_interval_count > _interval_pass_count) {
-        if(_action) {
+    int32_t new_interval_count = (_axis - threshold) / _config.interval.value();
+    if (new_interval_count > _interval_pass_count) {
+        if (_action) {
             _action->press();
             _action->release();
         }
@@ -73,12 +70,10 @@ void IntervalGesture::move(int16_t axis)
     _interval_pass_count = new_interval_count;
 }
 
-bool IntervalGesture::wheelCompatibility() const
-{
+bool IntervalGesture::wheelCompatibility() const {
     return true;
 }
 
-bool IntervalGesture::metThreshold() const
-{
-    return _axis >= _config.threshold.value_or(defaults::gesture_threshold);;
+bool IntervalGesture::metThreshold() const {
+    return _axis >= _config.threshold.value_or(defaults::gesture_threshold);
 }

@@ -17,14 +17,12 @@
  */
 #include "SmartShift.h"
 #include "../Device.h"
-#include "../util/log.h"
 
 using namespace logid::features;
 using namespace logid::backend;
 
 SmartShift::SmartShift(Device* device) : DeviceFeature(device),
-    _config (device->activeProfile().smartshift)
-{
+                                         _config(device->activeProfile().smartshift) {
     try {
         _smartshift = std::make_shared<hidpp20::SmartShift>(&device->hidpp20());
     } catch (hidpp20::UnsupportedFeature& e) {
@@ -34,117 +32,100 @@ SmartShift::SmartShift(Device* device) : DeviceFeature(device),
     _ipc = _device->ipcNode()->make_interface<IPC>(this);
 }
 
-void SmartShift::configure()
-{
-    if(_config.has_value()) {
+void SmartShift::configure() {
+    if (_config.has_value()) {
         const auto& conf = _config.value();
-        Status settings {};
+        Status settings{};
         settings.setActive = conf.on.has_value();
-        if(settings.setActive)
+        if (settings.setActive)
             settings.active = conf.on.value();
         settings.setAutoDisengage = conf.threshold.has_value();
-        if(settings.setAutoDisengage)
+        if (settings.setAutoDisengage)
             settings.autoDisengage = conf.threshold.value();
 
         _smartshift->setStatus(settings);
     }
 }
 
-void SmartShift::listen()
-{
+void SmartShift::listen() {
 }
 
-SmartShift::Status SmartShift::getStatus() const
-{
+SmartShift::Status SmartShift::getStatus() const {
     return _smartshift->getStatus();
 }
 
-void SmartShift::setStatus(Status status)
-{
+void SmartShift::setStatus(Status status) {
     _smartshift->setStatus(status);
 }
 
-SmartShift::IPC::IPC(SmartShift *parent) :
-    ipcgull::interface(
-            "pizza.pixl.LogiOps.SmartShift", {
-                {"GetStatus", {this, &IPC::getStatus, {"active", "threshold"}}},
-                {"SetActive", {this, &IPC::setActive, {"active"}}},
-                {"SetThreshold", {this, &IPC::setThreshold, {"threshold"}}},
-                {"GetDefault",
-                 {this, &IPC::getDefault,
-                  {"setActive", "active", "setThreshold", "threshold"}}},
-                {"ClearDefaultActive", {this, &IPC::clearDefaultActive}},
-                {"SetDefaultActive",
-                 {this, &IPC::setDefaultActive, {"active"}}},
-                {"ClearDefaultThreshold", {this, &IPC::clearDefaultThreshold}},
-                {"SetDefaultThreshold",
-                 {this, &IPC::setDefaultThreshold, {"threshold"}}}
-            }, {}, {}),
-    _parent (*parent)
-{
+SmartShift::IPC::IPC(SmartShift* parent) :
+        ipcgull::interface(
+                "pizza.pixl.LogiOps.SmartShift", {
+                        {"GetStatus",             {this, &IPC::getStatus,           {"active",    "threshold"}}},
+                        {"SetActive",             {this, &IPC::setActive,           {"active"}}},
+                        {"SetThreshold",          {this, &IPC::setThreshold,        {"threshold"}}},
+                        {"GetDefault",            {this, &IPC::getDefault,          {"setActive", "active", "setThreshold", "threshold"}}},
+                        {"ClearDefaultActive",    {this, &IPC::clearDefaultActive}},
+                        {"SetDefaultActive",      {this, &IPC::setDefaultActive,    {"active"}}},
+                        {"ClearDefaultThreshold", {this, &IPC::clearDefaultThreshold}},
+                        {"SetDefaultThreshold",   {this, &IPC::setDefaultThreshold, {"threshold"}}}
+                }, {}, {}),
+        _parent(*parent) {
 }
 
-std::tuple<bool, uint8_t> SmartShift::IPC::getStatus() const
-{
+std::tuple<bool, uint8_t> SmartShift::IPC::getStatus() const {
     auto ret = _parent.getStatus();
     return std::make_tuple(ret.active, ret.autoDisengage);
 }
 
-void SmartShift::IPC::setActive(bool active)
-{
-    Status status {};
+void SmartShift::IPC::setActive(bool active) {
+    Status status{};
     status.setActive = true;
     status.active = active;
     _parent.setStatus(status);
 }
 
-void SmartShift::IPC::setThreshold(uint8_t threshold)
-{
-    Status status {};
+void SmartShift::IPC::setThreshold(uint8_t threshold) {
+    Status status{};
     status.setAutoDisengage = true;
     status.autoDisengage = threshold;
     _parent.setStatus(status);
 }
 
-std::tuple<bool, bool, bool, uint8_t> SmartShift::IPC::getDefault() const
-{
-    if(!_parent._config.has_value())
+std::tuple<bool, bool, bool, uint8_t> SmartShift::IPC::getDefault() const {
+    if (!_parent._config.has_value())
         return {false, false, false, 0};
 
     std::tuple<bool, bool, bool, uint8_t> ret;
     std::get<0>(ret) = _parent._config.value().on.has_value();
-    if(std::get<0>(ret))
+    if (std::get<0>(ret))
         std::get<1>(ret) = _parent._config.value().on.value();
     std::get<2>(ret) = _parent._config.value().threshold.has_value();
-    if(std::get<2>(ret))
+    if (std::get<2>(ret))
         std::get<3>(ret) = _parent._config.value().threshold.value();
 
     return ret;
 }
 
-void SmartShift::IPC::clearDefaultActive()
-{
-    if(_parent._config.has_value())
+void SmartShift::IPC::clearDefaultActive() {
+    if (_parent._config.has_value())
         _parent._config.value().on.reset();
 }
 
-void SmartShift::IPC::setDefaultActive(bool active)
-{
-    if(!_parent._config.has_value())
+void SmartShift::IPC::setDefaultActive(bool active) {
+    if (!_parent._config.has_value())
         _parent._config = config::SmartShift{};
     _parent._config.value().on = active;
 }
 
 
-void SmartShift::IPC::clearDefaultThreshold()
-{
-    if(_parent._config.has_value())
+void SmartShift::IPC::clearDefaultThreshold() {
+    if (_parent._config.has_value())
         _parent._config.value().threshold.reset();
 }
 
-void SmartShift::IPC::setDefaultThreshold(uint8_t threshold)
-{
-    if(!_parent._config.has_value())
+void SmartShift::IPC::setDefaultThreshold(uint8_t threshold) {
+    if (!_parent._config.has_value())
         _parent._config = config::SmartShift{};
     _parent._config.value().threshold = threshold;
 }

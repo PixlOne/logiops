@@ -22,36 +22,30 @@ using namespace logid::actions;
 
 const char* NullGesture::interface_name = "None";
 
-NullGesture::NullGesture(Device *device,
+NullGesture::NullGesture(Device* device,
                          config::NoGesture& config,
                          const std::shared_ptr<ipcgull::node>& parent) :
-    Gesture (device, parent, interface_name), _config (config)
-{
+        Gesture(device, parent, interface_name), _config(config) {
 }
 
-void NullGesture::press(bool init_threshold)
-{
+void NullGesture::press(bool init_threshold) {
     _axis = init_threshold ? _config.threshold.value_or(
             defaults::gesture_threshold) : 0;
 }
 
-void NullGesture::release(bool primary)
-{
+void NullGesture::release(bool primary) {
     // Do nothing
-    (void)primary; // Suppress unused warning
+    (void) primary; // Suppress unused warning
 }
 
-void NullGesture::move(int16_t axis)
-{
+void NullGesture::move(int16_t axis) {
     _axis += axis;
 }
 
-bool NullGesture::wheelCompatibility() const
-{
+bool NullGesture::wheelCompatibility() const {
     return true;
 }
 
-bool NullGesture::metThreshold() const
-{
+bool NullGesture::metThreshold() const {
     return _axis > _config.threshold.value_or(defaults::gesture_threshold);
 }

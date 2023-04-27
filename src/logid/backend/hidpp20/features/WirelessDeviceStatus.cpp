@@ -20,13 +20,11 @@
 
 using namespace logid::backend::hidpp20;
 
-WirelessDeviceStatus::WirelessDeviceStatus(Device* dev) : Feature(dev, ID)
-{
+WirelessDeviceStatus::WirelessDeviceStatus(Device* dev) : Feature(dev, ID) {
 }
 
 WirelessDeviceStatus::Status WirelessDeviceStatus::statusBroadcastEvent(
-        const hidpp::Report &report)
-{
+        const hidpp::Report& report) {
     assert(report.function() == StatusBroadcast);
     Status status = {};
     auto params = report.paramBegin();

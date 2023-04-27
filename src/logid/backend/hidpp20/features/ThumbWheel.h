@@ -21,15 +21,12 @@
 #include "../feature_defs.h"
 #include "../Feature.h"
 
-namespace logid {
-namespace backend {
-namespace hidpp20
-{
-    class ThumbWheel : public Feature
-    {
+namespace logid::backend::hidpp20 {
+    class ThumbWheel : public Feature {
     public:
         static const uint16_t ID = FeatureID::THUMB_WHEEL;
-        virtual uint16_t getID() { return ID; }
+
+        uint16_t getID() final { return ID; }
 
         enum Function {
             GetInfo = 0,
@@ -43,12 +40,11 @@ namespace hidpp20
 
         explicit ThumbWheel(Device* dev);
 
-        enum Capabilities : uint8_t
-        {
+        enum Capabilities : uint8_t {
             Timestamp = 1,
-            Touch = 1<<1,
-            Proxy = 1<<2,
-            SingleTap = 1<<3
+            Touch = 1 << 1,
+            Proxy = 1 << 2,
+            SingleTap = 1 << 3
         };
 
         struct ThumbwheelInfo {
@@ -66,8 +62,7 @@ namespace hidpp20
             bool proxy;
         };
 
-        enum RotationStatus : uint8_t
-        {
+        enum RotationStatus : uint8_t {
             Inactive = 0,
             Start = 1,
             Active = 2,
@@ -81,14 +76,14 @@ namespace hidpp20
             uint8_t flags;
         };
 
-        ThumbwheelInfo getInfo();
-        ThumbwheelStatus getStatus();
+        [[nodiscard]] ThumbwheelInfo getInfo();
+
+        [[nodiscard]] ThumbwheelStatus getStatus();
 
         ThumbwheelStatus setStatus(bool divert, bool invert);
 
-        [[nodiscard]] ThumbwheelEvent thumbwheelEvent(
-                const hidpp::Report& report);
+        [[nodiscard]] static ThumbwheelEvent thumbwheelEvent(const hidpp::Report& report);
     };
-}}}
+}
 
 #endif //LOGID_BACKEND_HIDPP20_FEATURE_THUMBWHEEL_H

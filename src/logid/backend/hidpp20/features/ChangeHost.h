@@ -21,17 +21,14 @@
 #include "../feature_defs.h"
 #include "../Feature.h"
 
-namespace logid {
-namespace backend {
-namespace hidpp20
-{
-    class ChangeHost : public Feature
-    {
+namespace logid::backend::hidpp20 {
+    class ChangeHost : public Feature {
     public:
         static const uint16_t ID = FeatureID::CHANGE_HOST;
-        virtual uint16_t getID() { return ID; }
 
-        ChangeHost(Device* dev);
+        [[nodiscard]] uint16_t getID() final { return ID; }
+
+        explicit ChangeHost(Device* dev);
 
         enum Function {
             GetHostInfo = 0,
@@ -40,22 +37,23 @@ namespace hidpp20
             SetCookie = 3
         };
 
-        struct HostInfo
-        {
+        struct HostInfo {
             uint8_t hostCount;
             uint8_t currentHost;
-            bool enhancedHostSwitch;
+            [[maybe_unused]] bool enhancedHostSwitch;
         };
 
         HostInfo getHostInfo();
+
         void setHost(uint8_t host);
 
-        std::vector<uint8_t> getCookies();
-        void setCookie(uint8_t host, uint8_t cookie);
+        [[maybe_unused]] [[maybe_unused]] std::vector<uint8_t> getCookies();
+
+        [[maybe_unused]] [[maybe_unused]] void setCookie(uint8_t host, uint8_t cookie);
+
     private:
         uint8_t _host_count;
     };
-}}}
-
+}
 
 #endif //LOGID_BACKEND_HIDPP20_FEATURE_CHANGEHOST_H

@@ -21,58 +21,48 @@
 #include "../Feature.h"
 #include "../feature_defs.h"
 
-namespace logid {
-namespace backend {
-namespace hidpp20
-{
-    class HiresScroll : public Feature
-    {
+namespace logid::backend::hidpp20 {
+    class HiresScroll : public Feature {
     public:
         ///TODO: Hires scroll V1?
         static const uint16_t ID = FeatureID::HIRES_SCROLLING_V2;
-        virtual uint16_t getID() { return ID; }
 
-        enum Function : uint8_t
-        {
+        uint16_t getID() final { return ID; }
+
+        enum Function : uint8_t {
             GetCapabilities = 0,
             GetMode = 1,
             SetMode = 2,
             GetRatchetState = 3
         };
 
-        enum Event : uint8_t
-        {
+        enum Event : uint8_t {
             WheelMovement = 0,
             RatchetSwitch = 1,
         };
 
-        enum Capability : uint8_t
-        {
-            Invertable = 1<<3,
-            HasRatchet = 1<<2
+        enum Capability : uint8_t {
+            Invertible = 1 << 3,
+            HasRatchet = 1 << 2
         };
 
-        enum Mode : uint8_t
-        {
-            Inverted = 1<<2,
-            HiRes = 1<<1,
+        enum Mode : uint8_t {
+            Inverted = 1 << 2,
+            HiRes = 1 << 1,
             Target = 1
         };
 
-        enum RatchetState : uint8_t
-        {
+        enum RatchetState : uint8_t {
             FreeWheel = 0,
             Ratchet = 1
         };
 
-        struct Capabilities
-        {
+        struct Capabilities {
             uint8_t multiplier;
             uint8_t flags;
         };
 
-        struct WheelStatus
-        {
+        struct WheelStatus {
             bool hiRes;
             uint8_t periods;
             int16_t deltaV;
@@ -81,13 +71,19 @@ namespace hidpp20
         explicit HiresScroll(Device* device);
 
         Capabilities getCapabilities();
+
         uint8_t getMode();
+
         void setMode(uint8_t mode);
+
+        [[maybe_unused]]
         bool getRatchetState();
 
         static WheelStatus wheelMovementEvent(const hidpp::Report& report);
+
+        [[maybe_unused]]
         static RatchetState ratchetSwitchEvent(const hidpp::Report& report);
     };
-}}}
+}
 
 #endif //LOGID_BACKEND_HIDPP20_FEATURE_HIRESSCROLL_H

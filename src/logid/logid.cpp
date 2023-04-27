@@ -36,15 +36,13 @@
 
 using namespace logid;
 
-struct CmdlineOptions
-{
+struct CmdlineOptions {
     std::string config_file = DEFAULT_CONFIG_FILE;
 };
 
 LogLevel logid::global_loglevel = INFO;
 
-enum class Option
-{
+enum class Option {
     None,
     Verbose,
     Config,
@@ -67,71 +65,70 @@ void logid::reload()
 }
  */
 
-void readCliOptions(const int argc, char** argv, CmdlineOptions& options)
-{
-    for(int i = 1; i < argc; i++) {
+void readCliOptions(const int argc, char** argv, CmdlineOptions& options) {
+    for (int i = 1; i < argc; i++) {
         Option option = Option::None;
-        if(argv[i][0] == '-') {
+        if (argv[i][0] == '-') {
             // This argument is an option
-            switch(argv[i][1]) {
-            case '-': {
-                // Full option name
-                std::string op_str = argv[i];
-                if (op_str == "--verbose") option = Option::Verbose;
-                if (op_str == "--config") option = Option::Config;
-                if (op_str == "--help") option = Option::Help;
-                if (op_str == "--version") option = Option::Version;
-                break;
-            }
-            case 'v': // Verbosity
-                option = Option::Verbose;
-                break;
-            case 'V': //Version
+            switch (argv[i][1]) {
+                case '-': {
+                    // Full option name
+                    std::string op_str = argv[i];
+                    if (op_str == "--verbose") option = Option::Verbose;
+                    if (op_str == "--config") option = Option::Config;
+                    if (op_str == "--help") option = Option::Help;
+                    if (op_str == "--version") option = Option::Version;
+                    break;
+                }
+                case 'v': // Verbosity
+                    option = Option::Verbose;
+                    break;
+                case 'V': //Version
                     option = Option::Version;
                     break;
-            case 'c': // Config file path
-                option = Option::Config;
-                break;
-            case 'h': // Help
-                option = Option::Help;
-                break;
-            default:
-                logPrintf(WARN, "%s is not a valid option, ignoring.",
-                        argv[i]);
+                case 'c': // Config file path
+                    option = Option::Config;
+                    break;
+                case 'h': // Help
+                    option = Option::Help;
+                    break;
+                default:
+                    logPrintf(WARN, "%s is not a valid option, ignoring.",
+                              argv[i]);
             }
 
-            switch(option) {
-            case Option::Verbose: {
-                if (++i >= argc) {
-                    global_loglevel = DEBUG; // Assume debug verbosity
+            switch (option) {
+                case Option::Verbose: {
+                    if (++i >= argc) {
+                        global_loglevel = DEBUG; // Assume debug verbosity
+                        break;
+                    }
+                    std::string loglevel = argv[i];
+                    try {
+                        global_loglevel = toLogLevel(argv[i]);
+                    } catch (std::invalid_argument& e) {
+                        if (argv[i][0] == '-') {
+                            global_loglevel = DEBUG; // Assume debug verbosity
+                            i--; // Go back to last argument to continue loop.
+                        } else {
+                            logPrintf(WARN, e.what());
+                            printf("Valid verbosity levels are: Debug, Info, "
+                                   "Warn/Warning, or Error.\n");
+                            exit(EXIT_FAILURE);
+                        }
+                    }
                     break;
                 }
-                std::string loglevel = argv[i];
-                try {
-                    global_loglevel = toLogLevel(argv[i]);
-                } catch (std::invalid_argument &e) {
-                    if (argv[i][0] == '-') {
-                        global_loglevel = DEBUG; // Assume debug verbosity
-                        i--; // Go back to last argument to continue loop.
-                    } else {
-                        logPrintf(WARN, e.what());
-                        printf("Valid verbosity levels are: Debug, Info, "
-                               "Warn/Warning, or Error.\n");
+                case Option::Config: {
+                    if (++i >= argc) {
+                        logPrintf(ERROR, "Config file is not specified.");
                         exit(EXIT_FAILURE);
                     }
-                }
+                    options.config_file = argv[i];
                     break;
-            }
-            case Option::Config: {
-                if (++i >= argc) {
-                    logPrintf(ERROR, "Config file is not specified.");
-                    exit(EXIT_FAILURE);
                 }
-                options.config_file = argv[i];
-                break;
-            }
-            case Option::Help:
-                printf(R"(logid version %s
+                case Option::Help:
+                    printf(R"(logid version %s
 Usage: %s [options]
 Possible options are:
     -v,--verbose [level]       Set log level to debug/info/warn/error (leave blank for debug)
@@ -139,19 +136,18 @@ Possible options are:
     -c,--config [file path]    Change config file from default at %s
     -h,--help                  Print this message.
 )", LOGIOPS_VERSION, argv[0], DEFAULT_CONFIG_FILE);
-                exit(EXIT_SUCCESS);
-            case Option::Version:
-                printf("%s\n", LOGIOPS_VERSION);
-                exit(EXIT_SUCCESS);
-            case Option::None:
-                break;
+                    exit(EXIT_SUCCESS);
+                case Option::Version:
+                    printf("%s\n", LOGIOPS_VERSION);
+                    exit(EXIT_SUCCESS);
+                case Option::None:
+                    break;
             }
         }
     }
 }
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
     CmdlineOptions options{};
     readCliOptions(argc, argv, options);
     std::shared_ptr<Configuration> config;
@@ -161,7 +157,7 @@ int main(int argc, char** argv)
     try {
         config = std::make_shared<Configuration>(options.config_file);
     }
-    catch (std::exception &e) {
+    catch (std::exception& e) {
         config = std::make_shared<Configuration>();
     }
 
@@ -172,7 +168,7 @@ int main(int argc, char** argv)
     //Create a virtual input device
     try {
         virtual_input = std::make_unique<InputDevice>(LOGID_VIRTUAL_INPUT_NAME);
-    } catch(std::system_error& e) {
+    } catch (std::system_error& e) {
         logPrintf(ERROR, "Could not create input device: %s", e.what());
         return EXIT_FAILURE;
     }
@@ -184,7 +180,7 @@ int main(int argc, char** argv)
 
     try {
         server->start();
-    } catch(ipcgull::connection_failed& e) {
+    } catch (ipcgull::connection_failed& e) {
         logPrintf(ERROR, "Lost IPC connection, terminating.");
     }
 

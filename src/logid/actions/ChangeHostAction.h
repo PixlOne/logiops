@@ -22,24 +22,23 @@
 #include "Action.h"
 #include "../backend/hidpp20/features/ChangeHost.h"
 
-namespace logid::actions
-{
-    class ChangeHostAction : public Action
-    {
+namespace logid::actions {
+    class ChangeHostAction : public Action {
     public:
         static const char* interface_name;
 
         ChangeHostAction(Device* device, config::ChangeHost& config,
                          const std::shared_ptr<ipcgull::node>& parent);
 
-        virtual void press();
-        virtual void release();
+        void press() final;
 
+        void release() final;
 
         [[nodiscard]] std::string getHost() const;
+
         void setHost(std::string host);
 
-        virtual uint8_t reprogFlags() const;
+        [[nodiscard]] uint8_t reprogFlags() const final;
 
     protected:
         std::shared_ptr<backend::hidpp20::ChangeHost> _change_host;

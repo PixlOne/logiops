@@ -27,17 +27,18 @@ using namespace logid::backend;
 const char* ChangeHostAction::interface_name = "ChangeHost";
 
 ChangeHostAction::ChangeHostAction(
-        Device *device, config::ChangeHost& config,
+        Device* device, config::ChangeHost& config,
         [[maybe_unused]] const std::shared_ptr<ipcgull::node>& parent)
-    : Action(device, interface_name, {
+        : Action(device, interface_name, {
         {
                 {"GetHost", {this, &ChangeHostAction::getHost, {"host"}}},
                 {"SetHost", {this, &ChangeHostAction::setHost, {"host"}}}
-        }, {}, {}
-    }), _config (config)
-{
+        },
+        {},
+        {}
+}), _config(config) {
     if (_config.host.has_value()) {
-        if(std::holds_alternative<std::string>(_config.host.value())) {
+        if (std::holds_alternative<std::string>(_config.host.value())) {
             auto& host = std::get<std::string>(_config.host.value());
             std::transform(host.begin(), host.end(),
                            host.begin(), ::tolower);
@@ -48,13 +49,12 @@ ChangeHostAction::ChangeHostAction(
     } catch (hidpp20::UnsupportedFeature& e) {
         logPrintf(WARN, "%s:%d: ChangeHost feature not supported, "
                         "ChangeHostAction will not work.", device->hidpp20()
-                        .devicePath().c_str(), device->hidpp20().deviceIndex());
+                          .devicePath().c_str(), device->hidpp20().deviceIndex());
     }
 }
 
-std::string ChangeHostAction::getHost() const
-{
-    if(_config.host.has_value()) {
+std::string ChangeHostAction::getHost() const {
+    if (_config.host.has_value()) {
         if (std::holds_alternative<std::string>(_config.host.value()))
             return std::get<std::string>(_config.host.value());
         else
@@ -64,8 +64,7 @@ std::string ChangeHostAction::getHost() const
     }
 }
 
-void ChangeHostAction::setHost(std::string host)
-{
+void ChangeHostAction::setHost(std::string host) {
     std::transform(host.begin(), host.end(),
                    host.begin(), ::tolower);
     if (host == "next" || host == "prev" || host == "previous") {
@@ -75,37 +74,34 @@ void ChangeHostAction::setHost(std::string host)
     }
 }
 
-void ChangeHostAction::press()
-{
+void ChangeHostAction::press() {
     // Do nothing, wait until release
 }
 
-void ChangeHostAction::release()
-{
-    if(_change_host && _config.host.has_value()) {
+void ChangeHostAction::release() {
+    if (_change_host && _config.host.has_value()) {
         spawn_task(
-        [this] {
-            auto host_info = _change_host->getHostInfo();
-            int next_host;
-            if(std::holds_alternative<std::string>(_config.host.value())) {
-                const auto& host = std::get<std::string>(_config.host.value());
-                if(host == "next")
-                    next_host = host_info.currentHost + 1;
-                else if(host == "prev" || host == "previous")
-                    next_host = host_info.currentHost - 1;
-                else
-                    next_host = host_info.currentHost;
-            } else {
-                next_host = std::get<int>(_config.host.value())-1;
-            }
-            next_host %= host_info.hostCount;
-            if(next_host != host_info.currentHost)
-                _change_host->setHost(next_host);
-        });
+                [this] {
+                    auto host_info = _change_host->getHostInfo();
+                    int next_host;
+                    if (std::holds_alternative<std::string>(_config.host.value())) {
+                        const auto& host = std::get<std::string>(_config.host.value());
+                        if (host == "next")
+                            next_host = host_info.currentHost + 1;
+                        else if (host == "prev" || host == "previous")
+                            next_host = host_info.currentHost - 1;
+                        else
+                            next_host = host_info.currentHost;
+                    } else {
+                        next_host = std::get<int>(_config.host.value()) - 1;
+                    }
+                    next_host %= host_info.hostCount;
+                    if (next_host != host_info.currentHost)
+                        _change_host->setHost(next_host);
+                });
     }
 }
 
-uint8_t ChangeHostAction::reprogFlags() const
-{
+uint8_t ChangeHostAction::reprogFlags() const {
     return hidpp20::ReprogControls::TemporaryDiverted;
 }

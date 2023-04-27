@@ -20,33 +20,32 @@
 
 #include "Gesture.h"
 
-namespace logid {
-namespace actions
-{
-    class ThresholdGesture : public Gesture
-    {
+namespace logid::actions {
+    class ThresholdGesture : public Gesture {
     public:
         static const char* interface_name;
 
         ThresholdGesture(Device* device, config::ThresholdGesture& config,
                          const std::shared_ptr<ipcgull::node>& parent);
 
-        virtual void press(bool init_threshold=false);
-        virtual void release(bool primary=false);
-        virtual void move(int16_t axis);
+        void press(bool init_threshold) final;
 
-        virtual bool metThreshold() const;
+        void release(bool primary) final;
 
-        virtual bool wheelCompatibility() const;
+        void move(int16_t axis) final;
+
+        [[nodiscard]] bool metThreshold() const final;
+
+        [[nodiscard]] bool wheelCompatibility() const final;
 
     protected:
-        int16_t _axis;
+        int32_t _axis{};
         std::shared_ptr<actions::Action> _action;
         config::ThresholdGesture& _config;
 
     private:
         bool _executed = false;
     };
-}}
+}
 
 #endif //LOGID_ACTION_THRESHOLDGESTURE_H

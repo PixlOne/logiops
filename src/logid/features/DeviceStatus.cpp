@@ -21,50 +21,49 @@
 using namespace logid::features;
 using namespace logid::backend;
 
-DeviceStatus::DeviceStatus(logid::Device *dev) : DeviceFeature(dev)
-{
+DeviceStatus::DeviceStatus(logid::Device* dev) : DeviceFeature(dev) {
     /* This feature is redundant on receivers since the receiver
      * handles wakeup/sleep events. If the device is connected on a
      * receiver, pretend this feature is unsupported.
      */
-    if(dev->hidpp20().deviceIndex() >= hidpp::WirelessDevice1 &&
-       dev->hidpp20().deviceIndex() <= hidpp::WirelessDevice6)
+    if (dev->hidpp20().deviceIndex() >= hidpp::WirelessDevice1 &&
+        dev->hidpp20().deviceIndex() <= hidpp::WirelessDevice6)
         throw UnsupportedFeature();
 
     try {
         _wireless_device_status = std::make_shared<
                 hidpp20::WirelessDeviceStatus>(&dev->hidpp20());
-    } catch(hidpp20::UnsupportedFeature& e) {
+    } catch (hidpp20::UnsupportedFeature& e) {
         throw UnsupportedFeature();
     }
 }
 
-DeviceStatus::~DeviceStatus() noexcept
-{
-    if(_ev_handler.has_value())
+DeviceStatus::~DeviceStatus() noexcept {
+    if (_ev_handler.has_value())
         _device->hidpp20().removeEventHandler(_ev_handler.value());
 }
 
-void DeviceStatus::configure()
-{
+void DeviceStatus::configure() {
     // Do nothing
 }
 
-void DeviceStatus::listen()
-{
-    if(!_ev_handler.has_value()) {
-        _ev_handler = _device->hidpp20().addEventHandler({
-            [index=_wireless_device_status->featureIndex()](
-                    const hidpp::Report& report)->bool {
-                return report.feature() == index && report.function() ==
-                    hidpp20::WirelessDeviceStatus::StatusBroadcast;
-            },
-            [dev=this->_device](const hidpp::Report& report) {
-                auto event =
-                        hidpp20::WirelessDeviceStatus::statusBroadcastEvent(report);
-                if(event.reconfNeeded)
-                    spawn_task( [dev](){ dev->wakeup(); });
-            }
-        });
+void DeviceStatus::listen() {
+    if (!_ev_handler.has_value()) {
+        _ev_handler = _device->hidpp20().addEventHandler(
+                {
+                        [index = _wireless_device_status->featureIndex()](
+                                const hidpp::Report& report) -> bool {
+                            return report.feature() == index &&
+                                   report.function() ==
+                                   hidpp20::WirelessDeviceStatus::StatusBroadcast;
+                        },
+                        [dev = this->_device](
+                                const hidpp::Report& report) {
+                            auto event =
+                                    hidpp20::WirelessDeviceStatus::statusBroadcastEvent(report);
+                            if (event.reconfNeeded)
+                                spawn_task([dev]() { dev->wakeup(); });
+                        }
+                });
     }
 }

@@ -23,43 +23,46 @@
 #include "Action.h"
 #include "gesture/Gesture.h"
 
-namespace logid {
-namespace actions {
-    class GestureAction : public Action
-    {
+namespace logid::actions {
+    class GestureAction : public Action {
     public:
         static const char* interface_name;
 
-        enum Direction
-        {
+        enum Direction {
             None,
             Up,
             Down,
             Left,
             Right
         };
+
         static Direction toDirection(std::string direction);
+
         static std::string fromDirection(Direction direction);
-        static Direction toDirection(int16_t x, int16_t y);
+
+        static Direction toDirection(int32_t x, int32_t y);
 
         GestureAction(Device* dev, config::GestureAction& config,
                       const std::shared_ptr<ipcgull::node>& parent);
 
-        virtual void press();
-        virtual void release();
-        virtual void move(int16_t x, int16_t y);
+        void press() final;
 
-        virtual uint8_t reprogFlags() const;
+        void release() final;
+
+        void move(int16_t x, int16_t y) final;
+
+        uint8_t reprogFlags() const final;
 
         void setGesture(const std::string& direction,
                         const std::string& type);
+
     protected:
-        int16_t _x, _y;
+        int32_t _x{}, _y{};
         std::shared_ptr<ipcgull::node> _node;
         std::map<Direction, std::shared_ptr<Gesture>> _gestures;
         config::GestureAction& _config;
         mutable std::mutex _config_lock;
     };
-}}
+}
 
 #endif //LOGID_ACTION_GESTUREACTION_H

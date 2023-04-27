@@ -20,17 +20,14 @@
 #define LOGID_BACKEND_HIDPP10_ERROR_H
 
 #include <cstdint>
+#include <exception>
 
-namespace logid {
-namespace backend {
-namespace hidpp10 {
+namespace logid::backend::hidpp10 {
     static constexpr uint8_t ErrorID = 0x8f;
 
-    class Error: public std::exception
-    {
+    class Error : public std::exception {
     public:
-        enum ErrorCode: uint8_t
-        {
+        enum ErrorCode : uint8_t {
             Success = 0x00,
             InvalidSubID = 0x01,
             InvalidAddress = 0x02,
@@ -48,12 +45,13 @@ namespace hidpp10 {
 
         explicit Error(uint8_t code);
 
-        const char* what() const noexcept override;
-        uint8_t code() const noexcept;
+        [[nodiscard]] const char* what() const noexcept override;
+
+        [[nodiscard]] uint8_t code() const noexcept;
 
     private:
         uint8_t _code;
     };
-}}}
+}
 
 #endif //LOGID_BACKEND_HIDPP10_ERROR_H

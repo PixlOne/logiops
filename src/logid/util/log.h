@@ -20,12 +20,10 @@
 
 #include <string>
 
-namespace logid
-{
+namespace logid {
     /// TODO: Replace with a safer object-oriented logger
 
-    enum LogLevel
-    {
+    enum LogLevel {
         RAWREPORT,
         DEBUG,
         INFO,
@@ -35,8 +33,10 @@ namespace logid
 
     extern LogLevel global_loglevel;
 
-    void logPrintf(LogLevel level, const char *format, ...);
-    const char *levelPrefix(LogLevel level);
+    void logPrintf(LogLevel level, const char* format, ...);
+
+    const char* levelPrefix(LogLevel level);
+
     LogLevel toLogLevel(std::string s);
 }
 

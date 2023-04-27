@@ -30,50 +30,63 @@
 #include "Device.h"
 #include "Receiver.h"
 
-namespace logid
-{
+namespace logid {
     class InputDevice;
 
-    class DeviceManager : public backend::raw::DeviceMonitor
-    {
+    class DeviceManager : public backend::raw::DeviceMonitor {
     public:
         static std::shared_ptr<DeviceManager> make(
                 const std::shared_ptr<Configuration>& config,
                 const std::shared_ptr<InputDevice>& virtual_input,
                 const std::shared_ptr<ipcgull::server>& server);
+
         [[nodiscard]] std::shared_ptr<Configuration> config() const;
+
         [[nodiscard]] std::shared_ptr<InputDevice> virtualInput() const;
+
         [[nodiscard]] std::shared_ptr<const ipcgull::node> devicesNode() const;
+
         [[nodiscard]] std::shared_ptr<const ipcgull::node>
-            receiversNode() const;
+        receiversNode() const;
 
         void addExternalDevice(const std::shared_ptr<Device>& d);
+
         void removeExternalDevice(const std::shared_ptr<Device>& d);
 
         std::mutex& mutex() const;
+
     protected:
         void addDevice(std::string path) final;
+
         void removeDevice(std::string path) final;
+
     private:
         class DevicesIPC : public ipcgull::interface {
         public:
             explicit DevicesIPC(DeviceManager* manager);
+
             void deviceAdded(const std::shared_ptr<Device>& d);
+
             void deviceRemoved(const std::shared_ptr<Device>& d);
         };
+
         [[nodiscard]]
         std::vector<std::shared_ptr<Device>> listDevices() const;
 
         class ReceiversIPC : public ipcgull::interface {
         public:
             explicit ReceiversIPC(DeviceManager* manager);
+
             void receiverAdded(const std::shared_ptr<Receiver>& r);
+
             void receiverRemoved(const std::shared_ptr<Receiver>& r);
         };
+
         [[nodiscard]]
         std::vector<std::shared_ptr<Receiver>> listReceivers() const;
 
-        friend class _DeviceManager;
+        friend class DevManagerWrapper;
+
         DeviceManager(std::shared_ptr<Configuration> config,
                       std::shared_ptr<InputDevice> virtual_input,
                       std::shared_ptr<ipcgull::server> server);
@@ -98,9 +111,11 @@ namespace logid
         mutable std::mutex _map_lock;
 
         friend class DeviceNickname;
+
         friend class ReceiverNickname;
 
         [[nodiscard]] int newDeviceNickname();
+
         [[nodiscard]] int newReceiverNickname();
 
         std::mutex _nick_lock;

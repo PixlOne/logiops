@@ -19,19 +19,17 @@
 
 using namespace logid::backend::hidpp20;
 
-FeatureSet::FeatureSet(Device *device) : Feature(device, ID)
-{
+[[maybe_unused]]
+FeatureSet::FeatureSet(Device* device) : Feature(device, ID) {
 }
 
-uint8_t FeatureSet::getFeatureCount()
-{
+uint8_t FeatureSet::getFeatureCount() {
     std::vector<uint8_t> params(0);
     auto response = callFunction(GetFeatureCount, params);
     return response[0];
 }
 
-uint16_t FeatureSet::getFeature(uint8_t feature_index)
-{
+uint16_t FeatureSet::getFeature(uint8_t feature_index) {
     std::vector<uint8_t> params(1);
     params[0] = feature_index;
     auto response = callFunction(GetFeature, params);
@@ -41,11 +39,11 @@ uint16_t FeatureSet::getFeature(uint8_t feature_index)
     return feature_id;
 }
 
-std::map<uint8_t, uint16_t> FeatureSet::getFeatures()
-{
+[[maybe_unused]]
+std::map<uint8_t, uint16_t> FeatureSet::getFeatures() {
     uint8_t feature_count = getFeatureCount();
     std::map<uint8_t, uint16_t> features;
-    for(uint8_t i = 0; i < feature_count; i++)
+    for (uint8_t i = 0; i < feature_count; i++)
         features[i] = getFeature(i);
     return features;
 }

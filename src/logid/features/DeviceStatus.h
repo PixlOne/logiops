@@ -23,21 +23,22 @@
 #include "../Device.h"
 #include "../backend/hidpp20/features/WirelessDeviceStatus.h"
 
-namespace logid {
-namespace features
-{
-    class DeviceStatus : public DeviceFeature
-    {
+namespace logid::features {
+    class DeviceStatus : public DeviceFeature {
     public:
         explicit DeviceStatus(Device* dev);
-        ~DeviceStatus();
-        virtual void configure();
-        virtual void listen();
+
+        ~DeviceStatus() noexcept override;
+
+        void configure() final;
+
+        void listen() final;
+
     private:
         std::optional<backend::hidpp::Device::EvHandlerId> _ev_handler;
         std::shared_ptr<backend::hidpp20::WirelessDeviceStatus>
                 _wireless_device_status;
     };
-}}
+}
 
 #endif //LOGID_FEATURE_DEVICESTATUS_H

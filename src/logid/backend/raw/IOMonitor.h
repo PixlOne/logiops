@@ -35,21 +35,25 @@ namespace logid::backend::raw {
                   std::function<void()> err);
     };
 
-    class IOMonitor
-    {
+    class IOMonitor {
     public:
         IOMonitor();
+
         ~IOMonitor() noexcept;
 
         void add(int fd, IOHandler handler);
+
         void remove(int fd) noexcept;
+
     private:
         void _listen(); // This is a blocking call
         void _stop() noexcept;
 
-        bool _running() const;
+        [[maybe_unused]]
+        [[nodiscard]] bool _running() const;
 
         void _interrupt() noexcept;
+
         void _continue() noexcept;
 
         std::unique_ptr<std::thread> _io_thread;

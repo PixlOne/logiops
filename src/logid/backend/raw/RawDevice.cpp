@@ -19,7 +19,6 @@
 #include "RawDevice.h"
 #include "DeviceMonitor.h"
 #include "IOMonitor.h"
-#include "../Error.h"
 #include "../../util/log.h"
 
 #include <string>
@@ -39,31 +38,28 @@ using namespace logid::backend::raw;
 using namespace logid::backend;
 using namespace std::chrono;
 
-int get_fd(const std::string& path)
-{
+int get_fd(const std::string& path) {
     int fd = ::open(path.c_str(), O_RDWR | O_NONBLOCK);
-    if(fd == -1)
+    if (fd == -1)
         throw std::system_error(errno, std::system_category(),
                                 "RawDevice open failed");
 
     return fd;
 }
 
-RawDevice::dev_info get_devinfo(int fd)
-{
-    hidraw_devinfo devinfo{};
-    if (-1 == ::ioctl(fd, HIDIOCGRAWINFO, &devinfo)) {
+RawDevice::dev_info get_dev_info(int fd) {
+    hidraw_devinfo dev_info{};
+    if (-1 == ::ioctl(fd, HIDIOCGRAWINFO, &dev_info)) {
         int err = errno;
         ::close(fd);
         throw std::system_error(err, std::system_category(),
                                 "RawDevice HIDIOCGRAWINFO failed");
     }
 
-    return {devinfo.vendor, devinfo.product};
+    return {dev_info.vendor, dev_info.product};
 }
 
-std::string get_name(int fd)
-{
+std::string get_name(int fd) {
     ssize_t len;
     char name_buf[256];
     if (-1 == (len = ::ioctl(fd, HIDIOCGRAWNAME(sizeof(name_buf)), name_buf))) {
@@ -75,128 +71,111 @@ std::string get_name(int fd)
     return {name_buf, static_cast<size_t>(len)};
 }
 
-RawDevice::RawDevice(std::string path,
-                     std::shared_ptr<DeviceMonitor> monitor) :
-                     _valid (true),
-                     _path (std::move(path)),
-                     _fd (get_fd(_path)),
-                     _devinfo (get_devinfo(_fd)),
-                     _name (get_name(_fd)),
-                     _rdesc (getReportDescriptor(_fd)),
-                     _io_monitor (monitor->ioMonitor())
-{
+RawDevice::RawDevice(std::string path, const std::shared_ptr<DeviceMonitor>& monitor) :
+        _valid(true), _path(std::move(path)), _fd(get_fd(_path)),
+        _dev_info(get_dev_info(_fd)), _name(get_name(_fd)),
+        _report_desc(getReportDescriptor(_fd)), _io_monitor(monitor->ioMonitor()) {
     _io_monitor->add(_fd, {
-        [this]() { _readReports(); },
-        [this]() { _valid = false; },
-        [this]() { _valid = false; }
+            [this]() { _readReports(); },
+            [this]() { _valid = false; },
+            [this]() { _valid = false; }
     });
 }
 
-RawDevice::~RawDevice() noexcept
-{
+RawDevice::~RawDevice() noexcept {
     _io_monitor->remove(_fd);
     ::close(_fd);
 }
 
-const std::string& RawDevice::rawPath() const
-{
+const std::string& RawDevice::rawPath() const {
     return _path;
 }
 
-const std::string& RawDevice::name() const
-{
+const std::string& RawDevice::name() const {
     return _name;
 }
 
-int16_t RawDevice::vendorId() const
-{
-    return _devinfo.vid;
+[[maybe_unused]]
+int16_t RawDevice::vendorId() const {
+    return _dev_info.vid;
 }
 
-int16_t RawDevice::productId() const
-{
-    return _devinfo.pid;
+int16_t RawDevice::productId() const {
+    return _dev_info.pid;
 }
 
-std::vector<uint8_t> RawDevice::getReportDescriptor(std::string path)
-{
+std::vector<uint8_t> RawDevice::getReportDescriptor(const std::string& path) {
     int fd = ::open(path.c_str(), O_RDWR | O_NONBLOCK);
     if (fd == -1)
         throw std::system_error(errno, std::system_category(),
                                 "open failed");
 
-    auto rdesc = getReportDescriptor(fd);
+    auto report_desc = getReportDescriptor(fd);
     ::close(fd);
-    return rdesc;
+    return report_desc;
 }
 
-std::vector<uint8_t> RawDevice::getReportDescriptor(int fd)
-{
-    hidraw_report_descriptor rdesc{};
-    if (-1 == ::ioctl(fd, HIDIOCGRDESCSIZE, &rdesc.size)) {
+std::vector<uint8_t> RawDevice::getReportDescriptor(int fd) {
+    hidraw_report_descriptor report_desc{};
+    if (-1 == ::ioctl(fd, HIDIOCGRDESCSIZE, &report_desc.size)) {
         int err = errno;
         ::close(fd);
         throw std::system_error(err, std::system_category(),
                                 "RawDevice HIDIOCGRDESCSIZE failed");
     }
-    if (-1 == ::ioctl(fd, HIDIOCGRDESC, &rdesc)) {
+    if (-1 == ::ioctl(fd, HIDIOCGRDESC, &report_desc)) {
         int err = errno;
         ::close(fd);
         throw std::system_error(err, std::system_category(),
                                 "RawDevice HIDIOCGRDESC failed");
     }
-    return std::vector<uint8_t>(rdesc.value, rdesc.value + rdesc.size);
+    return {report_desc.value, report_desc.value + report_desc.size};
 }
 
-const std::vector<uint8_t>& RawDevice::reportDescriptor() const
-{
-    return _rdesc;
+const std::vector<uint8_t>& RawDevice::reportDescriptor() const {
+    return _report_desc;
 }
 
-void RawDevice::sendReport(const std::vector<uint8_t>& report)
-{
-    if(!_valid) {
+void RawDevice::sendReport(const std::vector<uint8_t>& report) {
+    if (!_valid) {
         // We could throw an error here, but this will likely be closed soon.
         return;
     }
 
-    if(logid::global_loglevel <= LogLevel::RAWREPORT) {
+    if (logid::global_loglevel <= LogLevel::RAWREPORT) {
         printf("[RAWREPORT] %s OUT: ", _path.c_str());
-        for(auto &i : report)
+        for (auto& i: report)
             printf("%02x ", i);
         printf("\n");
     }
 
-    if(write(_fd, report.data(), report.size()) == -1)
+    if (write(_fd, report.data(), report.size()) == -1)
         throw std::system_error(errno, std::system_category(),
                                 "sendReport write failed");
 }
 
-RawDevice::EvHandlerId RawDevice::addEventHandler(RawEventHandler handler)
-{
+RawDevice::EvHandlerId RawDevice::addEventHandler(RawEventHandler handler) {
     std::lock_guard<std::mutex> lock(_event_handler_lock);
     _event_handlers.emplace_front(std::move(handler));
     return _event_handlers.cbegin();
 }
 
-void RawDevice::removeEventHandler(RawDevice::EvHandlerId id)
-{
+void RawDevice::removeEventHandler(RawDevice::EvHandlerId id) {
     std::lock_guard<std::mutex> lock(_event_handler_lock);
     _event_handlers.erase(id);
 }
 
-void RawDevice::_readReports()
-{
+void RawDevice::_readReports() {
     uint8_t buf[max_data_length];
     ssize_t len;
 
-    while(-1 != (len = ::read(_fd, buf, max_data_length))) {
+    while (-1 != (len = ::read(_fd, buf, max_data_length))) {
         assert(len <= max_data_length);
         std::vector<uint8_t> report(buf, buf + len);
 
-        if(logid::global_loglevel <= LogLevel::RAWREPORT) {
+        if (logid::global_loglevel <= LogLevel::RAWREPORT) {
             printf("[RAWREPORT] %s IN:  ", _path.c_str());
-            for(auto &i : report)
+            for (auto& i: report)
                 printf("%02x ", i);
             printf("\n");
         }
@@ -205,10 +184,9 @@ void RawDevice::_readReports()
     }
 }
 
-void RawDevice::_handleEvent(const std::vector<uint8_t>& report)
-{
+void RawDevice::_handleEvent(const std::vector<uint8_t>& report) {
     std::unique_lock<std::mutex> lock(_event_handler_lock);
-    for(auto& handler : _event_handlers)
-        if(handler.condition(report))
+    for (auto& handler: _event_handlers)
+        if (handler.condition(report))
             handler.callback(report);
 }

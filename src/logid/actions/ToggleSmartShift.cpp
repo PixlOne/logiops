@@ -26,38 +26,34 @@ using namespace logid::backend;
 const char* ToggleSmartShift::interface_name = "ToggleSmartShift";
 
 ToggleSmartShift::ToggleSmartShift(
-        Device *dev,
+        Device* dev,
         [[maybe_unused]] const std::shared_ptr<ipcgull::node>& parent) :
-        Action (dev, interface_name)
-{
+        Action(dev, interface_name) {
     _smartshift = _device->getFeature<features::SmartShift>("smartshift");
-    if(!_smartshift)
+    if (!_smartshift)
         logPrintf(WARN, "%s:%d: SmartShift feature not found, cannot use "
                         "ToggleSmartShift action.",
-                        _device->hidpp20().devicePath().c_str(),
-                        _device->hidpp20().deviceIndex());
+                  _device->hidpp20().devicePath().c_str(),
+                  _device->hidpp20().deviceIndex());
 }
 
-void ToggleSmartShift::press()
-{
+void ToggleSmartShift::press() {
     _pressed = true;
-    if(_smartshift) {
+    if (_smartshift) {
         spawn_task(
-        [ss=this->_smartshift](){
-            auto status = ss->getStatus();
-            status.setActive = true;
-            status.active = !status.active;
-            ss->setStatus(status);
-        });
+                [ss = this->_smartshift]() {
+                    auto status = ss->getStatus();
+                    status.setActive = true;
+                    status.active = !status.active;
+                    ss->setStatus(status);
+                });
     }
 }
 
-void ToggleSmartShift::release()
-{
+void ToggleSmartShift::release() {
     _pressed = false;
 }
 
-uint8_t ToggleSmartShift::reprogFlags() const
-{
+uint8_t ToggleSmartShift::reprogFlags() const {
     return hidpp20::ReprogControls::TemporaryDiverted;
 }

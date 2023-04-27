@@ -19,13 +19,12 @@
 
 using namespace logid;
 
-void logid::spawn_task(const std::function<void ()>& function)
-{
+void logid::spawn_task(const std::function<void()>& function) {
     auto future = std::make_shared<std::future<void>>();
-    *future = std::async(std::launch::async,[function, future]() {
+    *future = std::async(std::launch::async, [function, future]() {
         try {
             function();
-        } catch(std::exception& e) {
+        } catch (std::exception& e) {
             ExceptionHandler::Default(e);
         }
     });

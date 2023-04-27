@@ -21,12 +21,10 @@
 
 using namespace logid::backend::hidpp20;
 
-ThumbWheel::ThumbWheel(Device *dev) : Feature(dev, ID)
-{
+ThumbWheel::ThumbWheel(Device* dev) : Feature(dev, ID) {
 }
 
-ThumbWheel::ThumbwheelInfo ThumbWheel::getInfo()
-{
+ThumbWheel::ThumbwheelInfo ThumbWheel::getInfo() {
     std::vector<uint8_t> params(0), response;
     ThumbwheelInfo info{};
     response = callFunction(GetInfo, params);
@@ -43,20 +41,20 @@ ThumbWheel::ThumbwheelInfo ThumbWheel::getInfo()
     return info;
 }
 
-ThumbWheel::ThumbwheelStatus ThumbWheel::getStatus()
-{
+ThumbWheel::ThumbwheelStatus ThumbWheel::getStatus() {
     std::vector<uint8_t> params(0), response;
     ThumbwheelStatus status{};
     response = callFunction(GetStatus, params);
 
     status.diverted = response[0];
     status.inverted = response[1] & 1;
+    status.touch = response[1] & (1 << 1);
+    status.proxy = response[1] & (1 << 2);
 
     return status;
 }
 
-ThumbWheel::ThumbwheelStatus ThumbWheel::setStatus(bool divert, bool invert)
-{
+ThumbWheel::ThumbwheelStatus ThumbWheel::setStatus(bool divert, bool invert) {
     std::vector<uint8_t> params(2), response;
     ThumbwheelStatus status{};
     params[0] = divert;
@@ -69,13 +67,10 @@ ThumbWheel::ThumbwheelStatus ThumbWheel::setStatus(bool divert, bool invert)
     return status;
 }
 
-ThumbWheel::ThumbwheelEvent ThumbWheel::thumbwheelEvent(
-        const hidpp::Report& report)
-{
+ThumbWheel::ThumbwheelEvent ThumbWheel::thumbwheelEvent(const hidpp::Report& report) {
     assert(report.function() == Event);
     ThumbwheelEvent event{};
-    event.rotation = report.paramBegin()[1];
-    event.rotation |= report.paramBegin()[0] << 8;
+    event.rotation = (int16_t) ((report.paramBegin()[0] << 8) | report.paramBegin()[1]);
     event.timestamp = report.paramBegin()[3];
     event.timestamp |= report.paramBegin()[2] << 8;
     event.rotationStatus = static_cast<RotationStatus>(report.paramBegin()[4]);

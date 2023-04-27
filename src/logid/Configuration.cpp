@@ -18,7 +18,6 @@
 
 #include <utility>
 #include <vector>
-#include <map>
 
 #include "Configuration.h"
 #include "util/log.h"
@@ -28,15 +27,14 @@ using namespace libconfig;
 using namespace logid::config;
 
 Configuration::Configuration(std::string config_file) :
-    _config_file (std::move(config_file))
-{
+        _config_file(std::move(config_file)) {
     try {
         _config.readFile(_config_file);
-    } catch(const FileIOException &e) {
+    } catch (const FileIOException& e) {
         logPrintf(ERROR, "I/O Error while reading %s: %s", _config_file.c_str(),
                   e.what());
         throw;
-    } catch(const ParseException &e) {
+    } catch (const ParseException& e) {
         logPrintf(ERROR, "Parse error in %s, line %d: %s", e.getFile(),
                   e.getLine(), e.getError());
         throw;
@@ -44,29 +42,27 @@ Configuration::Configuration(std::string config_file) :
 
     Config::operator=(get<Config>(_config.getRoot()));
 
-    if(!devices.has_value())
+    if (!devices.has_value())
         devices = decltype(config::Config::devices)();
 }
 
-void Configuration::save()
-{
+void Configuration::save() {
     config::set(_config.getRoot(), *this);
     try {
         _config.writeFile(_config_file);
-    } catch(const FileIOException &e) {
+    } catch (const FileIOException& e) {
         logPrintf(ERROR, "I/O Error while writing %s: %s",
                   _config_file.c_str(), e.what());
         throw;
-    } catch(const std::exception& e) {
+    } catch (const std::exception& e) {
         logPrintf(ERROR, "Error while writing %s: %s",
                   _config_file.c_str(), e.what());
         throw;
     }
 }
 
-Configuration::IPC::IPC(Configuration *config) :
+Configuration::IPC::IPC(Configuration* config) :
         ipcgull::interface("pizza.pixl.LogiOps.Config", {
                 {"Save", {config, &Configuration::save}}
-        }, {}, {})
-{
+        }, {}, {}) {
 }

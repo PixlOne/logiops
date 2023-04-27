@@ -28,28 +28,25 @@
 
 #include "config/schema.h"
 
-namespace logid
-{
+namespace logid {
     namespace defaults {
         static constexpr double io_timeout = 500;
         static constexpr int gesture_threshold = 50;
-        static constexpr int worker_count = 4;
     }
 
-    class Configuration : public config::Config
-    {
+    class Configuration : public config::Config {
     public:
         explicit Configuration(std::string config_file);
+
         Configuration() = default;
 
         // Reloading is not safe, references will be invalidated
         //void reload();
         void save();
 
-        class IPC : public ipcgull::interface
-        {
+        class IPC : public ipcgull::interface {
         public:
-            IPC(Configuration* config);
+            explicit IPC(Configuration* config);
         };
 
     private:

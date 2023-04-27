@@ -20,10 +20,8 @@
 
 #include <stdexcept>
 
-namespace logid {
-namespace ExceptionHandler
-{
+namespace logid::ExceptionHandler {
     void Default(std::exception& e);
-}}
+}
 
 #endif //LOGID_EXCEPTIONHANDLER_H

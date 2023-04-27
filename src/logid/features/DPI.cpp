@@ -24,32 +24,29 @@ using namespace logid::features;
 using namespace logid::backend;
 
 uint16_t getClosestDPI(const hidpp20::AdjustableDPI::SensorDPIList& dpi_list,
-        uint16_t dpi)
-{
-    if(dpi_list.isRange) {
-        const uint16_t min = *std::min_element(dpi_list.dpis.begin(),
-                dpi_list.dpis.end());
-        const uint16_t max = *std::max_element(dpi_list.dpis.begin(),
-                dpi_list.dpis.end());
-        if(!((dpi-min) % dpi_list.dpiStep) && dpi >= min && dpi <= max)
+                       uint16_t dpi) {
+    if (dpi_list.isRange) {
+        const uint16_t min = *std::min_element(dpi_list.dpis.begin(), dpi_list.dpis.end());
+        const uint16_t max = *std::max_element(dpi_list.dpis.begin(), dpi_list.dpis.end());
+        if (!((dpi - min) % dpi_list.dpiStep) && dpi >= min && dpi <= max)
             return dpi;
-        else if(dpi > max)
+        else if (dpi > max)
             return max;
-        else if(dpi < min)
+        else if (dpi < min)
             return min;
         else
-            return min + round((double)(dpi-min)/dpi_list.dpiStep)*dpi_list
-            .dpiStep;
+            return (uint16_t) (min + round((double) (dpi - min) / dpi_list.dpiStep) *
+                                     dpi_list.dpiStep);
     } else {
-        if(std::find(dpi_list.dpis.begin(), dpi_list.dpis.end(), dpi)
-           != dpi_list.dpis.end())
+        if (std::find(dpi_list.dpis.begin(), dpi_list.dpis.end(), dpi)
+            != dpi_list.dpis.end())
             return dpi;
         else {
-            auto it = std::min_element(dpi_list.dpis.begin(), dpi_list.dpis
-                    .end(), [dpi](uint16_t a, uint16_t b) {
-                return (dpi - a) < (dpi - b);
-            });
-            if(it == dpi_list.dpis.end())
+            auto it = std::min_element(dpi_list.dpis.begin(), dpi_list.dpis.end(),
+                                       [dpi](uint16_t a, uint16_t b) {
+                                           return (dpi - a) < (dpi - b);
+                                       });
+            if (it == dpi_list.dpis.end())
                 return 0;
             else
                 return *it;
@@ -58,8 +55,7 @@ uint16_t getClosestDPI(const hidpp20::AdjustableDPI::SensorDPIList& dpi_list,
 }
 
 DPI::DPI(Device* device) : DeviceFeature(device),
-         _config (device->activeProfile().dpi)
-{
+                           _config(device->activeProfile().dpi) {
     try {
         _adjustable_dpi = std::make_shared<hidpp20::AdjustableDPI>
                 (&device->hidpp20());
@@ -68,45 +64,41 @@ DPI::DPI(Device* device) : DeviceFeature(device),
     }
 }
 
-void DPI::configure()
-{
-    if(_config.has_value()) {
+void DPI::configure() {
+    if (_config.has_value()) {
         const auto& config = _config.value();
-        if(std::holds_alternative<int>(config)) {
+        if (std::holds_alternative<int>(config)) {
             const auto& dpi = std::get<int>(config);
             _adjustable_dpi->setSensorDPI(
                     0,
                     getClosestDPI(_adjustable_dpi->getSensorDPIList(0),
-                                  dpi) );
+                                  dpi));
         } else {
             const auto& dpis = std::get<std::list<int>>(config);
             int i = 0;
-            for(const auto& dpi : dpis) {
+            for (const auto& dpi: dpis) {
                 _adjustable_dpi->setSensorDPI(
                         i,
                         getClosestDPI(_adjustable_dpi->getSensorDPIList(i),
-                                      dpi) );
+                                      dpi));
                 ++i;
             }
         }
     }
 }
 
-void DPI::listen()
-{
+void DPI::listen() {
 }
 
-uint16_t DPI::getDPI(uint8_t sensor)
-{
+uint16_t DPI::getDPI(uint8_t sensor) {
     return _adjustable_dpi->getSensorDPI(sensor);
 }
 
-void DPI::setDPI(uint16_t dpi, uint8_t sensor)
-{
+void DPI::setDPI(uint16_t dpi, uint8_t sensor) {
     hidpp20::AdjustableDPI::SensorDPIList dpi_list;
-    if(_dpi_lists.size() <= sensor) {
+    if (_dpi_lists.size() <= sensor) {
         dpi_list = _adjustable_dpi->getSensorDPIList(sensor);
-        for(std::size_t i = _dpi_lists.size(); i < sensor; i++) {
+        for (std::size_t i = _dpi_lists.size(); i < sensor; i++) {
             _dpi_lists.push_back(_adjustable_dpi->getSensorDPIList(i));
         }
         _dpi_lists.push_back(dpi_list);

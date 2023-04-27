@@ -22,41 +22,38 @@ using namespace logid::actions;
 
 const char* ReleaseGesture::interface_name = "OnRelease";
 
-ReleaseGesture::ReleaseGesture(Device *device, config::ReleaseGesture& config,
+ReleaseGesture::ReleaseGesture(Device* device, config::ReleaseGesture& config,
                                const std::shared_ptr<ipcgull::node>& parent) :
-    Gesture (device, parent, interface_name), _config (config)
-{
-    if(_config.action.has_value())
+        Gesture(device, parent, interface_name), _config(config) {
+    if (_config.action.has_value())
         _action = Action::makeAction(device, _config.action.value(), _node);
 }
 
-void ReleaseGesture::press(bool init_threshold)
-{
-    _axis = init_threshold ? _config.threshold.value_or(
-            defaults::gesture_threshold) : 0;
+void ReleaseGesture::press(bool init_threshold) {
+    if (init_threshold) {
+        _axis = (int32_t) (_config.threshold.value_or(defaults::gesture_threshold));
+    } else {
+        _axis = 0;
+    }
 }
 
-void ReleaseGesture::release(bool primary)
-{
-    if(metThreshold() && primary) {
-        if(_action) {
+void ReleaseGesture::release(bool primary) {
+    if (metThreshold() && primary) {
+        if (_action) {
             _action->press();
             _action->release();
         }
     }
 }
 
-void ReleaseGesture::move(int16_t axis)
-{
+void ReleaseGesture::move(int16_t axis) {
     _axis += axis;
 }
 
-bool ReleaseGesture::wheelCompatibility() const
-{
+bool ReleaseGesture::wheelCompatibility() const {
     return false;
 }
 
-bool ReleaseGesture::metThreshold() const
-{
+bool ReleaseGesture::metThreshold() const {
     return _axis >= _config.threshold.value_or(defaults::gesture_threshold);
 }

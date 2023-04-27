@@ -27,21 +27,27 @@
 #include "Configuration.h"
 #include "util/log.h"
 
-namespace logid
-{
+namespace logid {
     class DeviceManager;
+
     class Device;
+
     class Receiver;
+
     class InputDevice;
 
     class DeviceNickname {
     public:
         explicit DeviceNickname(const std::shared_ptr<DeviceManager>& manager);
+
         DeviceNickname() = delete;
+
         DeviceNickname(const DeviceNickname&) = delete;
+
         ~DeviceNickname();
 
         operator std::string() const;
+
     private:
         const int _nickname;
         const std::weak_ptr<DeviceManager> _manager;
@@ -51,63 +57,70 @@ namespace logid
      * Currently, the logid::Device class has a hardcoded requirement
      * for an HID++ 2.0 device.
      */
-    class Device : public ipcgull::object
-    {
-    private:
-        class Config;
+    class Device : public ipcgull::object {
     public:
         std::string name();
+
         uint16_t pid();
 
         //config::Device& config();
         config::Profile& activeProfile();
-        const config::Profile& activeProfile() const;
+
+        [[nodiscard]] const config::Profile& activeProfile() const;
+
         backend::hidpp20::Device& hidpp20();
 
         static std::shared_ptr<Device> make(
                 std::string path,
                 backend::hidpp::DeviceIndex index,
                 std::shared_ptr<DeviceManager> manager);
+
         static std::shared_ptr<Device> make(
                 std::shared_ptr<backend::raw::RawDevice> raw_device,
                 backend::hidpp::DeviceIndex index,
                 std::shared_ptr<DeviceManager> manager);
+
         static std::shared_ptr<Device> make(
                 Receiver* receiver,
                 backend::hidpp::DeviceIndex index,
                 std::shared_ptr<DeviceManager> manager);
 
         void wakeup();
+
         void sleep();
 
         void reset();
 
         [[nodiscard]] std::shared_ptr<InputDevice> virtualInput() const;
+
         [[nodiscard]] std::shared_ptr<ipcgull::node> ipcNode() const;
 
         template<typename T>
-        std::shared_ptr<T> getFeature(std::string name) {
+        std::shared_ptr<T> getFeature(const std::string& name) {
             auto it = _features.find(name);
-            if(it == _features.end())
+            if (it == _features.end())
                 return nullptr;
             try {
                 return std::dynamic_pointer_cast<T>(it->second);
-            } catch(std::bad_cast& e) {
+            } catch (std::bad_cast& e) {
                 logPrintf(ERROR, "bad_cast while getting device feature %s: %s",
-                                 name.c_str(), e.what());
+                          name.c_str(), e.what());
                 return nullptr;
             }
         }
 
     private:
-        friend class _Device;
+        friend class DeviceWrapper;
+
         Device(std::string path, backend::hidpp::DeviceIndex index,
-               std::shared_ptr<DeviceManager> manager);
+               const std::shared_ptr<DeviceManager>& manager);
+
         Device(std::shared_ptr<backend::raw::RawDevice> raw_device,
                backend::hidpp::DeviceIndex index,
-               std::shared_ptr<DeviceManager> manager);
+               const std::shared_ptr<DeviceManager>& manager);
+
         Device(Receiver* receiver, backend::hidpp::DeviceIndex index,
-               std::shared_ptr<DeviceManager> manager);
+               const std::shared_ptr<DeviceManager>& manager);
 
         static config::Device& _getConfig(
                 const std::shared_ptr<DeviceManager>& manager,
@@ -117,8 +130,7 @@ namespace logid
 
         /* Adds a feature without calling an error if unsupported */
         template<typename T>
-        void _addFeature(std::string name)
-        {
+        void _addFeature(std::string name) {
             try {
                 _features.emplace(name, std::make_shared<T>(this));
             } catch (features::UnsupportedFeature& e) {
@@ -129,7 +141,7 @@ namespace logid
         std::string _path;
         backend::hidpp::DeviceIndex _index;
         std::map<std::string, std::shared_ptr<features::DeviceFeature>>
-            _features;
+                _features;
         config::Device& _config;
         std::map<std::string, config::Profile>::iterator _profile;
 
@@ -137,6 +149,7 @@ namespace logid
         const std::weak_ptr<DeviceManager> _manager;
 
         void _makeResetMechanism();
+
         std::unique_ptr<std::function<void()>> _reset_mechanism;
 
         const DeviceNickname _nickname;
@@ -146,7 +159,8 @@ namespace logid
         private:
             Device& _device;
         public:
-            IPC(Device* device);
+            explicit IPC(Device* device);
+
             void notifyStatus() const;
         };
 

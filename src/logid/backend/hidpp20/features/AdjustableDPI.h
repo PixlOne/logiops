@@ -21,15 +21,12 @@
 #include "../feature_defs.h"
 #include "../Feature.h"
 
-namespace logid {
-namespace backend {
-namespace hidpp20
-{
-    class AdjustableDPI : public Feature
-    {
+namespace logid::backend::hidpp20 {
+    class AdjustableDPI : public Feature {
     public:
         static const uint16_t ID = FeatureID::ADJUSTABLE_DPI;
-        virtual uint16_t getID() { return ID; }
+
+        [[nodiscard]] uint16_t getID() final { return ID; }
 
         enum Function {
             GetSensorCount = 0,
@@ -38,23 +35,24 @@ namespace hidpp20
             SetSensorDPI = 3
         };
 
-        AdjustableDPI(Device* dev);
+        explicit AdjustableDPI(Device* dev);
 
         uint8_t getSensorCount();
 
-        struct SensorDPIList
-        {
+        struct SensorDPIList {
             std::vector<uint16_t> dpis;
             bool isRange;
             uint16_t dpiStep;
         };
+
         SensorDPIList getSensorDPIList(uint8_t sensor);
 
         uint16_t getDefaultSensorDPI(uint8_t sensor);
+
         uint16_t getSensorDPI(uint8_t sensor);
 
         void setSensorDPI(uint8_t sensor, uint16_t dpi);
     };
-}}}
+}
 
 #endif //LOGID_BACKEND_HIDPP20_FEATURE_ADJUSTABLEDPI_H

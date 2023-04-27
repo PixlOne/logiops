@@ -27,56 +27,57 @@
 using namespace logid;
 using namespace logid::actions;
 
-Gesture::Gesture(Device *device,
+Gesture::Gesture(Device* device,
                  std::shared_ptr<ipcgull::node> node,
                  const std::string& name, tables t) :
         ipcgull::interface("pizza.pixl.LogiOps.Gesture." + name, std::move(t)),
-        _node (std::move(node)), _device (device)
-{
+        _node(std::move(node)), _device(device) {
 }
 
-template <typename T>
-struct gesture_type {
-    typedef typename T::gesture type;
-};
+namespace {
+    template<typename T>
+    struct gesture_type {
+        typedef typename T::gesture type;
+    };
 
-template <typename T>
-struct gesture_type<const T> : gesture_type<T> { };
+    template<typename T>
+    struct gesture_type<const T> : gesture_type<T> {
+    };
 
-template <typename T>
-struct gesture_type<T&> : gesture_type<T> { };
+    template<typename T>
+    struct gesture_type<T&> : gesture_type<T> {
+    };
 
-template <typename T>
-std::shared_ptr<Gesture> _makeGesture(
-        Device* device, T gesture,
-        const std::shared_ptr<ipcgull::node>& parent) {
-    return parent->make_interface<typename gesture_type<T>::type>(
-            device, gesture, parent);
+    template<typename T>
+    std::shared_ptr<Gesture> _makeGesture(
+            Device* device, T gesture,
+            const std::shared_ptr<ipcgull::node>& parent) {
+        return parent->make_interface<typename gesture_type<T>::type>(
+                device, gesture, parent);
+    }
 }
 
 std::shared_ptr<Gesture> Gesture::makeGesture(
-        Device *device, config::Gesture& gesture,
-        const std::shared_ptr<ipcgull::node>& parent)
-{
+        Device* device, config::Gesture& gesture,
+        const std::shared_ptr<ipcgull::node>& parent) {
     return std::visit([&device, &parent](auto&& x) {
         return _makeGesture(device, x, parent);
     }, gesture);
 }
 
 std::shared_ptr<Gesture> Gesture::makeGesture(
-        Device *device, const std::string& type,
+        Device* device, const std::string& type,
         config::Gesture& config,
-        const std::shared_ptr<ipcgull::node> &parent)
-{
-    if(type == AxisGesture::interface_name) {
+        const std::shared_ptr<ipcgull::node>& parent) {
+    if (type == AxisGesture::interface_name) {
         config = config::AxisGesture();
-    } else if(type == IntervalGesture::interface_name) {
+    } else if (type == IntervalGesture::interface_name) {
         config = config::IntervalGesture();
-    } else if(type == ReleaseGesture::interface_name) {
+    } else if (type == ReleaseGesture::interface_name) {
         config = config::ReleaseGesture();
-    } else if(type == ThresholdGesture::interface_name) {
+    } else if (type == ThresholdGesture::interface_name) {
         config = config::ThresholdGesture();
-    } else if(type == NullGesture::interface_name) {
+    } else if (type == NullGesture::interface_name) {
         config = config::NoGesture();
     } else {
         throw InvalidGesture();

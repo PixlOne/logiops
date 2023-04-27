@@ -66,41 +66,38 @@ static const std::array<uint8_t, 39> DJReportDesc2 = {
         0xC0               // End Collection
 };
 
-bool dj::supportsDjReports(const std::vector<uint8_t>& rdesc)
-{
-    auto it = std::search(rdesc.begin(), rdesc.end(),
-            DJReportDesc.begin(), DJReportDesc.end());
-    if(it == rdesc.end())
-        it = std::search(rdesc.begin(), rdesc.end(),
+bool dj::supportsDjReports(const std::vector<uint8_t>& report_desc) {
+    auto it = std::search(report_desc.begin(), report_desc.end(),
+                          DJReportDesc.begin(), DJReportDesc.end());
+    if (it == report_desc.end())
+        it = std::search(report_desc.begin(), report_desc.end(),
                          DJReportDesc2.begin(), DJReportDesc2.end());
-    return it != rdesc.end();
+    return it != report_desc.end();
 }
 
-Report::Report(const std::vector<uint8_t>& data) : _data (data)
-{
-    switch(data[Offset::Type]) {
-    case ReportType::Short:
-        _data.resize(HeaderLength+ShortParamLength);
-        break;
-    case ReportType::Long:
-        _data.resize(HeaderLength+LongParamLength);
-        break;
-    default:
-        assert(false);
+Report::Report(const std::vector<uint8_t>& data) : _data(data) {
+    switch (data[Offset::Type]) {
+        case ReportType::Short:
+            _data.resize(HeaderLength + ShortParamLength);
+            break;
+        case ReportType::Long:
+            _data.resize(HeaderLength + LongParamLength);
+            break;
+        default:
+            assert(false);
     }
 }
 
-Report::Report(Report::Type type, hidpp::DeviceIndex index, uint8_t feature)
-{
-    switch(type) {
-    case ReportType::Short:
-        _data.resize(HeaderLength+ShortParamLength);
-        break;
-    case ReportType::Long:
-        _data.resize(HeaderLength+LongParamLength);
-        break;
-    default:
-        assert(false);
+Report::Report(Report::Type type, hidpp::DeviceIndex index, uint8_t feature) {
+    switch (type) {
+        case ReportType::Short:
+            _data.resize(HeaderLength + ShortParamLength);
+            break;
+        case ReportType::Long:
+            _data.resize(HeaderLength + LongParamLength);
+            break;
+        default:
+            assert(false);
     }
 
     _data[Offset::Type] = type;
@@ -109,27 +106,22 @@ Report::Report(Report::Type type, hidpp::DeviceIndex index, uint8_t feature)
 }
 
 
-Report::Type Report::type() const
-{
+Report::Type Report::type() const {
     return static_cast<Type>(_data[Offset::Type]);
 }
 
-hidpp::DeviceIndex Report::index() const
-{
+hidpp::DeviceIndex Report::index() const {
     return static_cast<hidpp::DeviceIndex>(_data[Offset::DeviceIndex]);
 }
 
-uint8_t Report::feature() const
-{
+uint8_t Report::feature() const {
     return _data[Offset::Feature];
 }
 
-std::vector<uint8_t>::iterator Report::paramBegin()
-{
+std::vector<uint8_t>::iterator Report::paramBegin() {
     return _data.begin() + Offset::Parameters;
 }
 
-std::vector<uint8_t> Report::rawData() const
-{
+const std::vector<uint8_t>& Report::rawData() const {
     return _data;
 }

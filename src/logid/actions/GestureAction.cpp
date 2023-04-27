@@ -26,50 +26,47 @@ using namespace logid::backend;
 
 const char* GestureAction::interface_name = "Gesture";
 
-GestureAction::Direction GestureAction::toDirection(std::string direction)
-{
+GestureAction::Direction GestureAction::toDirection(std::string direction) {
     std::transform(direction.begin(), direction.end(), direction.begin(),
-            ::tolower);
-    if(direction == "up")
+                   ::tolower);
+    if (direction == "up")
         return Up;
-    else if(direction == "down")
+    else if (direction == "down")
         return Down;
-    else if(direction == "left")
+    else if (direction == "left")
         return Left;
-    else if(direction == "right")
+    else if (direction == "right")
         return Right;
-    else if(direction == "none")
+    else if (direction == "none")
         return None;
     else
         throw std::invalid_argument("direction");
 }
 
-std::string GestureAction::fromDirection(Direction direction)
-{
-    switch(direction) {
-    case Up:
-        return "up";
-    case Down:
-        return "down";
-    case Left:
-        return "left";
-    case Right:
-        return "right";
-    case None:
-        return "none";
+std::string GestureAction::fromDirection(Direction direction) {
+    switch (direction) {
+        case Up:
+            return "up";
+        case Down:
+            return "down";
+        case Left:
+            return "left";
+        case Right:
+            return "right";
+        case None:
+            return "none";
     }
 
     // This shouldn't happen
     throw InvalidGesture();
 }
 
-GestureAction::Direction GestureAction::toDirection(int16_t x, int16_t y)
-{
-    if(x >= 0 && y >= 0)
+GestureAction::Direction GestureAction::toDirection(int32_t x, int32_t y) {
+    if (x >= 0 && y >= 0)
         return x >= y ? Right : Down;
-    else if(x < 0 && y >= 0)
+    else if (x < 0 && y >= 0)
         return -x <= y ? Down : Left;
-    else if(x <= 0 && y < 0)
+    else if (x <= 0 /* && y < 0 */)
         return x <= y ? Left : Up;
     else
         return x <= -y ? Up : Right;
@@ -77,18 +74,19 @@ GestureAction::Direction GestureAction::toDirection(int16_t x, int16_t y)
 
 GestureAction::GestureAction(Device* dev, config::GestureAction& config,
                              const std::shared_ptr<ipcgull::node>& parent) :
-    Action (dev, interface_name,
-            {
-        {
-            {"SetGesture", {this, &GestureAction::setGesture,
-                            {"direction", "type"}}}
-            }, {}, {}
-            }),
-            _node (parent->make_child("gestures")), _config (config)
-{
-    if(_config.gestures.has_value()) {
+        Action(dev, interface_name,
+               {
+                       {
+                               {"SetGesture", {this, &GestureAction::setGesture,
+                                                      {"direction", "type"}}}
+                       },
+                       {},
+                       {}
+               }),
+        _node(parent->make_child("gestures")), _config(config) {
+    if (_config.gestures.has_value()) {
         auto& gestures = _config.gestures.value();
-        for(auto& x : gestures) {
+        for (auto& x: gestures) {
             try {
                 auto direction = toDirection(x.first);
                 _gestures.emplace(direction,
@@ -96,25 +94,23 @@ GestureAction::GestureAction(Device* dev, config::GestureAction& config,
                                           dev, x.second,
                                           _node->make_child(
                                                   fromDirection(direction))));
-            } catch(std::invalid_argument& e) {
+            } catch (std::invalid_argument& e) {
                 logPrintf(WARN, "%s is not a direction", x.first.c_str());
             }
         }
     }
 }
 
-void GestureAction::press()
-{
+void GestureAction::press() {
     std::lock_guard<std::mutex> lock(_config_lock);
 
     _pressed = true;
     _x = 0, _y = 0;
-    for(auto& gesture : _gestures)
-        gesture.second->press();
+    for (auto& gesture: _gestures)
+        gesture.second->press(false);
 }
 
-void GestureAction::release()
-{
+void GestureAction::release() {
     std::lock_guard<std::mutex> lock(_config_lock);
 
     _pressed = false;
@@ -122,16 +118,16 @@ void GestureAction::release()
 
     auto d = toDirection(_x, _y);
     auto primary_gesture = _gestures.find(d);
-    if(primary_gesture != _gestures.end()) {
+    if (primary_gesture != _gestures.end()) {
         threshold_met = primary_gesture->second->metThreshold();
         primary_gesture->second->release(true);
     }
 
-    for(auto& gesture : _gestures) {
-        if(gesture.first == d)
+    for (auto& gesture: _gestures) {
+        if (gesture.first == d)
             continue;
-        if(!threshold_met) {
-            if(gesture.second->metThreshold()) {
+        if (!threshold_met) {
+            if (gesture.second->metThreshold()) {
                 // If the primary gesture did not meet its threshold, use the
                 // secondary one.
                 threshold_met = true;
@@ -143,105 +139,103 @@ void GestureAction::release()
         }
     }
 
-    if(!threshold_met) {
+    if (!threshold_met) {
         try {
             auto none = _gestures.at(None);
-            if(none) {
-                none->press();
-                none->release();
+            if (none) {
+                none->press(false);
+                none->release(false);
             }
-        } catch(std::out_of_range& e) { }
+        } catch (std::out_of_range& e) {}
     }
 }
 
-void GestureAction::move(int16_t x, int16_t y)
-{
+void GestureAction::move(int16_t x, int16_t y) {
     std::lock_guard<std::mutex> lock(_config_lock);
 
-    auto new_x = _x + x, new_y = _y + y;
+    int32_t new_x = _x + x, new_y = _y + y;
 
-    if(abs(x) > 0) {
-        if(_x < 0 && new_x >= 0) { // Left -> Origin/Right
+    if (abs(x) > 0) {
+        if (_x < 0 && new_x >= 0) { // Left -> Origin/Right
             auto left = _gestures.find(Left);
-            if(left != _gestures.end() && left->second)
-                left->second->move(_x);
-            if(new_x) { // Ignore to origin
+            if (left != _gestures.end() && left->second)
+                left->second->move((int16_t) _x);
+            if (new_x) { // Ignore to origin
                 auto right = _gestures.find(Right);
-                if(right != _gestures.end() && right->second)
-                    right->second->move(new_x);
+                if (right != _gestures.end() && right->second)
+                    right->second->move((int16_t) new_x);
             }
-        } else if(_x > 0 && new_x <= 0) { // Right -> Origin/Left
+        } else if (_x > 0 && new_x <= 0) { // Right -> Origin/Left
             auto right = _gestures.find(Right);
-            if(right != _gestures.end() && right->second)
-                right->second->move(-_x);
-            if(new_x) { // Ignore to origin
+            if (right != _gestures.end() && right->second)
+                right->second->move((int16_t) -_x);
+            if (new_x) { // Ignore to origin
                 auto left = _gestures.find(Left);
-                if(left != _gestures.end() && left->second)
-                    left->second->move(-new_x);
+                if (left != _gestures.end() && left->second)
+                    left->second->move((int16_t) -new_x);
             }
-        } else if(new_x < 0) { // Origin/Left to Left
+        } else if (new_x < 0) { // Origin/Left to Left
             auto left = _gestures.find(Left);
-            if(left != _gestures.end() && left->second)
-                left->second->move(-x);
-        } else if(new_x > 0) { // Origin/Right to Right
+            if (left != _gestures.end() && left->second)
+                left->second->move((int16_t) -x);
+        } else if (new_x > 0) { // Origin/Right to Right
             auto right = _gestures.find(Right);
-            if(right != _gestures.end() && right->second)
+            if (right != _gestures.end() && right->second)
                 right->second->move(x);
         }
     }
 
-    if(abs(y) > 0) {
-        if(_y > 0 && new_y <= 0) { // Up -> Origin/Down
+    if (abs(y) > 0) {
+        if (_y > 0 && new_y <= 0) { // Up -> Origin/Down
             auto up = _gestures.find(Up);
-            if(up != _gestures.end() && up->second)
-                up->second->move(_y);
-            if(new_y) { // Ignore to origin
+            if (up != _gestures.end() && up->second)
+                up->second->move((int16_t) _y);
+            if (new_y) { // Ignore to origin
                 auto down = _gestures.find(Down);
-                if(down != _gestures.end() && down->second)
-                    down->second->move(new_y);
+                if (down != _gestures.end() && down->second)
+                    down->second->move((int16_t) new_y);
             }
-        } else if(_y < 0 && new_y >= 0) { // Down -> Origin/Up
+        } else if (_y < 0 && new_y >= 0) { // Down -> Origin/Up
             auto down = _gestures.find(Down);
-            if(down != _gestures.end() && down->second)
-                down->second->move(-_y);
-            if(new_y) { // Ignore to origin
+            if (down != _gestures.end() && down->second)
+                down->second->move((int16_t) -_y);
+            if (new_y) { // Ignore to origin
                 auto up = _gestures.find(Up);
-                if(up != _gestures.end() && up->second)
-                    up->second->move(-new_y);
+                if (up != _gestures.end() && up->second)
+                    up->second->move((int16_t) -new_y);
             }
-        } else if(new_y < 0) { // Origin/Up to Up
+        } else if (new_y < 0) { // Origin/Up to Up
             auto up = _gestures.find(Up);
-            if(up != _gestures.end() && up->second)
-                up->second->move(-y);
-        } else if(new_y > 0) {// Origin/Down to Down
+            if (up != _gestures.end() && up->second)
+                up->second->move((int16_t) -y);
+        } else if (new_y > 0) {// Origin/Down to Down
             auto down = _gestures.find(Down);
-            if(down != _gestures.end() && down->second)
+            if (down != _gestures.end() && down->second)
                 down->second->move(y);
         }
     }
 
-    _x = new_x; _y = new_y;
+    _x = new_x;
+    _y = new_y;
 }
 
-uint8_t GestureAction::reprogFlags() const
-{
+uint8_t GestureAction::reprogFlags() const {
     return (hidpp20::ReprogControls::TemporaryDiverted |
-        hidpp20::ReprogControls::RawXYDiverted);
+            hidpp20::ReprogControls::RawXYDiverted);
 }
 
-void GestureAction::setGesture(const std::string &direction,
-                               const std::string &type)
-{
+void GestureAction::setGesture(const std::string& direction,
+                               const std::string& type) {
     std::lock_guard<std::mutex> lock(_config_lock);
 
     Direction d = toDirection(direction);
 
     auto it = _gestures.find(d);
 
-    if(it != _gestures.end()) {
-        if(pressed()) {
+    if (it != _gestures.end()) {
+        if (pressed()) {
             auto current = toDirection(_x, _y);
-            if(it->second)
+            if (it->second)
                 it->second->release(current == d);
         }
     }

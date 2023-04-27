@@ -19,12 +19,10 @@
 
 using namespace logid::backend::hidpp20;
 
-Reset::Reset(Device *device) : Feature(device, ID)
-{
+Reset::Reset(Device* device) : Feature(device, ID) {
 }
 
-uint16_t Reset::getProfile()
-{
+uint16_t Reset::getProfile() {
     std::vector<uint8_t> params(0);
     auto results = callFunction(GetProfile, params);
 
@@ -33,8 +31,7 @@ uint16_t Reset::getProfile()
     return profile;
 }
 
-void Reset::reset(uint16_t profile)
-{
+void Reset::reset(uint16_t profile) {
     std::vector<uint8_t> params(2);
     params[0] = (profile >> 8) & 0xff;
     params[1] = profile & 0xff;

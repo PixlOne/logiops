@@ -19,29 +19,26 @@
 
 using namespace logid::backend::hidpp20;
 
-SmartShift::SmartShift(Device* dev) : Feature(dev, ID)
-{
+SmartShift::SmartShift(Device* dev) : Feature(dev, ID) {
 }
 
-SmartShift::SmartshiftStatus SmartShift::getStatus()
-{
+SmartShift::SmartshiftStatus SmartShift::getStatus() {
     std::vector<uint8_t> params(0);
     SmartshiftStatus status{};
     auto response = callFunction(GetStatus, params);
-    status.active = response[0]-1;
+    status.active = response[0] - 1;
     status.autoDisengage = response[1];
     status.defaultAutoDisengage = response[2];
     return status;
 }
 
-void SmartShift::setStatus(SmartshiftStatus status)
-{
+void SmartShift::setStatus(SmartshiftStatus status) {
     std::vector<uint8_t> params(3);
-    if(status.setActive)
+    if (status.setActive)
         params[0] = status.active + 1;
-    if(status.setAutoDisengage)
+    if (status.setAutoDisengage)
         params[1] = status.autoDisengage;
-    if(status.setDefaultAutoDisengage)
+    if (status.setDefaultAutoDisengage)
         params[2] = status.defaultAutoDisengage;
     callFunction(SetStatus, params);
 }

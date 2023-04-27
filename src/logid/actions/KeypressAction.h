@@ -22,10 +22,8 @@
 #include <libconfig.h++>
 #include "Action.h"
 
-namespace logid {
-namespace actions {
-    class KeypressAction : public Action
-    {
+namespace logid::actions {
+    class KeypressAction : public Action {
     public:
         static const char* interface_name;
 
@@ -33,13 +31,16 @@ namespace actions {
                        config::KeypressAction& config,
                        const std::shared_ptr<ipcgull::node>& parent);
 
-        virtual void press();
-        virtual void release();
+        void press() final;
+
+        void release() final;
 
         [[nodiscard]] std::vector<std::string> getKeys() const;
+
         void setKeys(const std::vector<std::string>& keys);
 
-        virtual uint8_t reprogFlags() const;
+        [[nodiscard]] uint8_t reprogFlags() const final;
+
     protected:
         mutable std::mutex _config_lock;
         config::KeypressAction& _config;
@@ -47,6 +48,6 @@ namespace actions {
 
         void _setConfig();
     };
-}}
+}
 
 #endif //LOGID_ACTION_KEYPRESS_H

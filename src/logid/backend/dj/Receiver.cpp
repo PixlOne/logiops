@@ -24,74 +24,73 @@
 using namespace logid::backend::dj;
 using namespace logid::backend;
 
-InvalidReceiver::InvalidReceiver(Reason reason) : _reason (reason)
-{
+InvalidReceiver::InvalidReceiver(Reason reason) : _reason(reason) {
 }
 
-const char* InvalidReceiver::what() const noexcept
-{
-    switch(_reason) {
-    case NoDJReports:
-        return "No DJ reports";
-    default:
-        return "Invalid receiver";
+const char* InvalidReceiver::what() const noexcept {
+    switch (_reason) {
+        case NoDJReports:
+            return "No DJ reports";
+        default:
+            return "Invalid receiver";
     }
 }
 
-InvalidReceiver::Reason InvalidReceiver::code() const noexcept
-{
+InvalidReceiver::Reason InvalidReceiver::code() const noexcept {
     return _reason;
 }
 
 Receiver::Receiver(std::string path,
                    const std::shared_ptr<raw::DeviceMonitor>& monitor,
                    double timeout) :
-    _raw_device (std::make_shared<raw::RawDevice>(std::move(path), monitor)),
-    _hidpp10_device (_raw_device, hidpp::DefaultDevice, timeout)
-{
-    if(!supportsDjReports(_raw_device->reportDescriptor()))
+        _raw_device(std::make_shared<raw::RawDevice>(std::move(path), monitor)),
+        _hidpp10_device(_raw_device, hidpp::DefaultDevice, timeout) {
+    if (!supportsDjReports(_raw_device->reportDescriptor()))
         throw InvalidReceiver(InvalidReceiver::NoDJReports);
 
     // Pass all HID++ events on DefaultDevice to handleHidppEvent
-    _raw_hidpp_handler = _raw_device->addEventHandler({
-        [](const std::vector<uint8_t>& report)->bool {
-            return (report[hidpp::Offset::Type] == hidpp::Report::Type::Short ||
-                report[hidpp::Offset::Type] == hidpp::Report::Type::Long);
-        },
-        [this](const std::vector<uint8_t>& report)->void {
-            hidpp::Report _report(report);
-            this->_handleHidppEvent(_report);
-        }
-    });
+    _raw_hidpp_handler = _raw_device->addEventHandler(
+            {
+                    [](const std::vector<uint8_t>& report) -> bool {
+                        return (report[hidpp::Offset::Type] ==
+                                hidpp::Report::Type::Short ||
+                                report[hidpp::Offset::Type] ==
+                                hidpp::Report::Type::Long);
+                    },
+                    [this](const std::vector<uint8_t>& report) -> void {
+                        hidpp::Report _report(report);
+                        this->_handleHidppEvent(_report);
+                    }
+            });
 
     // Pass all DJ events with device index to handleDjEvent
-    _raw_dj_handler = _raw_device->addEventHandler({
-        [](const std::vector<uint8_t>& report)->bool {
-            return (report[Offset::Type] == Report::Type::Short ||
-            report[Offset::Type] == Report::Type::Long);
-            },
-            [this](const std::vector<uint8_t>& report)->void {
-            Report _report(report);
-            this->_handleDjEvent(_report);
-        }
-    });
+    _raw_dj_handler = _raw_device->addEventHandler(
+            {
+                    [](const std::vector<uint8_t>& report) -> bool {
+                        return (report[Offset::Type] ==
+                                Report::Type::Short ||
+                                report[Offset::Type] ==
+                                Report::Type::Long);
+                    },
+                    [this](const std::vector<uint8_t>& report) -> void {
+                        Report _report(report);
+                        this->_handleDjEvent(_report);
+                    }
+            });
 }
 
-Receiver::~Receiver()
-{
+Receiver::~Receiver() {
     _raw_device->removeEventHandler(_raw_dj_handler);
     _raw_device->removeEventHandler(_raw_hidpp_handler);
 }
 
-void Receiver::enumerateDj()
-{
-    _sendDjRequest(hidpp::DefaultDevice, GetPairedDevices,{});
+void Receiver::enumerateDj() {
+    _sendDjRequest(hidpp::DefaultDevice, GetPairedDevices, {});
 }
 
-Receiver::NotificationFlags Receiver::getHidppNotifications()
-{
+Receiver::NotificationFlags Receiver::getHidppNotifications() {
     auto response = _hidpp10_device.getRegister(EnableHidppNotifications, {},
-            hidpp::ReportType::Short);
+                                                hidpp::ReportType::Short);
 
     NotificationFlags flags{};
     flags.deviceBatteryStatus = response[0] & (1 << 4);
@@ -101,41 +100,37 @@ Receiver::NotificationFlags Receiver::getHidppNotifications()
     return flags;
 }
 
-void Receiver::enableHidppNotifications(NotificationFlags flags)
-{
+void Receiver::enableHidppNotifications(NotificationFlags flags) {
     std::vector<uint8_t> request(3);
 
-    if(flags.deviceBatteryStatus)
+    if (flags.deviceBatteryStatus)
         request[0] |= (1 << 4);
-    if(flags.receiverWirelessNotifications)
+    if (flags.receiverWirelessNotifications)
         request[1] |= 1;
-    if(flags.receiverSoftwarePresent)
+    if (flags.receiverSoftwarePresent)
         request[1] |= (1 << 3);
 
     _hidpp10_device.setRegister(EnableHidppNotifications, request,
-            hidpp::ReportType::Short);
+                                hidpp::ReportType::Short);
 }
 
-void Receiver::enumerateHidpp()
-{
+void Receiver::enumerateHidpp() {
     /* This isn't in the documentation but this is how solaar does it
      * All I know is that when (p0 & 2), devices are enumerated
      */
     _hidpp10_device.setRegister(ConnectionState, {2},
-            hidpp::ReportType::Short);
+                                hidpp::ReportType::Short);
 }
 
 ///TODO: Investigate usage
-uint8_t Receiver::getConnectionState(hidpp::DeviceIndex index)
-{
+uint8_t Receiver::getConnectionState(hidpp::DeviceIndex index) {
     auto response = _hidpp10_device.getRegister(ConnectionState, {index},
-            hidpp::ReportType::Short);
+                                                hidpp::ReportType::Short);
 
     return response[0];
 }
 
-void Receiver::startPairing(uint8_t timeout)
-{
+void Receiver::startPairing(uint8_t timeout) {
     ///TODO: Device number == Device index?
     std::vector<uint8_t> request(3);
 
@@ -144,11 +139,10 @@ void Receiver::startPairing(uint8_t timeout)
     request[2] = timeout;
 
     _hidpp10_device.setRegister(DevicePairing, request,
-            hidpp::ReportType::Short);
+                                hidpp::ReportType::Short);
 }
 
-void Receiver::stopPairing()
-{
+void Receiver::stopPairing() {
     ///TODO: Device number == Device index?
     std::vector<uint8_t> request(3);
 
@@ -156,11 +150,10 @@ void Receiver::stopPairing()
     request[1] = hidpp::DefaultDevice;
 
     _hidpp10_device.setRegister(DevicePairing, request,
-            hidpp::ReportType::Short);
+                                hidpp::ReportType::Short);
 }
 
-void Receiver::disconnect(hidpp::DeviceIndex index)
-{
+void Receiver::disconnect(hidpp::DeviceIndex index) {
     ///TODO: Device number == Device index?
     std::vector<uint8_t> request(3);
 
@@ -168,30 +161,28 @@ void Receiver::disconnect(hidpp::DeviceIndex index)
     request[1] = index;
 
     _hidpp10_device.setRegister(DevicePairing, request,
-            hidpp::ReportType::Short);
+                                hidpp::ReportType::Short);
 }
 
-std::map<hidpp::DeviceIndex, uint8_t> Receiver::getDeviceActivity()
-{
+std::map<hidpp::DeviceIndex, uint8_t> Receiver::getDeviceActivity() {
     auto response = _hidpp10_device.getRegister(DeviceActivity, {},
-            hidpp::ReportType::Long);
+                                                hidpp::ReportType::Long);
 
     std::map<hidpp::DeviceIndex, uint8_t> device_activity;
-    for(uint8_t i = hidpp::WirelessDevice1; i <= hidpp::WirelessDevice6; i++)
+    for (uint8_t i = hidpp::WirelessDevice1; i <= hidpp::WirelessDevice6; i++)
         device_activity[static_cast<hidpp::DeviceIndex>(i)] = response[i];
 
     return device_activity;
 }
 
 struct Receiver::PairingInfo
-    Receiver::getPairingInfo(hidpp::DeviceIndex index)
-{
+Receiver::getPairingInfo(hidpp::DeviceIndex index) {
     std::vector<uint8_t> request(1);
     request[0] = index;
     request[0] += 0x1f;
 
     auto response = _hidpp10_device.getRegister(PairingInfo, request,
-            hidpp::ReportType::Long);
+                                                hidpp::ReportType::Long);
 
     struct PairingInfo info{};
     info.destinationId = response[1];
@@ -204,26 +195,25 @@ struct Receiver::PairingInfo
 }
 
 struct Receiver::ExtendedPairingInfo
-    Receiver::getExtendedPairingInfo(hidpp::DeviceIndex index)
-{
+Receiver::getExtendedPairingInfo(hidpp::DeviceIndex index) {
     std::vector<uint8_t> request(1);
     request[0] = index;
     request[0] += 0x2f;
 
     auto response = _hidpp10_device.getRegister(PairingInfo, request,
-            hidpp::ReportType::Long);
+                                                hidpp::ReportType::Long);
 
     ExtendedPairingInfo info{};
 
     info.serialNumber = 0;
-    for(uint8_t i = 0; i < 4; i++)
-        info.serialNumber |= (response[i+1] << 8*i);
+    for (uint8_t i = 0; i < 4; i++)
+        info.serialNumber |= (response[i + 1] << 8 * i);
 
-    for(uint8_t i = 0; i < 4; i++)
+    for (uint8_t i = 0; i < 4; i++)
         info.reportTypes[i] = response[i + 5];
 
     uint8_t psl = response[8] & 0xf;
-    if(psl > 0xc)
+    if (psl > 0xc)
         info.powerSwitchLocation = PowerSwitchLocation::Reserved;
     else
         info.powerSwitchLocation = static_cast<PowerSwitchLocation>(psl);
@@ -231,35 +221,32 @@ struct Receiver::ExtendedPairingInfo
     return info;
 }
 
-std::string Receiver::getDeviceName(hidpp::DeviceIndex index)
-{
+std::string Receiver::getDeviceName(hidpp::DeviceIndex index) {
     std::vector<uint8_t> request(1);
     request[0] = index;
     request[0] += 0x3f;
 
     auto response = _hidpp10_device.getRegister(PairingInfo, request,
-            hidpp::ReportType::Long);
+                                                hidpp::ReportType::Long);
 
     uint8_t size = response[1];
     assert(size <= 14);
 
     std::string name(size, ' ');
-    for(std::size_t i = 0; i < size; i++)
-        name[i] = response[i + 2];
+    for (std::size_t i = 0; i < size; i++)
+        name[i] = (char) (response[i + 2]);
 
     return name;
 }
 
 hidpp::DeviceIndex Receiver::deviceDisconnectionEvent(const hidpp::Report&
-report)
-{
+report) {
     assert(report.subId() == DeviceDisconnection);
     return report.deviceIndex();
 }
 
 hidpp::DeviceConnectionEvent Receiver::deviceConnectionEvent(const
-        hidpp::Report &report)
-{
+                                                             hidpp::Report& report) {
     assert(report.subId() == DeviceConnection);
 
     hidpp::DeviceConnectionEvent event{};
@@ -269,75 +256,66 @@ hidpp::DeviceConnectionEvent Receiver::deviceConnectionEvent(const
 
     event.deviceType = static_cast<DeviceType::DeviceType>(
             report.paramBegin()[0] & 0x0f);
-    event.softwarePresent = report.paramBegin()[0] & (1<<4);
-    event.encrypted = report.paramBegin()[0] & (1<<5);
-    event.linkEstablished = !(report.paramBegin()[0] & (1<<6));
-    event.withPayload = report.paramBegin()[0] & (1<<7);
+    event.softwarePresent = report.paramBegin()[0] & (1 << 4);
+    event.encrypted = report.paramBegin()[0] & (1 << 5);
+    event.linkEstablished = !(report.paramBegin()[0] & (1 << 6));
+    event.withPayload = report.paramBegin()[0] & (1 << 7);
     event.fromTimeoutCheck = false;
 
-    event.pid =(report.paramBegin()[2] << 8);
+    event.pid = (report.paramBegin()[2] << 8);
     event.pid |= report.paramBegin()[1];
 
     return event;
 }
 
-void Receiver::_handleDjEvent(Report& report)
-{
-    for(auto& handler : _dj_event_handlers)
-        if(handler.second->condition(report))
+void Receiver::_handleDjEvent(Report& report) {
+    for (auto& handler: _dj_event_handlers)
+        if (handler.second->condition(report))
             handler.second->callback(report);
 }
 
-void Receiver::_handleHidppEvent(hidpp::Report &report)
-{
-    for(auto& handler : _hidpp_event_handlers)
-        if(handler.second->condition(report))
+void Receiver::_handleHidppEvent(hidpp::Report& report) {
+    for (auto& handler: _hidpp_event_handlers)
+        if (handler.second->condition(report))
             handler.second->callback(report);
 }
 
 void Receiver::addDjEventHandler(const std::string& nickname,
-        const std::shared_ptr<EventHandler>& handler)
-{
+                                 const std::shared_ptr<EventHandler>& handler) {
     assert(_dj_event_handlers.find(nickname) == _dj_event_handlers.end());
     _dj_event_handlers.emplace(nickname, handler);
 }
 
-void Receiver::removeDjEventHandler(const std::string &nickname)
-{
+void Receiver::removeDjEventHandler(const std::string& nickname) {
     _dj_event_handlers.erase(nickname);
 }
 
 const std::map<std::string, std::shared_ptr<EventHandler>>&
-Receiver::djEventHandlers()
-{
+Receiver::djEventHandlers() {
     return _dj_event_handlers;
 }
 
 void Receiver::addHidppEventHandler(const std::string& nickname,
-        const std::shared_ptr<hidpp::EventHandler>& handler)
-{
+                                    const std::shared_ptr<hidpp::EventHandler>& handler) {
     assert(_hidpp_event_handlers.find(nickname) == _hidpp_event_handlers.end());
     _hidpp_event_handlers.emplace(nickname, handler);
 }
 
-void Receiver::removeHidppEventHandler(const std::string &nickname)
-{
+void Receiver::removeHidppEventHandler(const std::string& nickname) {
     _hidpp_event_handlers.erase(nickname);
 }
 
 const std::map<std::string, std::shared_ptr<hidpp::EventHandler>>&
-Receiver::hidppEventHandlers()
-{
+Receiver::hidppEventHandlers() {
     return _hidpp_event_handlers;
 }
 
 void Receiver::_sendDjRequest(hidpp::DeviceIndex index, uint8_t function,
-        const std::vector<uint8_t>&& params)
-{
+                              const std::vector<uint8_t>&& params) {
     assert(params.size() <= LongParamLength);
 
     Report::Type type = params.size() <= ShortParamLength ?
-            ReportType::Short : ReportType::Long;
+                        ReportType::Short : ReportType::Long;
 
     Report request(type, index, function);
 
@@ -346,8 +324,7 @@ void Receiver::_sendDjRequest(hidpp::DeviceIndex index, uint8_t function,
     _raw_device->sendReport(request.rawData());
 }
 
-Receiver::ConnectionStatusEvent Receiver::connectionStatusEvent(Report& report)
-{
+Receiver::ConnectionStatusEvent Receiver::connectionStatusEvent(Report& report) {
     assert(report.feature() == ConnectionStatus);
     ConnectionStatusEvent event{};
     event.index = report.index();
@@ -355,7 +332,6 @@ Receiver::ConnectionStatusEvent Receiver::connectionStatusEvent(Report& report)
     return event;
 }
 
-std::shared_ptr<raw::RawDevice> Receiver::rawDevice() const
-{
+std::shared_ptr<raw::RawDevice> Receiver::rawDevice() const {
     return _raw_device;
 }

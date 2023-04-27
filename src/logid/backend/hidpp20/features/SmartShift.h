@@ -21,15 +21,12 @@
 #include "../feature_defs.h"
 #include "../Feature.h"
 
-namespace logid {
-namespace backend {
-namespace hidpp20
-{
-    class SmartShift : public Feature
-    {
+namespace logid::backend::hidpp20 {
+    class SmartShift : public Feature {
     public:
         static const uint16_t ID = FeatureID::SMART_SHIFT;
-        virtual uint16_t getID() { return ID; }
+
+        uint16_t getID() final { return ID; }
 
         enum Function {
             GetStatus = 0,
@@ -38,8 +35,7 @@ namespace hidpp20
 
         explicit SmartShift(Device* dev);
 
-        struct SmartshiftStatus
-        {
+        struct SmartshiftStatus {
             bool active;
             uint8_t autoDisengage;
             uint8_t defaultAutoDisengage;
@@ -47,8 +43,9 @@ namespace hidpp20
         };
 
         SmartshiftStatus getStatus();
+
         void setStatus(SmartshiftStatus status);
     };
-}}}
+}
 
 #endif //LOGID_BACKEND_HIDPP20_FEATURE_SMARTSHIFT_H
