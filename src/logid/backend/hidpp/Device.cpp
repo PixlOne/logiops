@@ -51,10 +51,10 @@ Device::InvalidDevice::Reason Device::InvalidDevice::code() const noexcept {
 }
 
 Device::Device(const std::string& path, DeviceIndex index,
-               std::shared_ptr<raw::DeviceMonitor> monitor, double timeout) :
+               const std::shared_ptr<raw::DeviceMonitor>& monitor, double timeout) :
         io_timeout(duration_cast<milliseconds>(
                 duration<double, std::milli>(timeout))),
-        _raw_device(std::make_shared<raw::RawDevice>(path, std::move(monitor))),
+        _raw_device(std::make_shared<raw::RawDevice>(path, monitor)),
         _receiver(nullptr), _path(path), _index(index) {
     _init();
 }
@@ -133,7 +133,7 @@ void Device::_init() {
             auto rsp = sendReport(
                     {ReportType::Short, _index,
                      hidpp20::FeatureID::ROOT, hidpp20::Root::Ping,
-                     LOGID_HIDPP_SOFTWARE_ID});
+                     hidpp::softwareID});
             if (rsp.deviceIndex() != _index) {
                 throw InvalidDevice(InvalidDevice::VirtualNode);
             }
@@ -152,12 +152,9 @@ void Device::_init() {
 
                     [index = this->_index](
                             const std::vector<uint8_t>& report) -> bool {
-                        return (report[Offset::Type] ==
-                                Report::Type::Short ||
-                                report[Offset::Type] ==
-                                Report::Type::Long) &&
-                               (report[Offset::DeviceIndex] ==
-                                index);
+                        return (report[Offset::Type] == Report::Type::Short ||
+                                report[Offset::Type] == Report::Type::Long) &&
+                               (report[Offset::DeviceIndex] == index);
                     },
                     [this](const std::vector<uint8_t>& report) -> void {
                         Report _report(report);
@@ -212,13 +209,13 @@ Device::~Device() {
 }
 
 Device::EvHandlerId Device::addEventHandler(EventHandler handler) {
-    std::lock_guard<std::mutex> lock(_event_handler_lock);
+    std::unique_lock lock(_event_handler_mutex);
     _event_handlers.emplace_front(std::move(handler));
     return _event_handlers.cbegin();
 }
 
 void Device::removeEventHandler(EvHandlerId id) {
-    std::lock_guard<std::mutex> lock(_event_handler_lock);
+    std::unique_lock lock(_event_handler_mutex);
     _event_handlers.erase(id);
 }
 
@@ -226,64 +223,80 @@ void Device::handleEvent(Report& report) {
     if (responseReport(report))
         return;
 
-    std::lock_guard<std::mutex> lock(_event_handler_lock);
+    std::shared_lock lock(_event_handler_mutex);
     for (auto& handler: _event_handlers)
         if (handler.condition(report))
             handler.callback(report);
 }
 
 Report Device::sendReport(const Report& report) {
-    std::lock_guard<std::mutex> lock(_send_lock);
-    {
-        std::lock_guard<std::mutex> sl(_slot_lock);
-        _report_slot = {};
-    }
-    sendReportNoResponse(report);
-    std::unique_lock<std::mutex> wait(_resp_wait_lock);
-    bool valid = _resp_cv.wait_for(
-            wait, io_timeout, [this]() {
-                std::lock_guard<std::mutex> sl(_slot_lock);
-                return _report_slot.has_value();
+    /* Must complete transaction before next send */
+    std::lock_guard send_lock(_send_mutex);
+    _sent_sub_id = report.subId();
+    std::unique_lock lock(_response_mutex);
+    _sendReport(report);
+
+    bool valid = _response_cv.wait_for(
+            lock, io_timeout, [this]() {
+                return _response.has_value();
             });
 
-    if (!valid)
+    if (!valid) {
+        _sent_sub_id.reset();
         throw TimeoutError();
-
-    std::lock_guard<std::mutex> sl(_slot_lock);
-
-    {
-        Report::Hidpp10Error error{};
-        if (_report_slot.value().isError10(&error))
-            throw hidpp10::Error(error.error_code);
     }
-    {
-        Report::Hidpp20Error error{};
-        if (_report_slot.value().isError20(&error))
-            throw hidpp20::Error(error.error_code);
+
+    Response response = _response.value();
+    _response.reset();
+    _sent_sub_id.reset();
+
+    if (std::holds_alternative<Report>(response)) {
+        return std::get<Report>(response);
+    } else if(std::holds_alternative<Report::Hidpp10Error>(response)) {
+        throw hidpp20::Error(std::get<Report::Hidpp10Error>(response).error_code);
+    } else if(std::holds_alternative<Report::Hidpp20Error>(response)) {
+        throw hidpp20::Error(std::get<Report::Hidpp20Error>(response).error_code);
     }
-    return _report_slot.value();
+
+    // Should not be reached
+    throw std::runtime_error("unhandled variant type");
 }
 
 bool Device::responseReport(const Report& report) {
-    if (_send_lock.try_lock()) {
-        _send_lock.unlock();
+    std::lock_guard lock(_response_mutex);
+    Response response = report;
+    uint8_t sub_id;
+
+    Report::Hidpp10Error hidpp10_error{};
+    Report::Hidpp20Error hidpp20_error{};
+    if (report.isError10(&hidpp10_error)) {
+        sub_id = hidpp10_error.sub_id;
+        response = hidpp10_error;
+    } else if (report.isError20(&hidpp20_error)) {
+        sub_id = hidpp20_error.feature_index;
+        response = hidpp20_error;
+    } else {
+        sub_id = report.subId();
+    }
+
+    if (sub_id == _sent_sub_id) {
+        _response = response;
+        _response_cv.notify_all();
+        return true;
+    } else {
         return false;
     }
 
-    // Basic check to see if the report is a response
-    if ((report.swId() != LOGID_HIDPP_SOFTWARE_ID)
-        && report.subId() < 0x80)
-        return false;
-
-    std::lock_guard lock(_slot_lock);
-    _report_slot = report;
-    _resp_cv.notify_all();
-    return true;
 }
 
-void Device::sendReportNoResponse(Report report) {
+void Device::_sendReport(Report report) {
     reportFixup(report);
     _raw_device->sendReport(report.rawReport());
+}
+
+void Device::sendReportNoACK(const Report& report) {
+    std::lock_guard lock(_send_mutex);
+    _sendReport(report);
 }
 
 void Device::reportFixup(Report& report) const {

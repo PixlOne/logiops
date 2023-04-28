@@ -26,9 +26,8 @@ using namespace logid::backend;
 using namespace logid::backend::hidpp20;
 
 Device::Device(const std::string& path, hidpp::DeviceIndex index,
-               std::shared_ptr<raw::DeviceMonitor> monitor, double timeout) :
-        hidpp::Device(path, index,
-                      std::move(monitor), timeout) {
+               const std::shared_ptr<raw::DeviceMonitor>& monitor, double timeout) :
+        hidpp::Device(path, index, monitor, timeout) {
     // TODO: Fix version check
     if (std::get<0>(version()) < 2)
         throw std::runtime_error("Invalid HID++ version");
@@ -68,7 +67,7 @@ std::vector<uint8_t> Device::callFunction(uint8_t feature_index,
         throw hidpp::Report::InvalidReportID();
 
     hidpp::Report request(type, deviceIndex(), feature_index, function,
-                          LOGID_HIDPP_SOFTWARE_ID);
+                          hidpp::softwareID);
     std::copy(params.begin(), params.end(), request.paramBegin());
 
     auto response = this->sendReport(request);
@@ -87,101 +86,85 @@ void Device::callFunctionNoResponse(uint8_t feature_index, uint8_t function,
     else
         throw hidpp::Report::InvalidReportID();
 
-    hidpp::Report request(type, deviceIndex(), feature_index, function,
-                          LOGID_HIDPP_SOFTWARE_ID);
+    hidpp::Report request(type, deviceIndex(), feature_index, function, hidpp::softwareID);
     std::copy(params.begin(), params.end(), request.paramBegin());
 
-    this->sendReportNoResponse(request);
+    this->sendReportNoACK(request);
 }
 
 hidpp::Report Device::sendReport(const hidpp::Report& report) {
-    decltype(_responses)::iterator response_slot;
+    auto& response_slot = _responses[report.feature() % _responses.size()];
 
-    while (true) {
-        {
-            std::lock_guard lock(_response_lock);
-            if (_responses.empty()) {
-                response_slot = _responses.emplace(
-                        2, std::optional<Response>()).first;
-                break;
-            } else if (_responses.size() < response_slots) {
-                uint8_t i = 0;
-                for (auto& x: _responses) {
-                    if (x.first != i + 1) {
-                        ++i;
-                        break;
-                    }
-                    i = x.first;
-                }
-                assert(_responses.count(i) == 0);
+    std::unique_lock<std::mutex> response_lock(_response_mutex);
+    _response_cv.wait(response_lock, [&response_slot]() {
+        return !response_slot.feature.has_value();
+    });
 
-                response_slot = _responses.emplace(
-                        i, std::optional<Response>()).first;
-                break;
-            }
-        }
+    response_slot.feature = report.feature();
 
-        std::unique_lock<std::mutex> lock(_response_wait_lock);
-        _response_cv.wait(lock, [this, sub_id = report.subId()]() {
-            std::lock_guard<std::mutex> lock(_response_lock);
-            return _responses.size() < response_slots;
-        });
-    }
+    _sendReport(report);
 
-    {
-        std::lock_guard<std::mutex> lock(_response_lock);
-        hidpp::Report mod_report{report};
-        mod_report.setSwId(response_slot->first);
-        sendReportNoResponse(std::move(mod_report));
-    }
-
-    std::unique_lock<std::mutex> wait(_response_wait_lock);
-    bool valid = _response_cv.wait_for(wait, io_timeout,
-                                       [this, &response_slot]() {
-                                           std::lock_guard<std::mutex> lock(_response_lock);
-                                           return response_slot->second.has_value();
-                                       });
+    bool valid = _response_cv.wait_for(
+            response_lock, io_timeout,
+            [&response_slot]() {
+                return response_slot.response.has_value();
+            });
 
     if (!valid) {
-        std::lock_guard<std::mutex> lock(_response_lock);
-        _responses.erase(response_slot);
+        response_slot.reset();
         throw TimeoutError();
     }
 
-    std::lock_guard<std::mutex> lock(_response_lock);
-    assert(response_slot->second.has_value());
-    auto response = response_slot->second.value();
-    _responses.erase(response_slot);
+    assert(response_slot.response.has_value());
+    auto response = response_slot.response.value();
+    response_slot.reset();
+
     if (std::holds_alternative<hidpp::Report>(response))
         return std::get<hidpp::Report>(response);
     else // if(std::holds_alternative<Error::ErrorCode>(response))
         throw Error(std::get<Error::ErrorCode>(response));
 }
 
+void Device::sendReportNoACK(const hidpp::Report& report) {
+    hidpp::Report no_ack_report(report);
+    no_ack_report.setSwId(hidpp::noAckSoftwareID);
+    _sendReport(std::move(no_ack_report));
+}
+
 bool Device::responseReport(const hidpp::Report& report) {
-    std::lock_guard<std::mutex> lock(_response_lock);
-    uint8_t sw_id;
+    auto& response_slot = _responses[report.feature() % _responses.size()];
+    std::lock_guard<std::mutex> lock(_response_mutex);
+    uint8_t sw_id, feature;
 
     bool is_error = false;
     hidpp::Report::Hidpp20Error hidpp20_error{};
     if (report.isError20(&hidpp20_error)) {
         is_error = true;
         sw_id = hidpp20_error.software_id;
+        feature = hidpp20_error.feature_index;
     } else {
         sw_id = report.swId();
+        feature = report.feature();
     }
 
-    auto response_slot = _responses.find(sw_id);
-    if (response_slot == _responses.end())
+    if (sw_id != hidpp::softwareID)
         return false;
 
+    if (!response_slot.feature || response_slot.feature.value() != feature) {
+        return false;
+    }
+
     if (is_error) {
-        response_slot->second = static_cast<Error::ErrorCode>(
-                hidpp20_error.error_code);
+        response_slot.response = static_cast<Error::ErrorCode>(hidpp20_error.error_code);
     } else {
-        response_slot->second = report;
+        response_slot.response = report;
     }
 
     _response_cv.notify_all();
     return true;
+}
+
+void Device::ResponseSlot::reset() {
+    response.reset();
+    feature.reset();
 }

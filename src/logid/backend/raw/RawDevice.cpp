@@ -155,13 +155,13 @@ void RawDevice::sendReport(const std::vector<uint8_t>& report) {
 }
 
 RawDevice::EvHandlerId RawDevice::addEventHandler(RawEventHandler handler) {
-    std::lock_guard<std::mutex> lock(_event_handler_lock);
+    std::unique_lock<std::shared_mutex> lock(_event_handler_mutex);
     _event_handlers.emplace_front(std::move(handler));
     return _event_handlers.cbegin();
 }
 
 void RawDevice::removeEventHandler(RawDevice::EvHandlerId id) {
-    std::lock_guard<std::mutex> lock(_event_handler_lock);
+    std::unique_lock<std::shared_mutex> lock(_event_handler_mutex);
     _event_handlers.erase(id);
 }
 
@@ -185,7 +185,7 @@ void RawDevice::_readReports() {
 }
 
 void RawDevice::_handleEvent(const std::vector<uint8_t>& report) {
-    std::unique_lock<std::mutex> lock(_event_handler_lock);
+    std::shared_lock<std::shared_mutex> lock(_event_handler_mutex);
     for (auto& handler: _event_handlers)
         if (handler.condition(report))
             handler.callback(report);

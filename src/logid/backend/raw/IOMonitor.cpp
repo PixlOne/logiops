@@ -86,8 +86,8 @@ void IOMonitor::_listen() {
     _is_running = true;
 
     while (_is_running) {
-        {
-            std::unique_lock<std::mutex> lock(_interrupt_lock);
+        if (_interrupting) {
+            std::unique_lock<std::mutex> lock(_interrupt_mutex);
             _interrupt_cv.wait(lock, [this]() {
                 return !(bool) _interrupting;
             });

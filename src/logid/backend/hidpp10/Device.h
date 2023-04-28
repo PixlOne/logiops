@@ -24,12 +24,13 @@
 
 #include "../hidpp/Device.h"
 #include "Error.h"
+#include "defs.h"
 
 namespace logid::backend::hidpp10 {
     class Device : public hidpp::Device {
     public:
         Device(const std::string& path, hidpp::DeviceIndex index,
-               std::shared_ptr<raw::DeviceMonitor> monitor, double timeout);
+               const std::shared_ptr<raw::DeviceMonitor>& monitor, double timeout);
 
         Device(std::shared_ptr<raw::RawDevice> raw_dev,
                hidpp::DeviceIndex index, double timeout);
@@ -51,15 +52,16 @@ namespace logid::backend::hidpp10 {
         bool responseReport(const hidpp::Report& report) final;
 
     private:
-        std::mutex _response_lock;
-        std::mutex _response_wait_lock;
-        std::condition_variable _response_cv;
-
         typedef std::variant<hidpp::Report, Error::ErrorCode> Response;
-        std::map<uint8_t, std::optional<Response>> _responses;
+        struct ResponseSlot {
+            std::optional<Response> response;
+            std::optional<uint8_t> sub_id;
+            void reset();
+        };
+        std::array<ResponseSlot, SubIDCount> _responses;
 
-        std::vector<uint8_t> accessRegister(uint8_t sub_id,
-                                            uint8_t address, const std::vector<uint8_t>& params);
+        std::vector<uint8_t> accessRegister(
+                uint8_t sub_id, uint8_t address, const std::vector<uint8_t>& params);
     };
 }
 

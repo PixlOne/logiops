@@ -21,8 +21,7 @@
 
 #include <string>
 #include <vector>
-#include <mutex>
-#include <map>
+#include <shared_mutex>
 #include <atomic>
 #include <future>
 #include <set>
@@ -85,7 +84,7 @@ namespace logid::backend::raw {
         std::shared_ptr<IOMonitor> _io_monitor;
 
         std::list<RawEventHandler> _event_handlers;
-        std::mutex _event_handler_lock;
+        std::shared_mutex _event_handler_mutex;
 
         void _handleEvent(const std::vector<uint8_t>& report);
     };

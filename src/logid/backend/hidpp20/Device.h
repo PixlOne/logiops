@@ -30,7 +30,7 @@ namespace logid::backend::hidpp20 {
     class Device : public hidpp::Device {
     public:
         Device(const std::string& path, hidpp::DeviceIndex index,
-               std::shared_ptr<raw::DeviceMonitor> monitor, double timeout);
+               const std::shared_ptr<raw::DeviceMonitor>& monitor, double timeout);
 
         Device(std::shared_ptr<raw::RawDevice> raw_device,
                hidpp::DeviceIndex index, double timeout);
@@ -51,17 +51,21 @@ namespace logid::backend::hidpp20 {
 
         hidpp::Report sendReport(const hidpp::Report& report) final;
 
+        void sendReportNoACK(const hidpp::Report& report) final;
+
     protected:
         bool responseReport(const hidpp::Report& report) final;
 
     private:
-        std::mutex _response_lock;
-        std::mutex _response_wait_lock;
-        std::condition_variable _response_cv;
-
-        static constexpr int response_slots = 14;
         typedef std::variant<hidpp::Report, Error::ErrorCode> Response;
-        std::map<uint8_t, std::optional<Response>> _responses;
+        struct ResponseSlot {
+            std::optional<Response> response;
+            std::optional<uint8_t> feature;
+            void reset();
+        };
+
+        /* Multiplex responses on lower nibble of SubID, ignore upper nibble for space */
+        std::array<ResponseSlot, 16> _responses;
     };
 }
 

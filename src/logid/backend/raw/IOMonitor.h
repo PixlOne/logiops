@@ -64,7 +64,7 @@ namespace logid::backend::raw {
         std::atomic_bool _is_running;
 
         std::atomic_bool _interrupting;
-        std::mutex _interrupt_lock;
+        std::mutex _interrupt_mutex;
         std::condition_variable _interrupt_cv;
 
         const int _epoll_fd;

@@ -24,8 +24,10 @@ namespace logid::backend::hidpp10 {
         SetRegisterShort = 0x80,
         GetRegisterShort = 0x81,
         SetRegisterLong = 0x82,
-        GetRegisterLong = 0x83
+        GetRegisterLong = 0x83,
     };
+
+    static constexpr size_t SubIDCount = 4;
 }
 
 #endif //LOGID_BACKEND_HIDPP10_DEFS_H

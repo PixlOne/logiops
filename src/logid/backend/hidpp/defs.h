@@ -19,8 +19,6 @@
 #ifndef LOGID_BACKEND_HIDPP_DEFS_H
 #define LOGID_BACKEND_HIDPP_DEFS_H
 
-#define LOGID_HIDPP_SOFTWARE_ID 2
-
 #include <cstdint>
 
 namespace logid::backend::hidpp {
@@ -41,6 +39,10 @@ namespace logid::backend::hidpp {
         WirelessDevice5 [[maybe_unused]] = 5,
         WirelessDevice6 = 6,
     };
+
+    static constexpr uint8_t softwareID = 2;
+    /* For sending reports with no response, use a different SW ID */
+    static constexpr uint8_t noAckSoftwareID = 1;
 
     static constexpr std::size_t ShortParamLength = 3;
     static constexpr std::size_t LongParamLength = 16;

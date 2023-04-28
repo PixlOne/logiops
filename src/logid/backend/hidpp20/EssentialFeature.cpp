@@ -36,8 +36,7 @@ std::vector<uint8_t> EssentialFeature::callFunction(uint8_t function_id,
     else
         throw hidpp::Report::InvalidReportID();
 
-    hidpp::Report request(type, _device->deviceIndex(), _index, function_id,
-                          LOGID_HIDPP_SOFTWARE_ID);
+    hidpp::Report request(type, _device->deviceIndex(), _index, function_id, hidpp::softwareID);
     std::copy(params.begin(), params.end(), request.paramBegin());
 
     auto response = _device->sendReport(request);

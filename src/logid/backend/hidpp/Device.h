@@ -20,6 +20,7 @@
 #define LOGID_BACKEND_HIDPP_DEVICE_H
 
 #include <optional>
+#include <variant>
 #include <string>
 #include <memory>
 #include <functional>
@@ -64,7 +65,7 @@ namespace logid::backend::hidpp {
         };
 
         Device(const std::string& path, DeviceIndex index,
-               std::shared_ptr<raw::DeviceMonitor> monitor, double timeout);
+               const std::shared_ptr<raw::DeviceMonitor>& monitor, double timeout);
 
         Device(std::shared_ptr<raw::RawDevice> raw_device, DeviceIndex index,
                double timeout);
@@ -93,7 +94,7 @@ namespace logid::backend::hidpp {
 
         virtual Report sendReport(const Report& report);
 
-        void sendReportNoResponse(Report report);
+        virtual void sendReportNoACK(const Report& report);
 
         void handleEvent(Report& report);
 
@@ -101,10 +102,15 @@ namespace logid::backend::hidpp {
         // Returns whether the report is a response
         virtual bool responseReport(const Report& report);
 
+        void _sendReport(Report report);
+
         void reportFixup(Report& report) const;
 
         const std::chrono::milliseconds io_timeout;
-        uint8_t supported_reports;
+        uint8_t supported_reports{};
+
+        std::mutex _response_mutex;
+        std::condition_variable _response_cv;
     private:
         void _init();
 
@@ -115,16 +121,17 @@ namespace logid::backend::hidpp {
         DeviceIndex _index;
 
         std::tuple<uint8_t, uint8_t> _version;
-        uint16_t _pid;
+        uint16_t _pid{};
         std::string _name;
 
-        std::mutex _send_lock;
-        std::mutex _resp_wait_lock;
-        std::condition_variable _resp_cv;
-        std::mutex _slot_lock;
-        std::optional<Report> _report_slot;
+        std::mutex _send_mutex;
 
-        std::mutex _event_handler_lock;
+        typedef std::variant<Report, Report::Hidpp10Error, Report::Hidpp20Error> Response;
+
+        std::optional<Response> _response;
+        std::optional<uint8_t> _sent_sub_id{};
+
+        std::shared_mutex _event_handler_mutex;
         std::list<EventHandler> _event_handlers;
     };
 }

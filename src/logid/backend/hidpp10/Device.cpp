@@ -25,15 +25,13 @@
 using namespace logid::backend;
 using namespace logid::backend::hidpp10;
 
-Device::Device(const std::string& path,
-               hidpp::DeviceIndex index,
-               std::shared_ptr<raw::DeviceMonitor> monitor, double timeout) :
-        hidpp::Device(path, index, std::move(monitor), timeout) {
+Device::Device(const std::string& path, hidpp::DeviceIndex index,
+               const std::shared_ptr<raw::DeviceMonitor>& monitor, double timeout) :
+        hidpp::Device(path, index, monitor, timeout) {
     assert(version() == std::make_tuple(1, 0));
 }
 
-Device::Device(std::shared_ptr<raw::RawDevice> raw_dev,
-               hidpp::DeviceIndex index,
+Device::Device(std::shared_ptr<raw::RawDevice> raw_dev, hidpp::DeviceIndex index,
                double timeout) : hidpp::Device(std::move(raw_dev), index, timeout) {
     assert(version() == std::make_tuple(1, 0));
 }
@@ -45,44 +43,34 @@ Device::Device(const std::shared_ptr<dj::Receiver>& receiver,
     assert(version() == std::make_tuple(1, 0));
 }
 
-hidpp::Report Device::sendReport(const hidpp::Report& report) {
-    decltype(_responses)::iterator response_slot;
-    while (true) {
-        {
-            std::lock_guard<std::mutex> lock(_response_lock);
-            response_slot = _responses.find(report.subId());
-            if (response_slot == _responses.end()) {
-                response_slot = _responses.emplace(
-                        report.subId(), std::optional<Response>()).first;
-                break;
-            }
-        }
-        std::unique_lock<std::mutex> lock(_response_wait_lock);
-        _response_cv.wait(lock, [this, sub_id = report.subId()]() {
-            std::lock_guard<std::mutex> lock(_response_lock);
-            return _responses.find(sub_id) != _responses.end();
-        });
-    }
+void Device::ResponseSlot::reset() {
+    response.reset();
+    sub_id.reset();
+}
 
-    sendReportNoResponse(report);
-    std::unique_lock<std::mutex> wait(_response_wait_lock);
+hidpp::Report Device::sendReport(const hidpp::Report& report) {
+    auto& response_slot = _responses[report.subId() % SubIDCount];
+
+    std::unique_lock<std::mutex> lock(_response_mutex);
+    _response_cv.wait(lock, [&response_slot]() {
+        return !response_slot.sub_id.has_value();
+    });
+    response_slot.sub_id = report.subId();
+
+    _sendReport(report);
     bool valid = _response_cv.wait_for(
-            wait, io_timeout,
-            [this, &response_slot]() {
-                std::lock_guard<std::mutex> lock(_response_lock);
-                return response_slot->second.has_value();
+            lock, io_timeout,
+            [&response_slot]() {
+                return response_slot.response.has_value();
             });
 
     if (!valid) {
-        std::lock_guard<std::mutex> lock(_response_lock);
-        _responses.erase(response_slot);
+        response_slot.reset();
         throw TimeoutError();
     }
 
-    std::lock_guard<std::mutex> lock(_response_lock);
-    assert(response_slot->second.has_value());
-    auto response = response_slot->second.value();
-    _responses.erase(response_slot);
+    auto response = response_slot.response.value();
+    response_slot.reset();
     if (std::holds_alternative<hidpp::Report>(response))
         return std::get<hidpp::Report>(response);
     else // if(std::holds_alternative<Error::ErrorCode>(response))
@@ -90,7 +78,7 @@ hidpp::Report Device::sendReport(const hidpp::Report& report) {
 }
 
 bool Device::responseReport(const hidpp::Report& report) {
-    std::lock_guard<std::mutex> lock(_response_lock);
+    std::lock_guard<std::mutex> lock(_response_mutex);
     uint8_t sub_id;
 
     bool is_error = false;
@@ -102,15 +90,15 @@ bool Device::responseReport(const hidpp::Report& report) {
         sub_id = report.subId();
     }
 
-    auto response_slot = _responses.find(sub_id);
-    if (response_slot == _responses.end())
+    auto& response_slot = _responses[sub_id % SubIDCount];
+
+    if (!response_slot.sub_id.has_value() || response_slot.sub_id.value() != sub_id)
         return false;
 
     if (is_error) {
-        response_slot->second = static_cast<Error::ErrorCode>(
-                hidpp10_error.error_code);
+        response_slot.response = static_cast<Error::ErrorCode>(hidpp10_error.error_code);
     } else {
-        response_slot->second = report;
+        response_slot.response = report;
     }
 
     _response_cv.notify_all();
