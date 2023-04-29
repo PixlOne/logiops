@@ -21,18 +21,18 @@
 #include <util/log.h>
 #include <algorithm>
 
-#define LOGID_VIRTUAL_INPUT_NAME "LogiOps Virtual Input"
-#define DEFAULT_CONFIG_FILE "/etc/logid.cfg"
-
 #ifndef LOGIOPS_VERSION
 #define LOGIOPS_VERSION "null"
 #warning Version is undefined!
 #endif
 
+static constexpr auto virtual_input_name = "LogiOps Virtual Input";
+static constexpr auto default_config = "/etc/logid.cfg";
+
 using namespace logid;
 
 struct CmdlineOptions {
-    std::string config_file = DEFAULT_CONFIG_FILE;
+    std::string config_file = default_config;
 };
 
 LogLevel logid::global_loglevel = INFO;
@@ -115,7 +115,7 @@ Possible options are:
     -V,--version               Print version number
     -c,--config [file path]    Change config file from default at %s
     -h,--help                  Print this message.
-)", LOGIOPS_VERSION, argv[0], DEFAULT_CONFIG_FILE);
+)", LOGIOPS_VERSION, argv[0], default_config);
                     exit(EXIT_SUCCESS);
                 case Option::Version:
                     printf("%s\n", LOGIOPS_VERSION);
@@ -147,7 +147,7 @@ int main(int argc, char** argv) {
 
     //Create a virtual input device
     try {
-        virtual_input = std::make_unique<InputDevice>(LOGID_VIRTUAL_INPUT_NAME);
+        virtual_input = std::make_unique<InputDevice>(virtual_input_name);
     } catch (std::system_error& e) {
         logPrintf(ERROR, "Could not create input device: %s", e.what());
         return EXIT_FAILURE;

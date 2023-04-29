@@ -25,8 +25,7 @@ using namespace logid::features;
 using namespace logid::backend;
 using namespace logid;
 
-#define FLAG_STR(b) (_wheel_info.capabilities & _thumb_wheel->b ? "YES" : \
-    "NO")
+#define FLAG_STR(b) (_wheel_info.capabilities & _thumb_wheel->b ? "YES" : "NO")
 
 namespace {
     std::shared_ptr<actions::Action> _genAction(

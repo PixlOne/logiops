@@ -23,13 +23,13 @@
 #include <backend/hidpp/defs.h>
 #include <cstdint>
 
-/* Some devices only support a subset of these reports */
-#define HIDPP_REPORT_SHORT_SUPPORTED      1U
-#define HIDPP_REPORT_LONG_SUPPORTED       1U<<1U
-/* Very long reports exist, however they have not been encountered so far */
-
 namespace logid::backend::hidpp {
     uint8_t getSupportedReports(const std::vector<uint8_t>& report_desc);
+
+    /* Some devices only support a subset of these reports */
+    static constexpr uint8_t ShortReportSupported = 1U;
+    static constexpr uint8_t LongReportSupported = (1U<<1);
+    /* Very long reports exist, however they have not been encountered so far */
 
     namespace Offset {
         static constexpr uint8_t Type = 0;

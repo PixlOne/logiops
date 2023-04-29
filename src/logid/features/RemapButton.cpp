@@ -25,8 +25,13 @@ using namespace logid::features;
 using namespace logid::backend;
 using namespace logid::actions;
 
-#define HIDPP20_REPROG_REBIND (hidpp20::ReprogControls::ChangeTemporaryDivert \
-| hidpp20::ReprogControls::ChangeRawXYDivert)
+#define REPROG_FLAG(x) (control.second.flags & hidpp20::ReprogControls::x ? "YES" : "")
+#define REPROG_FLAG_ADDITIONAL(x) (control.second.additionalFlags & \
+    hidpp20::ReprogControls::x ? "YES" : "")
+
+static constexpr auto hidpp20_reprog_rebind =
+        (hidpp20::ReprogControls::ChangeTemporaryDivert |
+        hidpp20::ReprogControls::ChangeRawXYDivert);
 
 RemapButton::RemapButton(Device* dev) : DeviceFeature(dev),
                                         _config(dev->activeProfile().buttons),
@@ -49,7 +54,7 @@ RemapButton::RemapButton(Device* dev) : DeviceFeature(dev),
                 const std::shared_ptr<actions::Action>& action) {
             hidpp20::ReprogControls::ControlInfo report{};
             report.controlID = info.controlID;
-            report.flags = HIDPP20_REPROG_REBIND;
+            report.flags = hidpp20_reprog_rebind;
 
             if (action) {
                 if ((action->reprogFlags() &
@@ -72,11 +77,6 @@ RemapButton::RemapButton(Device* dev) : DeviceFeature(dev),
     _ipc_interface = _device->ipcNode()->make_interface<IPC>(this);
 
     if (global_loglevel <= DEBUG) {
-#define FLAG(x) (control.second.flags & hidpp20::ReprogControls::x ? \
-            "YES" : "")
-#define ADDITIONAL_FLAG(x) (control.second.additionalFlags & \
-            hidpp20::ReprogControls::x ? "YES" : "")
-
         // Print CIDs, originally by zv0n
         logPrintf(DEBUG, "%s:%d remappable buttons:",
                   dev->hidpp20().devicePath().c_str(),
@@ -85,10 +85,8 @@ RemapButton::RemapButton(Device* dev) : DeviceFeature(dev),
                          "gesture support?");
         for (const auto& control: _reprog_controls->getControls())
             logPrintf(DEBUG, "0x%02x | %-7s | %-7s | %-10s | %s",
-                      control.first, FLAG(TemporaryDivertable), FLAG(FKey),
-                      FLAG(MouseButton), ADDITIONAL_FLAG(RawXY));
-#undef ADDITIONAL_FLAG
-#undef FLAG
+                      control.first, REPROG_FLAG(TemporaryDivertable), REPROG_FLAG(FKey),
+                      REPROG_FLAG(MouseButton), REPROG_FLAG_ADDITIONAL(RawXY));
     }
 }
 

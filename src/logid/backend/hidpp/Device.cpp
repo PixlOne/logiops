@@ -302,12 +302,12 @@ void Device::sendReportNoACK(const Report& report) {
 void Device::reportFixup(Report& report) const {
     switch (report.type()) {
         case Report::Type::Short:
-            if (!(supported_reports & HIDPP_REPORT_SHORT_SUPPORTED))
+            if (!(supported_reports & ShortReportSupported))
                 report.setType(Report::Type::Long);
             break;
         case Report::Type::Long:
             /* Report can be truncated, but that isn't a good idea. */
-            assert(supported_reports & HIDPP_REPORT_LONG_SUPPORTED);
+            assert(supported_reports & LongReportSupported);
     }
 }
 

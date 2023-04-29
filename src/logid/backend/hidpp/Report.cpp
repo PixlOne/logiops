@@ -93,7 +93,7 @@ uint8_t hidpp::getSupportedReports(const std::vector<uint8_t>& report_desc) {
         it = std::search(report_desc.begin(), report_desc.end(),
                          ShortReportDesc2.begin(), ShortReportDesc2.end());
     if (it != report_desc.end())
-        ret |= HIDPP_REPORT_SHORT_SUPPORTED;
+        ret |= ShortReportSupported;
 
     it = std::search(report_desc.begin(), report_desc.end(),
                      LongReportDesc.begin(), LongReportDesc.end());
@@ -101,7 +101,7 @@ uint8_t hidpp::getSupportedReports(const std::vector<uint8_t>& report_desc) {
         it = std::search(report_desc.begin(), report_desc.end(),
                          LongReportDesc2.begin(), LongReportDesc2.end());
     if (it != report_desc.end())
-        ret |= HIDPP_REPORT_LONG_SUPPORTED;
+        ret |= LongReportSupported;
 
     return ret;
 }
