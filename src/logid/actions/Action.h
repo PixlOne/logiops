@@ -24,6 +24,7 @@
 #include <utility>
 #include <ipcgull/node.h>
 #include <ipcgull/interface.h>
+#include <shared_mutex>
 #include "../config/schema.h"
 
 namespace logid {
@@ -88,6 +89,7 @@ namespace logid::actions {
 
         Device* _device;
         std::atomic<bool> _pressed;
+        mutable std::shared_mutex _config_mutex;
     };
 }
 

@@ -49,19 +49,22 @@ CycleDPI::CycleDPI(Device* device, config::CycleDPI& config,
 }
 
 std::vector<int> CycleDPI::getDPIs() const {
+    std::shared_lock lock(_config_mutex);
     auto dpis = _config.dpis.value_or(std::list<int>());
     return {dpis.begin(), dpis.end()};
 }
 
 void CycleDPI::setDPIs(const std::vector<int>& dpis) {
-    std::lock_guard<std::mutex> lock(_dpi_lock);
+    std::unique_lock lock(_config_mutex);
+    std::lock_guard dpi_lock(_dpi_mutex);
     _config.dpis.emplace(dpis.begin(), dpis.end());
     _current_dpi = _config.dpis->cbegin();
 }
 
 void CycleDPI::press() {
     _pressed = true;
-    std::lock_guard<std::mutex> lock(_dpi_lock);
+    std::shared_lock lock(_config_mutex);
+    std::lock_guard dpi_lock(_dpi_mutex);
     if (_dpi && _config.dpis.has_value() && _config.dpis.value().empty()) {
         ++_current_dpi;
         if (_current_dpi == _config.dpis.value().end())

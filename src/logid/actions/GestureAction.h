@@ -61,7 +61,6 @@ namespace logid::actions {
         std::shared_ptr<ipcgull::node> _node;
         std::map<Direction, std::shared_ptr<Gesture>> _gestures;
         config::GestureAction& _config;
-        mutable std::mutex _config_lock;
     };
 }
 

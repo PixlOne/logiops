@@ -26,7 +26,16 @@ const char* AxisGesture::interface_name = "Axis";
 
 AxisGesture::AxisGesture(Device* device, config::AxisGesture& config,
                          const std::shared_ptr<ipcgull::node>& parent) :
-        Gesture(device, parent, interface_name), _multiplier(1), _config(config) {
+        Gesture(device, parent, interface_name, {
+            {
+                    {"GetConfig", {this, &AxisGesture::getConfig, {"axis", "multiplier", "threshold"}}},
+                    {"SetThreshold", {this, &AxisGesture::setThreshold, {"threshold"}}},
+                    {"SetMultiplier", {this, &AxisGesture::setMultiplier, {"multiplier"}}},
+                    {"SetAxis", {this, &AxisGesture::setAxis, {"axis"}}}
+            },
+            {},
+            {}
+        }), _multiplier(1), _config(config) {
     if (_config.axis.has_value()) {
         if (std::holds_alternative<uint>(_config.axis.value())) {
             _input_axis = std::get<uint>(_config.axis.value());
@@ -34,7 +43,6 @@ AxisGesture::AxisGesture(Device* device, config::AxisGesture& config,
             const auto& axis = std::get<std::string>(_config.axis.value());
             try {
                 _input_axis = _device->virtualInput()->toAxisCode(axis);
-                _device->virtualInput()->registerAxis(_input_axis.value());
             } catch (InputDevice::InvalidEventCode& e) {
                 logPrintf(WARN, "Invalid axis %s.");
             }
@@ -47,6 +55,7 @@ AxisGesture::AxisGesture(Device* device, config::AxisGesture& config,
 }
 
 void AxisGesture::press(bool init_threshold) {
+    std::shared_lock lock(_config_mutex);
     if (init_threshold) {
         _axis = (int32_t) (_config.threshold.value_or(defaults::gesture_threshold));
     } else {
@@ -62,6 +71,7 @@ void AxisGesture::release(bool primary) {
 }
 
 void AxisGesture::move(int16_t axis) {
+    std::shared_lock lock(_config_mutex);
     if (!_input_axis.has_value())
         return;
 
@@ -115,6 +125,7 @@ void AxisGesture::move(int16_t axis) {
 }
 
 bool AxisGesture::metThreshold() const {
+    std::shared_lock lock(_config_mutex);
     return _axis >= _config.threshold.value_or(defaults::gesture_threshold);
 }
 
@@ -123,7 +134,51 @@ bool AxisGesture::wheelCompatibility() const {
 }
 
 void AxisGesture::setHiresMultiplier(double multiplier) {
-    if (InputDevice::getLowResAxis(_axis) != -1) {
-        _multiplier = multiplier;
+    _hires_multiplier = multiplier;
+    if (_input_axis.has_value()) {
+        if (InputDevice::getLowResAxis(_input_axis.value()) != -1)
+            _multiplier = _config.axis_multiplier.value_or(1) * multiplier;
     }
+}
+
+std::tuple<std::string, double, int> AxisGesture::getConfig() const {
+    std::shared_lock lock(_config_mutex);
+    std::string axis;
+    if (_config.axis.has_value()) {
+        if (std::holds_alternative<std::string>(_config.axis.value())) {
+            axis = std::get<std::string>(_config.axis.value());
+        } else {
+            axis = _device->virtualInput()->toAxisName(std::get<uint>(_config.axis.value()));
+        }
+    }
+
+    return {axis, _config.axis_multiplier.value_or(1), _config.threshold.value_or(0)};
+}
+
+void AxisGesture::setAxis(const std::string& axis) {
+    std::unique_lock lock(_config_mutex);
+    if (axis.empty()) {
+        _config.axis.reset();
+        _input_axis.reset();
+    } else {
+        _input_axis = _device->virtualInput()->toAxisCode(axis);
+        _config.axis = axis;
+        _device->virtualInput()->registerAxis(_input_axis.value());
+    }
+    setHiresMultiplier(_hires_multiplier);
+}
+
+void AxisGesture::setMultiplier(double multiplier) {
+    std::unique_lock lock(_config_mutex);
+    _config.axis_multiplier = multiplier;
+    _multiplier = multiplier;
+    setHiresMultiplier(_hires_multiplier);
+}
+
+void AxisGesture::setThreshold(int threshold) {
+    std::unique_lock lock(_config_mutex);
+    if (threshold == 0)
+        _config.threshold.reset();
+    else
+        _config.threshold = threshold;
 }

@@ -43,38 +43,21 @@ ChangeDPI::ChangeDPI(
                   _device->hidpp20().deviceIndex());
 }
 
-std::tuple<int16_t, uint16_t> ChangeDPI::getConfig() const {
-    return {_config.inc.value_or(0), _config.sensor.value_or(0)};
-}
-
-void ChangeDPI::setChange(int16_t change) {
-    _config.inc = change;
-}
-
-void ChangeDPI::setSensor(uint8_t sensor, bool reset) {
-    if (reset) {
-        _config.sensor.reset();
-    } else {
-        _config.sensor = sensor;
-    }
-}
-
 void ChangeDPI::press() {
     _pressed = true;
+    std::shared_lock lock(_config_mutex);
     if (_dpi && _config.inc.has_value()) {
         spawn_task(
-                [this] {
+                [this, sensor = _config.sensor.value_or(0),
+                 inc = _config.inc.value()] {
                     try {
-                        uint16_t last_dpi = _dpi->getDPI(_config.sensor.value_or(0));
-                        _dpi->setDPI(last_dpi + _config.inc.value(),
-                                     _config.sensor.value_or(0));
+                        uint16_t last_dpi = _dpi->getDPI(sensor);
+                        _dpi->setDPI(last_dpi + inc,sensor);
                     } catch (backend::hidpp20::Error& e) {
                         if (e.code() == backend::hidpp20::Error::InvalidArgument)
-                            logPrintf(WARN, "%s:%d: Could not get/set DPI for sensor "
-                                            "%d",
+                            logPrintf(WARN, "%s:%d: Could not get/set DPI for sensor %d",
                                       _device->hidpp20().devicePath().c_str(),
-                                      _device->hidpp20().deviceIndex(),
-                                      _config.sensor.value_or(0));
+                                      _device->hidpp20().deviceIndex(), sensor);
                         else
                             throw e;
                     }
@@ -88,4 +71,23 @@ void ChangeDPI::release() {
 
 uint8_t ChangeDPI::reprogFlags() const {
     return backend::hidpp20::ReprogControls::TemporaryDiverted;
+}
+
+std::tuple<int16_t, uint16_t> ChangeDPI::getConfig() const {
+    std::shared_lock lock(_config_mutex);
+    return {_config.inc.value_or(0), _config.sensor.value_or(0)};
+}
+
+void ChangeDPI::setChange(int16_t change) {
+    std::unique_lock lock(_config_mutex);
+    _config.inc = change;
+}
+
+void ChangeDPI::setSensor(uint8_t sensor, bool reset) {
+    std::unique_lock lock(_config_mutex);
+    if (reset) {
+        _config.sensor.reset();
+    } else {
+        _config.sensor = sensor;
+    }
 }

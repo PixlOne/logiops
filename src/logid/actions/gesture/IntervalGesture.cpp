@@ -25,7 +25,16 @@ const char* IntervalGesture::interface_name = "OnInterval";
 IntervalGesture::IntervalGesture(
         Device* device, config::IntervalGesture& config,
         const std::shared_ptr<ipcgull::node>& parent) :
-        Gesture(device, parent, interface_name),
+        Gesture(device, parent, interface_name, {
+                {
+                        {"GetConfig", {this, &IntervalGesture::getConfig, {"interval", "threshold"}}},
+                        {"SetInterval", {this, &IntervalGesture::setInterval, {"interval"}}},
+                        {"SetThreshold", {this, &IntervalGesture::setThreshold, {"interval"}}},
+                        {"SetAction", {this, &IntervalGesture::setAction, {"type"}}}
+                },
+                {},
+                {}
+        }),
         _axis(0), _interval_pass_count(0), _config(config) {
     if (config.action) {
         try {
@@ -37,6 +46,7 @@ IntervalGesture::IntervalGesture(
 }
 
 void IntervalGesture::press(bool init_threshold) {
+    std::shared_lock lock(_config_mutex);
     if (init_threshold) {
         _axis = (int32_t) _config.threshold.value_or(defaults::gesture_threshold);
     } else {
@@ -45,12 +55,11 @@ void IntervalGesture::press(bool init_threshold) {
     _interval_pass_count = 0;
 }
 
-void IntervalGesture::release(bool primary) {
-    // Do nothing
-    (void) primary; // Suppress unused warning
+void IntervalGesture::release([[maybe_unused]] bool primary) {
 }
 
 void IntervalGesture::move(int16_t axis) {
+    std::shared_lock lock(_config_mutex);
     if (!_config.interval.has_value())
         return;
 
@@ -75,5 +84,33 @@ bool IntervalGesture::wheelCompatibility() const {
 }
 
 bool IntervalGesture::metThreshold() const {
+    std::shared_lock lock(_config_mutex);
     return _axis >= _config.threshold.value_or(defaults::gesture_threshold);
+}
+
+std::tuple<int, int> IntervalGesture::getConfig() const {
+    std::shared_lock lock(_config_mutex);
+    return {_config.interval.value_or(0), _config.threshold.value_or(0)};
+}
+
+void IntervalGesture::setInterval(int interval) {
+    std::unique_lock lock(_config_mutex);
+    if (interval == 0)
+        _config.interval.reset();
+    else
+        _config.interval = interval;
+}
+
+void IntervalGesture::setThreshold(int threshold) {
+    std::unique_lock lock(_config_mutex);
+    if (threshold == 0)
+        _config.threshold.reset();
+    else
+        _config.threshold = threshold;
+}
+
+void IntervalGesture::setAction(const std::string& type) {
+    std::unique_lock lock(_config_mutex);
+    _action.reset();
+    _action = Action::makeAction(_device, type, _config.action, _node);
 }

@@ -40,14 +40,14 @@ KeypressAction::KeypressAction(
 }
 
 void KeypressAction::press() {
-    std::lock_guard<std::mutex> lock(_config_lock);
+    std::shared_lock lock(_config_mutex);
     _pressed = true;
     for (auto& key: _keys)
         _device->virtualInput()->pressKey(key);
 }
 
 void KeypressAction::release() {
-    std::lock_guard<std::mutex> lock(_config_lock);
+    std::shared_lock lock(_config_mutex);
     _pressed = false;
     for (auto& key: _keys)
         _device->virtualInput()->releaseKey(key);
@@ -103,7 +103,7 @@ uint8_t KeypressAction::reprogFlags() const {
 }
 
 std::vector<std::string> KeypressAction::getKeys() const {
-    std::lock_guard<std::mutex> lock(_config_lock);
+    std::shared_lock lock(_config_mutex);
     std::vector<std::string> ret;
     for (auto& x: _keys)
         ret.push_back(InputDevice::toKeyName(x));
@@ -112,7 +112,7 @@ std::vector<std::string> KeypressAction::getKeys() const {
 }
 
 void KeypressAction::setKeys(const std::vector<std::string>& keys) {
-    std::lock_guard<std::mutex> lock(_config_lock);
+    std::unique_lock lock(_config_mutex);
     if (_pressed)
         for (auto& key: _keys)
             _device->virtualInput()->releaseKey(key);

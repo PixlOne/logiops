@@ -38,25 +38,20 @@ namespace logid::actions {
 
         [[nodiscard]] bool metThreshold() const final;
 
+        [[nodiscard]] std::tuple<int, int> getConfig() const;
+
+        void setInterval(int interval);
+
+        void setThreshold(int threshold);
+
+        void setAction(const std::string& type);
+
     protected:
         int32_t _axis;
         int32_t _interval_pass_count;
         std::shared_ptr<Action> _action;
         config::IntervalGesture& _config;
     private:
-        class IPC : public ipcgull::interface {
-        public:
-            explicit IPC(IntervalGesture* parent);
-
-            void setAction(const std::string& type);
-
-            void setInterval(int interval);
-
-            void setThreshold(int threshold);
-
-        private:
-            IntervalGesture& parent;
-        };
     };
 }
 

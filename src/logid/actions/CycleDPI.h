@@ -41,7 +41,7 @@ namespace logid::actions {
         [[nodiscard]] uint8_t reprogFlags() const final;
 
     protected:
-        std::mutex _dpi_lock;
+        std::mutex _dpi_mutex;
         config::CycleDPI& _config;
         std::shared_ptr<features::DPI> _dpi;
         std::list<int>::const_iterator _current_dpi;

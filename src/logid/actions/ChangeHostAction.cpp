@@ -54,6 +54,7 @@ ChangeHostAction::ChangeHostAction(
 }
 
 std::string ChangeHostAction::getHost() const {
+    std::shared_lock lock(_config_mutex);
     if (_config.host.has_value()) {
         if (std::holds_alternative<std::string>(_config.host.value()))
             return std::get<std::string>(_config.host.value());
@@ -67,6 +68,7 @@ std::string ChangeHostAction::getHost() const {
 void ChangeHostAction::setHost(std::string host) {
     std::transform(host.begin(), host.end(),
                    host.begin(), ::tolower);
+    std::unique_lock lock(_config_mutex);
     if (host == "next" || host == "prev" || host == "previous") {
         _config.host = std::move(host);
     } else {
@@ -79,21 +81,22 @@ void ChangeHostAction::press() {
 }
 
 void ChangeHostAction::release() {
+    std::shared_lock lock(_config_mutex);
     if (_change_host && _config.host.has_value()) {
         spawn_task(
-                [this] {
+                [this, host=_config.host.value()] {
                     auto host_info = _change_host->getHostInfo();
                     int next_host;
-                    if (std::holds_alternative<std::string>(_config.host.value())) {
-                        const auto& host = std::get<std::string>(_config.host.value());
-                        if (host == "next")
+                    if (std::holds_alternative<std::string>(host)) {
+                        const auto& host_str = std::get<std::string>(host);
+                        if (host_str == "next")
                             next_host = host_info.currentHost + 1;
-                        else if (host == "prev" || host == "previous")
+                        else if (host_str == "prev" || host_str == "previous")
                             next_host = host_info.currentHost - 1;
                         else
                             next_host = host_info.currentHost;
                     } else {
-                        next_host = std::get<int>(_config.host.value()) - 1;
+                        next_host = std::get<int>(host) - 1;
                     }
                     next_host %= host_info.hostCount;
                     if (next_host != host_info.currentHost)

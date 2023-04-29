@@ -24,12 +24,21 @@ const char* ReleaseGesture::interface_name = "OnRelease";
 
 ReleaseGesture::ReleaseGesture(Device* device, config::ReleaseGesture& config,
                                const std::shared_ptr<ipcgull::node>& parent) :
-        Gesture(device, parent, interface_name), _config(config) {
+        Gesture(device, parent, interface_name, {
+                {
+                        {"GetThreshold", {this, &ReleaseGesture::getThreshold, {"threshold"}}},
+                        {"SetThreshold", {this, &ReleaseGesture::setThreshold, {"threshold"}}},
+                        {"SetAction", {this, &ReleaseGesture::setAction, {"type"}}}
+                },
+                {},
+                {}
+        }), _config(config) {
     if (_config.action.has_value())
         _action = Action::makeAction(device, _config.action.value(), _node);
 }
 
 void ReleaseGesture::press(bool init_threshold) {
+    std::shared_lock lock(_config_mutex);
     if (init_threshold) {
         _axis = (int32_t) (_config.threshold.value_or(defaults::gesture_threshold));
     } else {
@@ -55,5 +64,26 @@ bool ReleaseGesture::wheelCompatibility() const {
 }
 
 bool ReleaseGesture::metThreshold() const {
+    std::shared_lock lock(_config_mutex);
     return _axis >= _config.threshold.value_or(defaults::gesture_threshold);
+}
+
+
+int ReleaseGesture::getThreshold() const {
+    std::shared_lock lock(_config_mutex);
+    return _config.threshold.value_or(0);
+}
+
+void ReleaseGesture::setThreshold(int threshold) {
+    std::unique_lock lock(_config_mutex);
+    if (threshold == 0)
+        _config.threshold.reset();
+    else
+        _config.threshold = threshold;
+}
+
+void ReleaseGesture::setAction(const std::string& type) {
+    std::unique_lock lock(_config_mutex);
+    _action.reset();
+    _action = Action::makeAction(_device, type, _config.action, _node);
 }

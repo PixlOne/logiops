@@ -40,12 +40,21 @@ namespace logid::actions {
 
         void setHiresMultiplier(double multiplier);
 
+        [[nodiscard]] std::tuple<std::string, double, int> getConfig() const;
+
+        void setAxis(const std::string& axis);
+
+        void setMultiplier(double multiplier);
+
+        void setThreshold(int threshold);
+
     protected:
         int32_t _axis{};
         double _axis_remainder{};
         int _hires_remainder{};
         std::optional<uint> _input_axis;
         double _multiplier;
+        double _hires_multiplier = 1.0;
         config::AxisGesture& _config;
     };
 }

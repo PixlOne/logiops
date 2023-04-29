@@ -42,7 +42,6 @@ namespace logid::actions {
         [[nodiscard]] uint8_t reprogFlags() const final;
 
     protected:
-        mutable std::mutex _config_lock;
         config::KeypressAction& _config;
         std::list<uint> _keys;
 

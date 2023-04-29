@@ -64,6 +64,8 @@ namespace logid::actions {
                 std::shared_ptr<ipcgull::node> parent,
                 const std::string& name, tables t = {});
 
+        mutable std::shared_mutex _config_mutex;
+
         const std::shared_ptr<ipcgull::node> _node;
         Device* _device;
     };

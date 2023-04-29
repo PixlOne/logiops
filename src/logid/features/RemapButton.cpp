@@ -128,13 +128,10 @@ void RemapButton::listen() {
                                                     report));
                                     break;
                                 case hidpp20::ReprogControls::DivertedRawXYEvent: {
-                                    auto divertedXY = _reprog_controls->divertedRawXYEvent(
-                                            report);
+                                    auto divertedXY = _reprog_controls->divertedRawXYEvent(report);
                                     for (const auto& button: this->_buttons)
                                         if (button.second->pressed())
-                                            button.second->move(
-                                                    divertedXY.x,
-                                                    divertedXY.y);
+                                            button.second->move(divertedXY.x, divertedXY.y);
                                     break;
                                 }
                                 default:

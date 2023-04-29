@@ -100,7 +100,7 @@ GestureAction::GestureAction(Device* dev, config::GestureAction& config,
 }
 
 void GestureAction::press() {
-    std::lock_guard<std::mutex> lock(_config_lock);
+    std::shared_lock lock(_config_mutex);
 
     _pressed = true;
     _x = 0, _y = 0;
@@ -109,7 +109,7 @@ void GestureAction::press() {
 }
 
 void GestureAction::release() {
-    std::lock_guard<std::mutex> lock(_config_lock);
+    std::shared_lock lock(_config_mutex);
 
     _pressed = false;
     bool threshold_met = false;
@@ -149,7 +149,7 @@ void GestureAction::release() {
 }
 
 void GestureAction::move(int16_t x, int16_t y) {
-    std::lock_guard<std::mutex> lock(_config_lock);
+    std::shared_lock lock(_config_mutex);
 
     int32_t new_x = _x + x, new_y = _y + y;
 
@@ -222,9 +222,8 @@ uint8_t GestureAction::reprogFlags() const {
             hidpp20::ReprogControls::RawXYDiverted);
 }
 
-void GestureAction::setGesture(const std::string& direction,
-                               const std::string& type) {
-    std::lock_guard<std::mutex> lock(_config_lock);
+void GestureAction::setGesture(const std::string& direction, const std::string& type) {
+    std::unique_lock lock(_config_mutex);
 
     Direction d = toDirection(direction);
 

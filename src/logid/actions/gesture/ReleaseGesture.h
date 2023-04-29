@@ -38,6 +38,12 @@ namespace logid::actions {
 
         [[nodiscard]] bool metThreshold() const final;
 
+        [[nodiscard]] int getThreshold() const;
+
+        void setThreshold(int threshold);
+
+        void setAction(const std::string& type);
+
     protected:
         int32_t _axis{};
         std::shared_ptr<Action> _action;
