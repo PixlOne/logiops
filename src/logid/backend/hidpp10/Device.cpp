@@ -16,11 +16,10 @@
  *
  */
 
+#include <backend/hidpp10/Device.h>
+#include <backend/Error.h>
 #include <cassert>
 #include <utility>
-#include "Device.h"
-#include "defs.h"
-#include "../Error.h"
 
 using namespace logid::backend;
 using namespace logid::backend::hidpp10;

@@ -20,8 +20,8 @@
 #define LOGID_RECEIVER_H
 
 #include <string>
-#include "backend/dj/ReceiverMonitor.h"
-#include "Device.h"
+#include <Device.h>
+#include <backend/dj/ReceiverMonitor.h>
 
 namespace logid {
     class ReceiverNickname {

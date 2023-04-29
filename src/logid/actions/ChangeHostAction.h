@@ -18,9 +18,8 @@
 #ifndef LOGID_ACTION_CHANGEHOSTACTION_H
 #define LOGID_ACTION_CHANGEHOSTACTION_H
 
-#include <libconfig.h++>
-#include "Action.h"
-#include "../backend/hidpp20/features/ChangeHost.h"
+#include <actions/Action.h>
+#include <backend/hidpp20/features/ChangeHost.h>
 
 namespace logid::actions {
     class ChangeHostAction : public Action {

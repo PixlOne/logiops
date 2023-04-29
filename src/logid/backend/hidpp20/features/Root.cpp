@@ -16,7 +16,9 @@
  *
  */
 
-#include "Root.h"
+#include <backend/hidpp20/features/Root.h>
+#include <backend/hidpp20/Feature.h>
+#include <backend/hidpp20/Error.h>
 
 using namespace logid::backend::hidpp20;
 

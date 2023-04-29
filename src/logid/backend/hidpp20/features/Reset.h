@@ -18,8 +18,8 @@
 #ifndef LOGID_BACKEND_HIDPP20_FEATURE_RESET_H
 #define LOGID_BACKEND_HIDPP20_FEATURE_RESET_H
 
-#include "../Feature.h"
-#include "../feature_defs.h"
+#include <backend/hidpp20/Feature.h>
+#include <backend/hidpp20/feature_defs.h>
 
 namespace logid::backend::hidpp20 {
     class Reset : public Feature {

@@ -15,10 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#include "HiresScroll.h"
-#include "../Device.h"
-#include "../InputDevice.h"
-#include "../actions/gesture/AxisGesture.h"
+#include <features/HiresScroll.h>
+#include <actions/gesture/AxisGesture.h>
+#include <Device.h>
+#include <InputDevice.h>
 
 using namespace logid::features;
 using namespace logid::backend;

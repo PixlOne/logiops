@@ -21,10 +21,9 @@
 
 #include <optional>
 #include <variant>
-
-#include "../hidpp/Device.h"
-#include "Error.h"
-#include "defs.h"
+#include <backend/hidpp/Device.h>
+#include <backend/hidpp10/Error.h>
+#include <backend/hidpp10/defs.h>
 
 namespace logid::backend::hidpp10 {
     class Device : public hidpp::Device {

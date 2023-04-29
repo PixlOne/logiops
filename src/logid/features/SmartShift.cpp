@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#include "SmartShift.h"
-#include "../Device.h"
+#include <features/SmartShift.h>
+#include <Device.h>
 
 using namespace logid::features;
 using namespace logid::backend;

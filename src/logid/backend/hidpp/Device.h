@@ -25,9 +25,9 @@
 #include <memory>
 #include <functional>
 #include <map>
-#include "../raw/RawDevice.h"
-#include "Report.h"
-#include "defs.h"
+#include <backend/raw/RawDevice.h>
+#include <backend/hidpp/Report.h>
+#include <backend/hidpp/defs.h>
 
 namespace logid::backend::dj {
     // Need to define here for a constructor

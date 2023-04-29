@@ -19,8 +19,7 @@
 #define LOGID_ACTION_GESTURE_H
 
 #include <utility>
-
-#include "../Action.h"
+#include <actions/Action.h>
 
 namespace logid::actions {
     class InvalidGesture : public std::exception {

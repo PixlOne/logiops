@@ -15,11 +15,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+#include <util/ExceptionHandler.h>
 #include <system_error>
-#include "log.h"
-#include "ExceptionHandler.h"
-#include "../backend/hidpp10/Error.h"
-#include "../backend/hidpp20/Error.h"
+#include <util/log.h>
+#include <backend/hidpp10/Error.h>
+#include <backend/hidpp20/Error.h>
 
 using namespace logid;
 

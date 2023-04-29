@@ -21,8 +21,8 @@
 
 #include <cstdint>
 #include <string>
-#include "Receiver.h"
-#include "../hidpp/defs.h"
+#include <backend/dj/Receiver.h>
+#include <backend/hidpp/defs.h>
 
 namespace logid::backend::dj {
     // This class will run on the RawDevice thread,

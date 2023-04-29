@@ -18,10 +18,12 @@
 #ifndef LOGID_BACKEND_HIDPP20_FEATURE_REPROGCONTROLS_H
 #define LOGID_BACKEND_HIDPP20_FEATURE_REPROGCONTROLS_H
 
+#include <backend/hidpp20/feature_defs.h>
+#include <backend/hidpp20/Feature.h>
+#include <backend/hidpp/Report.h>
 #include <map>
-
-#include "../feature_defs.h"
-#include "../Feature.h"
+#include <set>
+#include <memory>
 
 namespace logid::backend::hidpp20 {
     class ReprogControls : public Feature {

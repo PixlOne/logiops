@@ -19,8 +19,7 @@
 #define LOGID_ACTION_KEYPRESS_H
 
 #include <vector>
-#include <libconfig.h++>
-#include "Action.h"
+#include <actions/Action.h>
 
 namespace logid::actions {
     class KeypressAction : public Action {

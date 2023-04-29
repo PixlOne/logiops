@@ -15,9 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#include "NullAction.h"
-#include "../Device.h"
-#include "../backend/hidpp20/features/ReprogControls.h"
+#include <actions/NullAction.h>
+#include <backend/hidpp20/features/ReprogControls.h>
 
 using namespace logid::actions;
 

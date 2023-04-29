@@ -16,9 +16,10 @@
  *
  */
 #include <cmath>
-#include "AxisGesture.h"
-#include "../../Device.h"
-#include "../../InputDevice.h"
+#include <actions/gesture/AxisGesture.h>
+#include <Device.h>
+#include <InputDevice.h>
+#include <util/log.h>
 
 using namespace logid::actions;
 

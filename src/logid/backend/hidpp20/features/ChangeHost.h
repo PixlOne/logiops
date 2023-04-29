@@ -18,8 +18,8 @@
 #ifndef LOGID_BACKEND_HIDPP20_FEATURE_CHANGEHOST_H
 #define LOGID_BACKEND_HIDPP20_FEATURE_CHANGEHOST_H
 
-#include "../feature_defs.h"
-#include "../Feature.h"
+#include <backend/hidpp20/feature_defs.h>
+#include <backend/hidpp20/Feature.h>
 
 namespace logid::backend::hidpp20 {
     class ChangeHost : public Feature {

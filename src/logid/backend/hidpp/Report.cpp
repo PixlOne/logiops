@@ -16,12 +16,12 @@
  *
  */
 
+#include <backend/hidpp/Report.h>
 #include <array>
 #include <algorithm>
 #include <cassert>
-#include "Report.h"
-#include "../hidpp10/Error.h"
-#include "../hidpp20/Error.h"
+#include <backend/hidpp10/Error.h>
+#include <backend/hidpp20/Error.h>
 
 using namespace logid::backend::hidpp;
 using namespace logid::backend;

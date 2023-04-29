@@ -15,9 +15,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+#include <backend/hidpp20/features/ReprogControls.h>
+#include <backend/hidpp20/Error.h>
 #include <cassert>
-#include "../Error.h"
-#include "ReprogControls.h"
 
 using namespace logid::backend::hidpp20;
 

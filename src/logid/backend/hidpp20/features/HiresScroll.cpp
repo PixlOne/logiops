@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+#include <backend/hidpp20/features/HiresScroll.h>
 #include <cassert>
-#include "HiresScroll.h"
 
 using namespace logid::backend::hidpp20;
 

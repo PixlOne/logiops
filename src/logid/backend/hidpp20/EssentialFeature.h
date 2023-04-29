@@ -25,7 +25,7 @@
  * hidpp::Device class. No version checks are provided here
  */
 
-#include "Device.h"
+#include <backend/hidpp/Device.h>
 
 namespace logid::backend::hidpp20 {
     class EssentialFeature {

@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#include "SmartShift.h"
+#include <backend/hidpp20/features/SmartShift.h>
 
 using namespace logid::backend::hidpp20;
 

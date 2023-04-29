@@ -26,8 +26,7 @@
 #include <future>
 #include <set>
 #include <list>
-
-#include "EventHandler.h"
+#include <backend/raw/EventHandler.h>
 
 namespace logid::backend::raw {
     class DeviceMonitor;

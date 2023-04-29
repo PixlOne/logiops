@@ -18,8 +18,9 @@
 #ifndef LOGID_BACKEND_HIDPP20_FEATURE_FEATURESET_H
 #define LOGID_BACKEND_HIDPP20_FEATURE_FEATURESET_H
 
-#include "../Feature.h"
-#include "../feature_defs.h"
+#include <backend/hidpp20/Feature.h>
+#include <backend/hidpp20/feature_defs.h>
+#include <map>
 
 namespace logid::backend::hidpp20 {
     class FeatureSet : public Feature {

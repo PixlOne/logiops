@@ -18,8 +18,8 @@
 #ifndef LOGID_ACTION_TOGGLEHIRESSCROLL_H
 #define LOGID_ACTION_TOGGLEHIRESSCROLL_H
 
-#include "Action.h"
-#include "../features/HiresScroll.h"
+#include <actions/Action.h>
+#include <features/HiresScroll.h>
 
 namespace logid::actions {
     class ToggleHiresScroll : public Action {

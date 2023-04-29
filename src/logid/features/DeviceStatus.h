@@ -19,9 +19,9 @@
 #define LOGID_FEATURE_DEVICESTATUS_H
 
 
-#include "DeviceFeature.h"
-#include "../Device.h"
-#include "../backend/hidpp20/features/WirelessDeviceStatus.h"
+#include <features/DeviceFeature.h>
+#include <Device.h>
+#include <backend/hidpp20/features/WirelessDeviceStatus.h>
 
 namespace logid::features {
     class DeviceStatus : public DeviceFeature {

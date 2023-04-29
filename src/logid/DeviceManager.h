@@ -19,16 +19,11 @@
 #ifndef LOGID_DEVICEMANAGER_H
 #define LOGID_DEVICEMANAGER_H
 
-#include <map>
-#include <thread>
-#include <mutex>
+#include <backend/raw/DeviceMonitor.h>
+#include <Device.h>
+#include <Receiver.h>
 #include <ipcgull/node.h>
 #include <ipcgull/interface.h>
-
-#include "backend/raw/DeviceMonitor.h"
-#include "backend/hidpp/Device.h"
-#include "Device.h"
-#include "Receiver.h"
 
 namespace logid {
     class InputDevice;

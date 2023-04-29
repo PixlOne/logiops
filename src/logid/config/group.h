@@ -22,7 +22,6 @@
 #include <type_traits>
 #include <functional>
 #include <utility>
-#include "../util/log.h"
 
 namespace logid::config {
     template<typename T>

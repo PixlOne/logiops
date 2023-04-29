@@ -16,19 +16,18 @@
  *
  */
 
+#include <Device.h>
+#include <DeviceManager.h>
+#include <features/SmartShift.h>
+#include <features/DPI.h>
+#include <features/RemapButton.h>
+#include <features/HiresScroll.h>
+#include <features/DeviceStatus.h>
+#include <features/ThumbWheel.h>
+#include <backend/hidpp20/features/Reset.h>
+#include <util/log.h>
 #include <thread>
 #include <utility>
-#include "util/log.h"
-#include "features/DPI.h"
-#include "Device.h"
-#include "DeviceManager.h"
-#include "Receiver.h"
-#include "features/SmartShift.h"
-#include "features/RemapButton.h"
-#include "backend/hidpp20/features/Reset.h"
-#include "features/HiresScroll.h"
-#include "features/DeviceStatus.h"
-#include "features/ThumbWheel.h"
 
 using namespace logid;
 using namespace logid::backend;

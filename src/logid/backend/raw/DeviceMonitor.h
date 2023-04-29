@@ -23,7 +23,6 @@
 #include <mutex>
 #include <atomic>
 #include <memory>
-#include "IOMonitor.h"
 
 extern "C"
 {
@@ -32,6 +31,8 @@ struct udev_monitor;
 }
 
 namespace logid::backend::raw {
+    class IOMonitor;
+
     static constexpr int ready_wait = 2000;
 
     class DeviceMonitor {

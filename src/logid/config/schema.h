@@ -18,7 +18,7 @@
 #ifndef LOGID_CONFIG_SCHEMA_H
 #define LOGID_CONFIG_SCHEMA_H
 
-#include "types.h"
+#include <config/types.h>
 
 namespace logid::actions {
     class ChangeDPI;

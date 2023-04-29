@@ -16,9 +16,10 @@
  *
  */
 
-#include "ThumbWheel.h"
-#include "../Device.h"
-#include "../actions/gesture/AxisGesture.h"
+#include <features/ThumbWheel.h>
+#include <actions/gesture/AxisGesture.h>
+#include <Device.h>
+#include <util/log.h>
 
 using namespace logid::features;
 using namespace logid::backend;

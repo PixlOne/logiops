@@ -15,10 +15,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+#include <features/RemapButton.h>
+#include <actions/GestureAction.h>
+#include <Device.h>
 #include <sstream>
-#include "../actions/GestureAction.h"
-#include "../Device.h"
-#include "RemapButton.h"
+#include <util/log.h>
 
 using namespace logid::features;
 using namespace logid::backend;
@@ -55,10 +56,8 @@ RemapButton::RemapButton(Device* dev) : DeviceFeature(dev),
                      hidpp20::ReprogControls::RawXYDiverted) &&
                     (!_reprog_controls->supportsRawXY() ||
                      !(info.additionalFlags & hidpp20::ReprogControls::RawXY)))
-                    logPrintf(WARN,
-                              "%s: Cannot divert raw XY movements for CID "
-                              "0x%02x", _device->name().c_str(),
-                              info.controlID);
+                    logPrintf(WARN, "%s: Cannot divert raw XY movements for CID 0x%02x",
+                              _device->name().c_str(), info.controlID);
 
                 report.flags |= action->reprogFlags();
             }

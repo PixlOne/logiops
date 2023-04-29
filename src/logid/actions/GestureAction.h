@@ -19,9 +19,8 @@
 #define LOGID_ACTION_GESTUREACTION_H
 
 #include <map>
-#include <libconfig.h++>
-#include "Action.h"
-#include "gesture/Gesture.h"
+#include <actions/Action.h>
+#include <actions/gesture/Gesture.h>
 
 namespace logid::actions {
     class GestureAction : public Action {

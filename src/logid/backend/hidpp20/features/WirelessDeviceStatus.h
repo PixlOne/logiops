@@ -18,8 +18,9 @@
 #ifndef LOGID_BACKEND_HIDPP20_FEATURE_WIRELESSDEVICESTATUS_H
 #define LOGID_BACKEND_HIDPP20_FEATURE_WIRELESSDEVICESTATUS_H
 
-#include "../Feature.h"
-#include "../feature_defs.h"
+#include <backend/hidpp20/Feature.h>
+#include <backend/hidpp20/feature_defs.h>
+#include <backend/hidpp/Report.h>
 
 namespace logid::backend::hidpp20 {
     class WirelessDeviceStatus : public Feature {

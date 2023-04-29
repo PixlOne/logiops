@@ -15,10 +15,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#include "KeypressAction.h"
-#include "../Device.h"
-#include "../InputDevice.h"
-#include "../backend/hidpp20/features/ReprogControls.h"
+#include <actions/KeypressAction.h>
+#include <Device.h>
+#include <InputDevice.h>
+#include <backend/hidpp20/features/ReprogControls.h>
+#include <util/log.h>
 
 using namespace logid::actions;
 using namespace logid::backend;

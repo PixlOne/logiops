@@ -15,10 +15,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#include "ChangeDPI.h"
-#include "../Device.h"
-#include "../util/task.h"
-#include "../backend/hidpp20/features/ReprogControls.h"
+#include <actions/ChangeDPI.h>
+#include <Device.h>
+#include <backend/hidpp20/features/ReprogControls.h>
+#include <util/task.h>
+#include <util/log.h>
 
 using namespace logid::actions;
 

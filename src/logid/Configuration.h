@@ -19,14 +19,12 @@
 #ifndef LOGID_CONFIGURATION_H
 #define LOGID_CONFIGURATION_H
 
-#include <map>
+#include <config/schema.h>
+#include <ipcgull/interface.h>
 #include <libconfig.h++>
 #include <memory>
 #include <chrono>
 #include <set>
-#include <ipcgull/interface.h>
-
-#include "config/schema.h"
 
 namespace logid {
     namespace defaults {

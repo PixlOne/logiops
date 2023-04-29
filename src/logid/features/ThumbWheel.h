@@ -18,10 +18,10 @@
 #ifndef LOGID_FEATURE_THUMBWHEEL_H
 #define LOGID_FEATURE_THUMBWHEEL_H
 
-#include "../backend/hidpp20/features/ThumbWheel.h"
-#include "DeviceFeature.h"
-#include "../actions/gesture/Gesture.h"
-#include "../config/schema.h"
+#include <features/DeviceFeature.h>
+#include <actions/gesture/Gesture.h>
+#include <backend/hidpp20/features/ThumbWheel.h>
+#include <backend/hidpp/Device.h>
 
 namespace logid::features {
     class ThumbWheel : public DeviceFeature {

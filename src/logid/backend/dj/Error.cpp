@@ -16,7 +16,7 @@
  *
  */
 
-#include "Error.h"
+#include <backend/dj/Error.h>
 
 using namespace logid::backend::dj;
 

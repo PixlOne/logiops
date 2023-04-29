@@ -20,10 +20,10 @@
 #define LOGID_BACKEND_DJ_RECEIVER_H
 
 #include <cstdint>
-#include "../raw/RawDevice.h"
-#include "Report.h"
-#include "../hidpp/Report.h"
-#include "../hidpp10/Device.h"
+#include <backend/raw/RawDevice.h>
+#include <backend/dj/Report.h>
+#include <backend/hidpp/Report.h>
+#include <backend/hidpp10/Device.h>
 
 namespace logid::backend::dj {
     struct EventHandler {

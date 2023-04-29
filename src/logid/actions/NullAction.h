@@ -18,7 +18,7 @@
 #ifndef LOGID_ACTION_NULL_H
 #define LOGID_ACTION_NULL_H
 
-#include "Action.h"
+#include <actions/Action.h>
 
 namespace logid::actions {
     class NullAction : public Action {

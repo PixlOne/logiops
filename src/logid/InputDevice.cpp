@@ -16,9 +16,8 @@
  *
  */
 
+#include <InputDevice.h>
 #include <system_error>
-
-#include "InputDevice.h"
 
 extern "C"
 {

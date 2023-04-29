@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#include "NullGesture.h"
-#include "../../Configuration.h"
+#include <actions/gesture/NullGesture.h>
+#include <Configuration.h>
 
 using namespace logid::actions;
 

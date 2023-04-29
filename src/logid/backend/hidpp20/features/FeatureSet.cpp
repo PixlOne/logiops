@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#include "FeatureSet.h"
+#include <backend/hidpp20/features/FeatureSet.h>
 
 using namespace logid::backend::hidpp20;
 

@@ -19,9 +19,8 @@
 #ifndef LOGID_BACKEND_HIDPP20_FEATURE_DEVICENAME_H
 #define LOGID_BACKEND_HIDPP20_FEATURE_DEVICENAME_H
 
-#include "../Feature.h"
-#include "../feature_defs.h"
-#include "../EssentialFeature.h"
+#include <backend/hidpp20/EssentialFeature.h>
+#include <backend/hidpp20/feature_defs.h>
 
 namespace logid::backend::hidpp20 {
     class DeviceName : public EssentialFeature {

@@ -19,13 +19,12 @@
 #define LOGID_ACTION_H
 
 #include <atomic>
-#include <libconfig.h++>
 #include <memory>
 #include <utility>
+#include <shared_mutex>
 #include <ipcgull/node.h>
 #include <ipcgull/interface.h>
-#include <shared_mutex>
-#include "../config/schema.h"
+#include <config/schema.h>
 
 namespace logid {
     class Device;

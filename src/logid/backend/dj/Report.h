@@ -20,9 +20,9 @@
 #define LOGID_BACKEND_DJ_REPORT_H
 
 #include <cstdint>
-#include "../raw/RawDevice.h"
-#include "defs.h"
-#include "../hidpp/defs.h"
+#include <vector>
+#include <backend/dj/defs.h>
+#include <backend/hidpp/defs.h>
 
 namespace logid::backend::dj {
     namespace Offset {

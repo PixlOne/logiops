@@ -19,13 +19,12 @@
 #ifndef LOGID_DEVICE_H
 #define LOGID_DEVICE_H
 
+#include <features/DeviceFeature.h>
+#include <backend/hidpp20/Device.h>
+#include <backend/hidpp/defs.h>
 #include <ipcgull/node.h>
 #include <ipcgull/interface.h>
-#include "backend/hidpp/defs.h"
-#include "backend/hidpp20/Device.h"
-#include "features/DeviceFeature.h"
-#include "Configuration.h"
-#include "util/log.h"
+#include <Configuration.h>
 
 namespace logid {
     class DeviceManager;
@@ -103,8 +102,6 @@ namespace logid {
             try {
                 return std::dynamic_pointer_cast<T>(it->second);
             } catch (std::bad_cast& e) {
-                logPrintf(ERROR, "bad_cast while getting device feature %s: %s",
-                          name.c_str(), e.what());
                 return nullptr;
             }
         }

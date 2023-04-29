@@ -16,12 +16,11 @@
  *
  */
 
+#include <util/log.h>
 #include <cstdio>
-#include <string>
 #include <cstdarg>
 #include <algorithm>
 #include <stdexcept>
-#include "log.h"
 
 using namespace logid;
 

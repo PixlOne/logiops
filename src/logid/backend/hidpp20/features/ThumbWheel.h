@@ -18,8 +18,9 @@
 #ifndef LOGID_BACKEND_HIDPP20_FEATURE_THUMBWHEEL_H
 #define LOGID_BACKEND_HIDPP20_FEATURE_THUMBWHEEL_H
 
-#include "../feature_defs.h"
-#include "../Feature.h"
+#include <backend/hidpp20/Feature.h>
+#include <backend/hidpp20/feature_defs.h>
+#include <backend/hidpp/Report.h>
 
 namespace logid::backend::hidpp20 {
     class ThumbWheel : public Feature {

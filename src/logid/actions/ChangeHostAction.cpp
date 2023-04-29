@@ -15,11 +15,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+#include <actions/ChangeHostAction.h>
+#include <Device.h>
+#include <backend/hidpp20/features/ReprogControls.h>
 #include <algorithm>
-#include "ChangeHostAction.h"
-#include "../Device.h"
-#include "../backend/hidpp20/features/ReprogControls.h"
-#include "../util/task.h"
+#include <util/task.h>
+#include <util/log.h>
 
 using namespace logid::actions;
 using namespace logid::backend;

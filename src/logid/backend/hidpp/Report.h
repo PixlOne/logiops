@@ -19,9 +19,9 @@
 #ifndef LOGID_BACKEND_HIDPP_REPORT_H
 #define LOGID_BACKEND_HIDPP_REPORT_H
 
+#include <backend/raw/RawDevice.h>
+#include <backend/hidpp/defs.h>
 #include <cstdint>
-#include "../raw/RawDevice.h"
-#include "defs.h"
 
 /* Some devices only support a subset of these reports */
 #define HIDPP_REPORT_SHORT_SUPPORTED      1U

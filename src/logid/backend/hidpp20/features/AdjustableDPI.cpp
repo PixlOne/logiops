@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#include "AdjustableDPI.h"
+#include <backend/hidpp20/features/AdjustableDPI.h>
 
 using namespace logid::backend::hidpp20;
 

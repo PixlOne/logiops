@@ -18,16 +18,15 @@
 #ifndef LOGID_CONFIG_PRIMITIVE_H
 #define LOGID_CONFIG_PRIMITIVE_H
 
+#include <config/map.h>
+#include <config/group.h>
+#include <ipcgull/property.h>
 #include <libconfig.h++>
 #include <type_traits>
 #include <optional>
 #include <variant>
 #include <list>
 #include <set>
-#include <ipcgull/property.h>
-#include "group.h"
-#include "map.h"
-#include "../util/log.h"
 
 /// TODO: A single element failing should not cause the container to be invalid.
 

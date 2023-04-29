@@ -16,15 +16,15 @@
  *
  */
 
+#include <backend/hidpp20/Device.h>
+#include <backend/hidpp20/features/Root.h>
+#include <backend/hidpp20/features/DeviceName.h>
+#include <backend/hidpp20/Feature.h>
+#include <backend/hidpp10/Error.h>
+#include <backend/dj/Receiver.h>
+#include <backend/Error.h>
 #include <cassert>
 #include <utility>
-#include "Device.h"
-#include "Report.h"
-#include "../hidpp20/features/Root.h"
-#include "../hidpp20/features/DeviceName.h"
-#include "../hidpp10/Error.h"
-#include "../Error.h"
-#include "../dj/Receiver.h"
 
 using namespace logid::backend;
 using namespace logid::backend::hidpp;

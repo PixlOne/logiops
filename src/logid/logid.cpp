@@ -16,15 +16,10 @@
  *
  */
 
+#include <DeviceManager.h>
+#include <InputDevice.h>
+#include <util/log.h>
 #include <algorithm>
-#include <cstdio>
-#include <cstdlib>
-#include <mutex>
-#include <ipcgull/exception.h>
-
-#include "util/log.h"
-#include "DeviceManager.h"
-#include "InputDevice.h"
 
 #define LOGID_VIRTUAL_INPUT_NAME "LogiOps Virtual Input"
 #define DEFAULT_CONFIG_FILE "/etc/logid.cfg"
@@ -49,21 +44,6 @@ enum class Option {
     Help,
     Version
 };
-
-/*
-void logid::reload()
-{
-    log_printf(INFO, "Reloading logid...");
-    finder_reloading.lock();
-    finder->_stop();
-    Configuration* old_config = global_config;
-    global_config = new Configuration(config_file.c_str());
-    delete(old_config);
-    delete(finder);
-    finder = new DeviceMonitor();
-    finder_reloading.unlock();
-}
- */
 
 void readCliOptions(const int argc, char** argv, CmdlineOptions& options) {
     for (int i = 1; i < argc; i++) {

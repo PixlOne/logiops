@@ -18,7 +18,7 @@
 #ifndef LOGID_ACTION_RELEASEGESTURE_H
 #define LOGID_ACTION_RELEASEGESTURE_H
 
-#include "Gesture.h"
+#include <actions/gesture/Gesture.h>
 
 namespace logid::actions {
     class ReleaseGesture : public Gesture {

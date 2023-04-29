@@ -16,10 +16,10 @@
  *
  */
 
-#include <array>
+#include <backend/dj/Report.h>
 #include <algorithm>
+#include <array>
 #include <cassert>
-#include "Report.h"
 
 using namespace logid::backend::dj;
 using namespace logid::backend;

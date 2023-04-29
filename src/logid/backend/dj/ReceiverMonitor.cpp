@@ -16,12 +16,11 @@
  *
  */
 
-#include "ReceiverMonitor.h"
-#include "../../util/task.h"
-#include "../../util/log.h"
-
+#include <backend/dj/ReceiverMonitor.h>
 #include <utility>
 #include <cassert>
+#include <util/task.h>
+#include <util/log.h>
 
 using namespace logid::backend::dj;
 

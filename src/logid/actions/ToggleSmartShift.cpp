@@ -15,10 +15,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#include "ToggleSmartShift.h"
-#include "../Device.h"
-#include "../backend/hidpp20/features/ReprogControls.h"
-#include "../util/task.h"
+
+#include <actions/ToggleSmartShift.h>
+#include <Device.h>
+#include <backend/hidpp20/features/ReprogControls.h>
+#include <util/task.h>
+#include <util/log.h>
 
 using namespace logid::actions;
 using namespace logid::backend;

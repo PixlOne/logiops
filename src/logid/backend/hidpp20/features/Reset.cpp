@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#include "Reset.h"
+#include <backend/hidpp20/features/Reset.h>
 
 using namespace logid::backend::hidpp20;
 

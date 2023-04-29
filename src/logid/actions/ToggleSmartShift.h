@@ -18,9 +18,8 @@
 #ifndef LOGID_ACTION_TOGGLESMARTSHIFT_H
 #define LOGID_ACTION_TOGGLESMARTSHIFT_H
 
-#include <libconfig.h++>
-#include "Action.h"
-#include "../features/SmartShift.h"
+#include <actions/Action.h>
+#include <features/SmartShift.h>
 
 namespace logid::actions {
     class ToggleSmartShift : public Action {

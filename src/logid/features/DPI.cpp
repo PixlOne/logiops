@@ -15,10 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+#include <features/DPI.h>
+#include <Device.h>
 #include <algorithm>
 #include <cmath>
-#include "DPI.h"
-#include "../Device.h"
 
 using namespace logid::features;
 using namespace logid::backend;

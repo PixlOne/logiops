@@ -16,10 +16,9 @@
  *
  */
 
+#include <backend/dj/Receiver.h>
 #include <cassert>
-#include "Report.h"
-#include "Receiver.h"
-#include "Error.h"
+#include <backend/dj/Error.h>
 
 using namespace logid::backend::dj;
 using namespace logid::backend;

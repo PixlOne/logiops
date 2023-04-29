@@ -16,12 +16,10 @@
  *
  */
 
-#include "Receiver.h"
-#include "DeviceManager.h"
-#include "util/log.h"
-#include "backend/hidpp10/Error.h"
-#include "backend/hidpp20/Error.h"
-#include "backend/Error.h"
+#include <Receiver.h>
+#include <DeviceManager.h>
+#include <backend/Error.h>
+#include <util/log.h>
 
 using namespace logid;
 using namespace logid::backend;

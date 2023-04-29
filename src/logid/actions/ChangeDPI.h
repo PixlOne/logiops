@@ -18,9 +18,8 @@
 #ifndef LOGID_ACTION_CHANGEDPI_H
 #define LOGID_ACTION_CHANGEDPI_H
 
-#include <libconfig.h++>
-#include "Action.h"
-#include "../features/DPI.h"
+#include <actions/Action.h>
+#include <features/DPI.h>
 
 namespace logid::actions {
     class ChangeDPI : public Action {

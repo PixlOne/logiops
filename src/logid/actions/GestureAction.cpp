@@ -15,10 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+#include <actions/GestureAction.h>
+#include <backend/hidpp20/features/ReprogControls.h>
+#include <util/log.h>
 #include <algorithm>
-#include "GestureAction.h"
-#include "../Device.h"
-#include "../backend/hidpp20/features/ReprogControls.h"
 
 using namespace logid::actions;
 using namespace logid;

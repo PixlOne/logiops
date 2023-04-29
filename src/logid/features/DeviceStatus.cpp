@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#include "DeviceStatus.h"
-#include "../util/task.h"
+#include <features/DeviceStatus.h>
+#include <util/task.h>
 
 using namespace logid::features;
 using namespace logid::backend;

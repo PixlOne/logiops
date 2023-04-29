@@ -16,11 +16,11 @@
  *
  */
 
+#include <backend/hidpp20/Feature.h>
+#include <backend/hidpp20/EssentialFeature.h>
+#include <backend/hidpp20/features/Root.h>
+#include <backend/hidpp20/Error.h>
 #include <cassert>
-#include "EssentialFeature.h"
-#include "feature_defs.h"
-#include "features/Root.h"
-#include "Error.h"
 
 using namespace logid::backend::hidpp20;
 

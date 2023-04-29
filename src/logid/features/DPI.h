@@ -18,9 +18,9 @@
 #ifndef LOGID_FEATURE_DPI_H
 #define LOGID_FEATURE_DPI_H
 
-#include "../backend/hidpp20/features/AdjustableDPI.h"
-#include "DeviceFeature.h"
-#include "../config/schema.h"
+#include <backend/hidpp20/features/AdjustableDPI.h>
+#include <features/DeviceFeature.h>
+#include <config/schema.h>
 
 namespace logid::features {
     class DPI : public DeviceFeature {

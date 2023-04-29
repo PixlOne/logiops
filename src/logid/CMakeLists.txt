@@ -83,7 +83,7 @@ find_library(EVDEV_LIBRARY
 set(IPCGULL_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../ipcgull/src/include)
 message(${IPCGULL_INCLUDE_DIRS})
 
-include_directories(${EVDEV_INCLUDE_DIR} ${LIBUDEV_INCLUDE_DIRECTORIES} ${IPCGULL_INCLUDE_DIRS})
+include_directories(. ${EVDEV_INCLUDE_DIR} ${LIBUDEV_INCLUDE_DIRECTORIES} ${IPCGULL_INCLUDE_DIRS})
 
 target_link_libraries(logid ${CMAKE_THREAD_LIBS_INIT} ${EVDEV_LIBRARY} config++
         ${LIBUDEV_LIBRARIES} ipcgull)

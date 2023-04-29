@@ -18,10 +18,10 @@
 #ifndef LOGID_FEATURE_SMARTSHIFT_H
 #define LOGID_FEATURE_SMARTSHIFT_H
 
+#include <features/DeviceFeature.h>
+#include <backend/hidpp20/features/SmartShift.h>
 #include <ipcgull/interface.h>
-#include "../backend/hidpp20/features/SmartShift.h"
-#include "DeviceFeature.h"
-#include "../config/schema.h"
+#include <config/schema.h>
 
 namespace logid::features {
     class SmartShift : public DeviceFeature {

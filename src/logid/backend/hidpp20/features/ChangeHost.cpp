@@ -15,7 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#include "ChangeHost.h"
+#include <backend/hidpp20/features/ChangeHost.h>
+#include <backend/hidpp20/Error.h>
 
 using namespace logid::backend::hidpp20;
 

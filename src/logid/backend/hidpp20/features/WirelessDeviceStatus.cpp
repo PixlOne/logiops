@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+#include <backend/hidpp20/features/WirelessDeviceStatus.h>
 #include <cassert>
-#include "WirelessDeviceStatus.h"
 
 using namespace logid::backend::hidpp20;
 

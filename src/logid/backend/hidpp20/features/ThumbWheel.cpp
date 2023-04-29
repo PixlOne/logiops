@@ -16,8 +16,8 @@
  *
  */
 
+#include <backend/hidpp20/features/ThumbWheel.h>
 #include <cassert>
-#include "ThumbWheel.h"
 
 using namespace logid::backend::hidpp20;
 

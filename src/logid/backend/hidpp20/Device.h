@@ -22,9 +22,8 @@
 #include <cstdint>
 #include <optional>
 #include <variant>
-
-#include "../hidpp/Device.h"
-#include "Error.h"
+#include <backend/hidpp20/Error.h>
+#include <backend/hidpp/Device.h>
 
 namespace logid::backend::hidpp20 {
     class Device : public hidpp::Device {

@@ -15,8 +15,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#include "ThresholdGesture.h"
-#include "../../Configuration.h"
+#include <actions/gesture/ThresholdGesture.h>
+#include <Configuration.h>
+#include <util/log.h>
 
 using namespace logid::actions;
 

@@ -16,11 +16,9 @@
  *
  */
 
+#include <Configuration.h>
+#include <util/log.h>
 #include <utility>
-#include <vector>
-
-#include "Configuration.h"
-#include "util/log.h"
 
 using namespace logid;
 using namespace libconfig;

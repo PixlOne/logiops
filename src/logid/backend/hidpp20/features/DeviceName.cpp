@@ -16,7 +16,7 @@
  *
  */
 
-#include "DeviceName.h"
+#include <backend/hidpp20/features/DeviceName.h>
 
 using namespace logid::backend;
 using namespace logid::backend::hidpp20;

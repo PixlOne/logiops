@@ -18,9 +18,14 @@
 #ifndef LOGID_FEATURE_HIRESSCROLL_H
 #define LOGID_FEATURE_HIRESSCROLL_H
 
-#include "../backend/hidpp20/features/HiresScroll.h"
-#include "DeviceFeature.h"
-#include "../actions/gesture/Gesture.h"
+#include <features/DeviceFeature.h>
+#include <actions/gesture/Gesture.h>
+#include <backend/hidpp20/features/HiresScroll.h>
+#include <backend/hidpp/Device.h>
+#include <memory>
+#include <optional>
+#include <variant>
+#include <chrono>
 
 namespace logid::features {
     class HiresScroll : public DeviceFeature {

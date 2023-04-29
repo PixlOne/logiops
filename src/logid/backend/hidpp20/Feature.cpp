@@ -16,10 +16,9 @@
  *
  */
 
-#include "Error.h"
-#include "Feature.h"
-#include "feature_defs.h"
-#include "features/Root.h"
+#include <backend/hidpp20/Feature.h>
+#include <backend/hidpp20/Device.h>
+#include <backend/hidpp20/features/Root.h>
 
 using namespace logid::backend::hidpp20;
 
@@ -64,6 +63,6 @@ Feature::Feature(Device* dev, uint16_t _id) : _device(dev) {
     }
 }
 
-uint8_t Feature::featureIndex() {
+uint8_t Feature::featureIndex() const {
     return _index;
 }

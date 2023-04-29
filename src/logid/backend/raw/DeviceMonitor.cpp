@@ -16,12 +16,12 @@
  *
  */
 
-#include "DeviceMonitor.h"
-#include "../../util/task.h"
-#include "../../util/log.h"
-#include "RawDevice.h"
-#include "../hidpp/Device.h"
-
+#include <backend/raw/DeviceMonitor.h>
+#include <backend/raw/IOMonitor.h>
+#include <backend/raw/RawDevice.h>
+#include <backend/hidpp/Device.h>
+#include <util/task.h>
+#include <util/log.h>
 #include <system_error>
 
 extern "C"

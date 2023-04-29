@@ -16,9 +16,8 @@
  *
  */
 
+#include <backend/hidpp10/Error.h>
 #include <cassert>
-#include <string>
-#include "Error.h"
 
 using namespace logid::backend::hidpp10;
 

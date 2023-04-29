@@ -18,7 +18,7 @@
 #ifndef LOGID_ACTION_AXISGESTURE_H
 #define LOGID_ACTION_AXISGESTURE_H
 
-#include "Gesture.h"
+#include <actions/gesture/Gesture.h>
 
 namespace logid::actions {
     class AxisGesture : public Gesture {

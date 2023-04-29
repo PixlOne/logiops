@@ -18,10 +18,10 @@
 #ifndef LOGID_TASK_H
 #define LOGID_TASK_H
 
+#include <util/ExceptionHandler.h>
 #include <functional>
 #include <memory>
 #include <future>
-#include "ExceptionHandler.h"
 
 namespace logid {
     /* This function spawns a new task into the least used worker queue

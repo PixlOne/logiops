@@ -18,8 +18,8 @@
 #ifndef LOGID_BACKEND_HIDPP20_FEATURE_SMARTSHIFT_H
 #define LOGID_BACKEND_HIDPP20_FEATURE_SMARTSHIFT_H
 
-#include "../feature_defs.h"
-#include "../Feature.h"
+#include <backend/hidpp20/feature_defs.h>
+#include <backend/hidpp20/Feature.h>
 
 namespace logid::backend::hidpp20 {
     class SmartShift : public Feature {

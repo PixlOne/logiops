@@ -16,16 +16,15 @@
  *
  */
 
-#include <algorithm>
-#include "Action.h"
-#include "KeypressAction.h"
-#include "ToggleSmartShift.h"
-#include "ToggleHiresScroll.h"
-#include "GestureAction.h"
-#include "NullAction.h"
-#include "CycleDPI.h"
-#include "ChangeDPI.h"
-#include "ChangeHostAction.h"
+#include <actions/Action.h>
+#include <actions/KeypressAction.h>
+#include <actions/ToggleSmartShift.h>
+#include <actions/ToggleHiresScroll.h>
+#include <actions/GestureAction.h>
+#include <actions/NullAction.h>
+#include <actions/CycleDPI.h>
+#include <actions/ChangeDPI.h>
+#include <actions/ChangeHostAction.h>
 
 using namespace logid;
 using namespace logid::actions;

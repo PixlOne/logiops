@@ -20,9 +20,12 @@
 #define LOGID_BACKEND_HIDPP20_FEATURE_H
 
 #include <cstdint>
-#include "Device.h"
+#include <exception>
+#include <vector>
 
 namespace logid::backend::hidpp20 {
+    class Device;
+
     class UnsupportedFeature : public std::exception {
     public:
         explicit UnsupportedFeature(uint16_t ID) : _f_id(ID) {}
@@ -41,7 +44,7 @@ namespace logid::backend::hidpp20 {
 
         virtual uint16_t getID() = 0;
 
-        uint8_t featureIndex();
+        [[nodiscard]] uint8_t featureIndex() const;
 
         virtual ~Feature() = default;
 

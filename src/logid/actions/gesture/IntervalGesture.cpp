@@ -15,8 +15,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#include "IntervalGesture.h"
-#include "../../Configuration.h"
+#include <actions/gesture/IntervalGesture.h>
+#include <Configuration.h>
+#include <util/log.h>
 
 using namespace logid::actions;
 

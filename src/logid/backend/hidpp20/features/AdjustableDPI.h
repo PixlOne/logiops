@@ -18,8 +18,8 @@
 #ifndef LOGID_BACKEND_HIDPP20_FEATURE_ADJUSTABLEDPI_H
 #define LOGID_BACKEND_HIDPP20_FEATURE_ADJUSTABLEDPI_H
 
-#include "../feature_defs.h"
-#include "../Feature.h"
+#include <backend/hidpp20/Feature.h>
+#include <backend/hidpp20/feature_defs.h>
 
 namespace logid::backend::hidpp20 {
     class AdjustableDPI : public Feature {

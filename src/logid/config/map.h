@@ -18,7 +18,7 @@
 #ifndef LOGID_CONFIG_MAP_H
 #define LOGID_CONFIG_MAP_H
 
-#include "group.h"
+#include <config/group.h>
 #include <map>
 #include <optional>
 #include <utility>

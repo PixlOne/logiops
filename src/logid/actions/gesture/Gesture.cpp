@@ -16,13 +16,13 @@
  *
  */
 
+#include <actions/gesture/Gesture.h>
 #include <utility>
-#include "Gesture.h"
-#include "ReleaseGesture.h"
-#include "ThresholdGesture.h"
-#include "IntervalGesture.h"
-#include "AxisGesture.h"
-#include "NullGesture.h"
+#include <actions/gesture/ReleaseGesture.h>
+#include <actions/gesture/ThresholdGesture.h>
+#include <actions/gesture/IntervalGesture.h>
+#include <actions/gesture/AxisGesture.h>
+#include <actions/gesture/NullGesture.h>
 
 using namespace logid;
 using namespace logid::actions;

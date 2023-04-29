@@ -18,9 +18,10 @@
 #ifndef LOGID_FEATURE_REMAPBUTTON_H
 #define LOGID_FEATURE_REMAPBUTTON_H
 
-#include "../backend/hidpp20/features/ReprogControls.h"
-#include "DeviceFeature.h"
-#include "../actions/Action.h"
+#include <features/DeviceFeature.h>
+#include <actions/Action.h>
+#include <backend/hidpp20/features/ReprogControls.h>
+#include <backend/hidpp/Device.h>
 
 namespace logid::features {
     class RemapButton;

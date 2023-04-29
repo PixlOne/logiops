@@ -16,16 +16,13 @@
  *
  */
 
+#include <DeviceManager.h>
+#include <backend/Error.h>
+#include <util/log.h>
+#include <ipcgull/function.h>
 #include <thread>
 #include <sstream>
 #include <utility>
-#include <ipcgull/function.h>
-
-#include "DeviceManager.h"
-#include "Receiver.h"
-#include "util/log.h"
-#include "backend/hidpp10/Error.h"
-#include "backend/Error.h"
 
 using namespace logid;
 using namespace logid::backend;
