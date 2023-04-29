@@ -23,6 +23,7 @@
 #include <actions/gesture/IntervalGesture.h>
 #include <actions/gesture/AxisGesture.h>
 #include <actions/gesture/NullGesture.h>
+#include <ipc_defs.h>
 
 using namespace logid;
 using namespace logid::actions;
@@ -30,7 +31,7 @@ using namespace logid::actions;
 Gesture::Gesture(Device* device,
                  std::shared_ptr<ipcgull::node> node,
                  const std::string& name, tables t) :
-        ipcgull::interface("pizza.pixl.LogiOps.Gesture." + name, std::move(t)),
+        ipcgull::interface(SERVICE_ROOT_NAME ".Gesture." + name, std::move(t)),
         _node(std::move(node)), _device(device) {
 }
 

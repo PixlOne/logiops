@@ -23,6 +23,7 @@
 #include <thread>
 #include <sstream>
 #include <utility>
+#include <ipc_defs.h>
 
 using namespace logid;
 using namespace logid::backend;
@@ -190,7 +191,7 @@ void DeviceManager::removeDevice(std::string path) {
 
 DeviceManager::DevicesIPC::DevicesIPC(DeviceManager* manager) :
         ipcgull::interface(
-                "pizza.pixl.LogiOps.Devices",
+                SERVICE_ROOT_NAME ".Devices",
                 {
                         {"Enumerate", {manager, &DeviceManager::listDevices, {"devices"}}}
                 },
@@ -238,7 +239,7 @@ void DeviceManager::DevicesIPC::deviceRemoved(
 
 DeviceManager::ReceiversIPC::ReceiversIPC(DeviceManager* manager) :
         ipcgull::interface(
-                "pizza.pixl.LogiOps.Receivers",
+                SERVICE_ROOT_NAME ".Receivers",
                 {
                         {"Enumerate", {manager, &DeviceManager::listReceivers,
                                        {"receivers"}}}

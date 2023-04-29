@@ -20,6 +20,7 @@
 #include <Device.h>
 #include <sstream>
 #include <util/log.h>
+#include <ipc_defs.h>
 
 using namespace logid::features;
 using namespace logid::backend;
@@ -31,7 +32,7 @@ using namespace logid::actions;
 
 static constexpr auto hidpp20_reprog_rebind =
         (hidpp20::ReprogControls::ChangeTemporaryDivert |
-        hidpp20::ReprogControls::ChangeRawXYDivert);
+         hidpp20::ReprogControls::ChangeRawXYDivert);
 
 RemapButton::RemapButton(Device* dev) : DeviceFeature(dev),
                                         _config(dev->activeProfile().buttons),
@@ -239,9 +240,8 @@ std::shared_ptr<ipcgull::node> Button::node() const {
     return _node;
 }
 
-Button::IPC::IPC(Button* parent,
-                 const Info& info) :
-        ipcgull::interface("pizza.pixl.LogiOps.Device.Button", {
+Button::IPC::IPC(Button* parent, const Info& info) :
+        ipcgull::interface(SERVICE_ROOT_NAME ".Button", {
                 {"SetAction", {this, &IPC::setAction, {"type"}}}
         }, {
                                    {"ControlID",      ipcgull::property<uint16_t>(
@@ -278,7 +278,7 @@ void Button::IPC::setAction(const std::string& type) {
 }
 
 RemapButton::IPC::IPC(RemapButton* parent) :
-        ipcgull::interface("pizza.pixl.LogiOps.Buttons", {
+        ipcgull::interface(SERVICE_ROOT_NAME ".Buttons", {
                 {"Enumerate", {this, &IPC::enumerate, {"buttons"}}}
         }, {}, {}),
         _parent(*parent) {

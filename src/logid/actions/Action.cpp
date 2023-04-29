@@ -25,6 +25,7 @@
 #include <actions/CycleDPI.h>
 #include <actions/ChangeDPI.h>
 #include <actions/ChangeHostAction.h>
+#include <ipc_defs.h>
 
 using namespace logid;
 using namespace logid::actions;
@@ -124,6 +125,6 @@ std::shared_ptr<Action> Action::makeAction(
 }
 
 Action::Action(Device* device, const std::string& name, tables t) :
-        ipcgull::interface("pizza.pixl.LogiOps.Action." + name, std::move(t)),
+        ipcgull::interface(SERVICE_ROOT_NAME ".Action." + name, std::move(t)),
         _device(device), _pressed(false) {
 }

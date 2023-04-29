@@ -20,6 +20,7 @@
 #include <actions/gesture/AxisGesture.h>
 #include <Device.h>
 #include <util/log.h>
+#include <ipc_defs.h>
 
 using namespace logid::features;
 using namespace logid::backend;
@@ -47,8 +48,14 @@ namespace {
             const std::shared_ptr<ipcgull::node>& parent, const std::string& direction) {
         if (conf.has_value()) {
             try {
-                return actions::Gesture::makeGesture(
-                        dev, conf.value(), parent->make_child(direction));
+                auto result = actions::Gesture::makeGesture(dev, conf.value(),
+                                                            parent->make_child(direction));
+                if (!result->wheelCompatibility()) {
+                    logPrintf(WARN, "Mapping thumb wheel to incompatible gesture");
+                    return nullptr;
+                } else {
+                    return result;
+                }
             } catch (actions::InvalidAction& e) {
                 logPrintf(WARN, "Mapping thumb wheel to invalid gesture");
             }
@@ -216,7 +223,7 @@ void ThumbWheel::_fixGesture(const std::shared_ptr<actions::Gesture>& gesture) c
 
 ThumbWheel::IPC::IPC(ThumbWheel* parent) :
         ipcgull::interface(
-                "pizza.pixl.LogiOps.ThumbWheel", {
+                SERVICE_ROOT_NAME ".ThumbWheel", {
                         {"GetConfig", {this, &IPC::getConfig, {"divert", "invert"}}},
                         {"SetDivert", {this, &IPC::setDivert, {"divert"}}},
                         {"SetInvert", {this, &IPC::setInvert, {"invert"}}},
@@ -276,7 +283,14 @@ void ThumbWheel::IPC::setLeft(const std::string& type) {
     }
     _parent._left_gesture = actions::Gesture::makeGesture(
             _parent._device, type, config.left.value(), _parent._left_node);
-    _parent._fixGesture(_parent._left_gesture);
+    if (!_parent._left_gesture->wheelCompatibility()) {
+        _parent._left_gesture.reset();
+        config.left.reset();
+
+        throw std::invalid_argument("incompatible gesture");
+    } else {
+        _parent._fixGesture(_parent._left_gesture);
+    }
 }
 
 void ThumbWheel::IPC::setRight(const std::string& type) {
@@ -289,7 +303,14 @@ void ThumbWheel::IPC::setRight(const std::string& type) {
     }
     _parent._right_gesture = actions::Gesture::makeGesture(
             _parent._device, type, config.right.value(), _parent._right_node);
-    _parent._fixGesture(_parent._right_gesture);
+    if (!_parent._right_gesture->wheelCompatibility()) {
+        _parent._right_gesture.reset();
+        config.right.reset();
+
+        throw std::invalid_argument("incompatible gesture");
+    } else {
+        _parent._fixGesture(_parent._right_gesture);
+    }
 }
 
 void ThumbWheel::IPC::setProxy(const std::string& type) {

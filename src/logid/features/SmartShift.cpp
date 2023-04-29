@@ -17,6 +17,7 @@
  */
 #include <features/SmartShift.h>
 #include <Device.h>
+#include <ipc_defs.h>
 
 using namespace logid::features;
 using namespace logid::backend;
@@ -60,7 +61,7 @@ void SmartShift::setStatus(Status status) {
 
 SmartShift::IPC::IPC(SmartShift* parent) :
         ipcgull::interface(
-                "pizza.pixl.LogiOps.SmartShift", {
+                SERVICE_ROOT_NAME ".SmartShift", {
                         {"GetStatus",             {this, &IPC::getStatus,           {"active",    "threshold"}}},
                         {"SetActive",             {this, &IPC::setActive,           {"active"}}},
                         {"SetThreshold",          {this, &IPC::setThreshold,        {"threshold"}}},

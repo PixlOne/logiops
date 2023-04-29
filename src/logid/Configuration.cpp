@@ -19,6 +19,7 @@
 #include <Configuration.h>
 #include <util/log.h>
 #include <utility>
+#include <ipc_defs.h>
 
 using namespace logid;
 using namespace libconfig;
@@ -60,7 +61,7 @@ void Configuration::save() {
 }
 
 Configuration::IPC::IPC(Configuration* config) :
-        ipcgull::interface("pizza.pixl.LogiOps.Config", {
+        ipcgull::interface(SERVICE_ROOT_NAME ".Config", {
                 {"Save", {config, &Configuration::save}}
         }, {}, {}) {
 }

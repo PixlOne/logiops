@@ -28,6 +28,7 @@
 #include <util/log.h>
 #include <thread>
 #include <utility>
+#include <ipc_defs.h>
 
 using namespace logid;
 using namespace logid::backend;
@@ -246,7 +247,7 @@ void Device::_makeResetMechanism() {
 
 Device::IPC::IPC(Device* device) :
         ipcgull::interface(
-                "pizza.pixl.LogiOps.Device",
+                SERVICE_ROOT_NAME ".Device",
                 {},
                 {
                         {"Name",           ipcgull::property<std::string>(

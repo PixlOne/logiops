@@ -20,6 +20,7 @@
 #include <DeviceManager.h>
 #include <backend/Error.h>
 #include <util/log.h>
+#include <ipc_defs.h>
 
 using namespace logid;
 using namespace logid::backend;
@@ -166,5 +167,5 @@ std::shared_ptr<dj::Receiver> Receiver::rawReceiver() {
 }
 
 Receiver::ReceiverIPC::ReceiverIPC(Receiver* receiver) :
-        ipcgull::interface("pizza.pixl.LogiOps.Receiver", {}, {}, {}) {
+        ipcgull::interface(SERVICE_ROOT_NAME ".Receiver", {}, {}, {}) {
 }

@@ -20,6 +20,7 @@
 #include <InputDevice.h>
 #include <util/log.h>
 #include <algorithm>
+#include <ipc_defs.h>
 
 #ifndef LOGIOPS_VERSION
 #define LOGIOPS_VERSION "null"
@@ -141,9 +142,7 @@ int main(int argc, char** argv) {
         config = std::make_shared<Configuration>();
     }
 
-    auto server = ipcgull::make_server("pizza.pixl.LogiOps",
-                                       "/pizza/pixl/LogiOps",
-                                       ipcgull::IPCGULL_USER);
+    auto server = ipcgull::make_server(SERVICE_ROOT_NAME, server_root_node, ipcgull::IPCGULL_USER);
 
     //Create a virtual input device
     try {
