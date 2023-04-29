@@ -61,15 +61,16 @@ namespace {
 
 ThumbWheel::ThumbWheel(Device* dev) : DeviceFeature(dev), _wheel_info(),
                                       _node(dev->ipcNode()->make_child("thumbwheel")),
-                                      _gesture_node(_node->make_child("scroll")),
+                                      _left_node(_node->make_child("left")),
+                                      _right_node(_node->make_child("right")),
                                       _proxy_node(_node->make_child("proxy")),
                                       _tap_node(_node->make_child("tap")),
                                       _touch_node(_node->make_child("touch")),
                                       _config(dev->activeProfile().thumbwheel) {
     if (_config.has_value()) {
         auto& conf = _config.value();
-        _left_action = _genGesture(dev, conf.left, _gesture_node, "left");
-        _right_action = _genGesture(dev, conf.right, _gesture_node, "right");
+        _left_gesture = _genGesture(dev, conf.left, _left_node, "left");
+        _right_gesture = _genGesture(dev, conf.right, _right_node, "right");
         _touch_action = _genAction(dev, conf.touch, _touch_node);
         _tap_action = _genAction(dev, conf.tap, _tap_node);
         _proxy_action = _genAction(dev, conf.proxy, _proxy_node);
@@ -90,28 +91,15 @@ ThumbWheel::ThumbWheel(Device* dev) : DeviceFeature(dev), _wheel_info(),
     logPrintf(DEBUG, "Thumb wheel resolution: native (%d), diverted (%d)",
               _wheel_info.nativeRes, _wheel_info.divertedRes);
 
-    if (_left_action) {
-        try {
-            auto left_axis = std::dynamic_pointer_cast<actions::AxisGesture>(
-                    _left_action);
-            // TODO: How do hires multipliers work on 0x2150 thumbwheels?
-            if (left_axis)
-                left_axis->setHiresMultiplier(_wheel_info.divertedRes);
-        } catch (std::bad_cast& e) {}
-
-        _left_action->press(true);
+    if (_left_gesture) {
+        _fixGesture(_left_gesture);
     }
 
-    if (_right_action) {
-        try {
-            auto right_axis = std::dynamic_pointer_cast<actions::AxisGesture>(
-                    _right_action);
-            if (right_axis)
-                right_axis->setHiresMultiplier(_wheel_info.divertedRes);
-        } catch (std::bad_cast& e) {}
-
-        _right_action->press(true);
+    if (_right_gesture) {
+        _fixGesture(_right_gesture);
     }
+
+    _ipc_interface = _node->make_interface<IPC>(this);
 }
 
 ThumbWheel::~ThumbWheel() noexcept {
@@ -120,6 +108,7 @@ ThumbWheel::~ThumbWheel() noexcept {
 }
 
 void ThumbWheel::configure() {
+    std::shared_lock lock(_config_mutex);
     if (_config.has_value()) {
         const auto& config = _config.value();
         _thumb_wheel->setStatus(config.divert.value_or(false),
@@ -148,6 +137,7 @@ void ThumbWheel::listen() {
 }
 
 void ThumbWheel::_handleEvent(hidpp20::ThumbWheel::ThumbwheelEvent event) {
+    std::shared_lock lock(_config_mutex);
     if (event.flags & hidpp20::ThumbWheel::SingleTap) {
         auto action = _tap_action;
         if (action) {
@@ -181,10 +171,10 @@ void ThumbWheel::_handleEvent(hidpp20::ThumbWheel::ThumbwheelEvent event) {
         event.rotation *= _wheel_info.defaultDirection;
 
         if (event.rotationStatus == hidpp20::ThumbWheel::Start) {
-            if (_right_action)
-                _right_action->press(true);
-            if (_left_action)
-                _left_action->press(true);
+            if (_right_gesture)
+                _right_gesture->press(true);
+            if (_left_gesture)
+                _left_gesture->press(true);
             _last_direction = 0;
         }
 
@@ -193,9 +183,9 @@ void ThumbWheel::_handleEvent(hidpp20::ThumbWheel::ThumbwheelEvent event) {
             std::shared_ptr<actions::Gesture> scroll_action;
 
             if (direction > 0)
-                scroll_action = _right_action;
+                scroll_action = _right_gesture;
             else
-                scroll_action = _left_action;
+                scroll_action = _left_gesture;
 
             if (scroll_action) {
                 scroll_action->press(true);
@@ -206,10 +196,128 @@ void ThumbWheel::_handleEvent(hidpp20::ThumbWheel::ThumbwheelEvent event) {
         }
 
         if (event.rotationStatus == hidpp20::ThumbWheel::Stop) {
-            if (_right_action)
-                _right_action->release(false);
-            if (_left_action)
-                _left_action->release(false);
+            if (_right_gesture)
+                _right_gesture->release(false);
+            if (_left_gesture)
+                _left_gesture->release(false);
         }
     }
+}
+
+void ThumbWheel::_fixGesture(const std::shared_ptr<actions::Gesture>& gesture) const {
+    try {
+        auto axis = std::dynamic_pointer_cast<actions::AxisGesture>(gesture);
+        // TODO: How do hires multipliers work on 0x2150 thumbwheels?
+        if (axis)
+            axis->setHiresMultiplier(_wheel_info.divertedRes);
+    } catch (std::bad_cast& e) {}
+
+    gesture->press(true);
+}
+
+ThumbWheel::IPC::IPC(ThumbWheel* parent) :
+        ipcgull::interface(
+                "pizza.pixl.LogiOps.ThumbWheel", {
+                        {"GetConfig", {this, &IPC::getConfig, {"divert", "invert"}}},
+                        {"SetDivert", {this, &IPC::setDivert, {"divert"}}},
+                        {"SetInvert", {this, &IPC::setInvert, {"invert"}}},
+                        {"SetLeft",   {this, &IPC::setLeft,   {"type"}}},
+                        {"SetRight",  {this, &IPC::setRight,  {"type"}}},
+                        {"SetProxy",  {this, &IPC::setProxy,  {"type"}}},
+                        {"SetTap",    {this, &IPC::setTap,    {"type"}}},
+                        {"SetTouch",  {this, &IPC::setTouch,  {"type"}}},
+                }, {}, {}), _parent(*parent) {
+}
+
+config::ThumbWheel& ThumbWheel::IPC::_parentConfig() {
+    if (!_parent._config.has_value()) {
+        _parent._config.emplace();
+    }
+
+    return _parent._config.value();
+}
+
+std::tuple<bool, bool> ThumbWheel::IPC::getConfig() const {
+    std::shared_lock lock(_parent._config_mutex);
+
+    if (!_parent._config.has_value()) {
+        return {false, false};
+    }
+
+    return {_parent._config.value().divert.value_or(false),
+            _parent._config.value().invert.value_or(false)};
+}
+
+void ThumbWheel::IPC::setDivert(bool divert) {
+    std::unique_lock lock(_parent._config_mutex);
+
+    auto& config = _parentConfig();
+    config.divert = divert;
+
+    _parent._thumb_wheel->setStatus(divert, config.invert.value_or(false));
+}
+
+void ThumbWheel::IPC::setInvert(bool invert) {
+    std::unique_lock lock(_parent._config_mutex);
+
+    auto& config = _parentConfig();
+    config.invert = invert;
+
+    _parent._thumb_wheel->setStatus(config.divert.value_or(false), invert);
+}
+
+void ThumbWheel::IPC::setLeft(const std::string& type) {
+    std::unique_lock lock(_parent._config_mutex);
+
+    auto& config = _parentConfig();
+
+    _parent._left_gesture.reset();
+    if (!config.left.has_value()) {
+        config.left = config::NoGesture();
+    }
+    _parent._left_gesture = actions::Gesture::makeGesture(
+            _parent._device, type, config.left.value(), _parent._left_node);
+    _parent._fixGesture(_parent._left_gesture);
+}
+
+void ThumbWheel::IPC::setRight(const std::string& type) {
+    std::unique_lock lock(_parent._config_mutex);
+
+    auto& config = _parentConfig();
+
+    if (!config.right.has_value()) {
+        config.right = config::NoGesture();
+    }
+    _parent._right_gesture = actions::Gesture::makeGesture(
+            _parent._device, type, config.right.value(), _parent._right_node);
+    _parent._fixGesture(_parent._right_gesture);
+}
+
+void ThumbWheel::IPC::setProxy(const std::string& type) {
+    std::unique_lock lock(_parent._config_mutex);
+
+    auto& config = _parentConfig();
+
+    _parent._proxy_action = actions::Action::makeAction(
+            _parent._device, type, config.proxy, _parent._proxy_node);
+}
+
+
+void ThumbWheel::IPC::setTap(const std::string& type) {
+    std::unique_lock lock(_parent._config_mutex);
+
+    auto& config = _parentConfig();
+
+    _parent._tap_action = actions::Action::makeAction(
+            _parent._device, type, config.tap, _parent._tap_node);
+}
+
+
+void ThumbWheel::IPC::setTouch(const std::string& type) {
+    std::unique_lock lock(_parent._config_mutex);
+
+    auto& config = _parentConfig();
+
+    _parent._touch_action = actions::Action::makeAction(
+            _parent._device, type, config.touch, _parent._touch_node);
 }
