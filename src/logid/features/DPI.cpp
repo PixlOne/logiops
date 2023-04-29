@@ -19,6 +19,7 @@
 #include <Device.h>
 #include <algorithm>
 #include <cmath>
+#include "ipc_defs.h"
 
 using namespace logid::features;
 using namespace logid::backend;
@@ -54,34 +55,39 @@ uint16_t getClosestDPI(const hidpp20::AdjustableDPI::SensorDPIList& dpi_list,
     }
 }
 
-DPI::DPI(Device* device) : DeviceFeature(device),
-                           _config(device->activeProfile().dpi) {
+DPI::DPI(Device* device) : DeviceFeature(device), _config(device->activeProfile().dpi) {
     try {
         _adjustable_dpi = std::make_shared<hidpp20::AdjustableDPI>
                 (&device->hidpp20());
     } catch (hidpp20::UnsupportedFeature& e) {
         throw UnsupportedFeature();
     }
+
+    _ipc_interface = _device->ipcNode()->make_interface<IPC>(this);
 }
 
 void DPI::configure() {
+    std::shared_lock lock(_config_mutex);
+
     if (_config.has_value()) {
         const auto& config = _config.value();
         if (std::holds_alternative<int>(config)) {
             const auto& dpi = std::get<int>(config);
-            _adjustable_dpi->setSensorDPI(
-                    0,
-                    getClosestDPI(_adjustable_dpi->getSensorDPIList(0),
-                                  dpi));
+            _fillDPILists(0);
+            std::shared_lock dpi_lock(_dpi_list_mutex);
+            if (dpi != 0) {
+                _adjustable_dpi->setSensorDPI(0, getClosestDPI(_dpi_lists.at(0), dpi));
+            }
         } else {
             const auto& dpis = std::get<std::list<int>>(config);
             int i = 0;
+            _fillDPILists(dpis.size() - 1);
+            std::shared_lock dpi_lock(_dpi_list_mutex);
             for (const auto& dpi: dpis) {
-                _adjustable_dpi->setSensorDPI(
-                        i,
-                        getClosestDPI(_adjustable_dpi->getSensorDPIList(i),
-                                      dpi));
-                ++i;
+                if (dpi != 0) {
+                    _adjustable_dpi->setSensorDPI(i, getClosestDPI(_dpi_lists.at(i), dpi));
+                    ++i;
+                }
             }
         }
     }
@@ -95,14 +101,101 @@ uint16_t DPI::getDPI(uint8_t sensor) {
 }
 
 void DPI::setDPI(uint16_t dpi, uint8_t sensor) {
-    hidpp20::AdjustableDPI::SensorDPIList dpi_list;
-    if (_dpi_lists.size() <= sensor) {
-        dpi_list = _adjustable_dpi->getSensorDPIList(sensor);
-        for (std::size_t i = _dpi_lists.size(); i < sensor; i++) {
+    if (dpi == 0)
+        return;
+    _fillDPILists(sensor);
+    std::shared_lock lock(_dpi_list_mutex);
+    auto dpi_list = _dpi_lists.at(sensor);
+    _adjustable_dpi->setSensorDPI(sensor, getClosestDPI(dpi_list, dpi));
+}
+
+void DPI::_fillDPILists(uint8_t sensor) {
+    bool needs_fill;
+    {
+        std::shared_lock lock(_dpi_list_mutex);
+        needs_fill = _dpi_lists.size() <= sensor;
+    }
+    if (needs_fill) {
+        std::unique_lock lock(_dpi_list_mutex);
+        for (std::size_t i = _dpi_lists.size(); i <= sensor; i++) {
             _dpi_lists.push_back(_adjustable_dpi->getSensorDPIList(i));
         }
-        _dpi_lists.push_back(dpi_list);
     }
-    dpi_list = _dpi_lists[sensor];
-    _adjustable_dpi->setSensorDPI(sensor, getClosestDPI(dpi_list, dpi));
+}
+
+DPI::IPC::IPC(DPI* parent) : ipcgull::interface(
+        SERVICE_ROOT_NAME ".DPI", {
+                {"GetSensors", {this, &IPC::getSensors, {"sensors"}}},
+                {"GetDPIs", {this, &IPC::getDPIs, {"sensor"}, {"dpis", "dpiStep", "range"}}},
+                {"GetDPI", {this, &IPC::getDPI, {"sensor"}, {"dpi"}}},
+                {"SetDPI", {this, &IPC::setDPI, {"dpi", "sensor"}}}
+        }, {}, {}), _parent(*parent) {
+}
+
+uint8_t DPI::IPC::getSensors() const {
+    return _parent._dpi_lists.size();
+}
+
+std::tuple<std::vector<uint16_t>, uint16_t, bool> DPI::IPC::getDPIs(uint8_t sensor) const {
+    _parent._fillDPILists(sensor);
+    std::shared_lock lock(_parent._dpi_list_mutex);
+    auto& dpi_list = _parent._dpi_lists.at(sensor);
+    return {dpi_list.dpis, dpi_list.dpiStep, dpi_list.isRange};
+}
+
+uint16_t DPI::IPC::getDPI(uint8_t sensor) const {
+    std::shared_lock lock(_parent._config_mutex);
+    if (!_parent._config.has_value())
+        return _parent.getDPI(sensor);
+
+    if (std::holds_alternative<int>(_parent._config.value())) {
+        if (sensor == 0)
+            return std::get<int>(_parent._config.value());
+        else
+            return _parent.getDPI(sensor);
+    }
+
+    const auto& list = std::get<std::list<int>>(_parent._config.value());
+
+    if (list.size() > sensor) {
+        auto it = list.begin();
+        std::advance(it, sensor);
+        return *it;
+    } else {
+        return _parent.getDPI(sensor);
+    }
+}
+
+void DPI::IPC::setDPI(uint16_t dpi, uint8_t sensor) {
+    std::unique_lock lock(_parent._config_mutex);
+
+    if (!_parent._config.has_value())
+        _parent._config.emplace(std::list<int>());
+
+    if (std::holds_alternative<int>(_parent._config.value())) {
+        if (sensor == 0) {
+            _parent._config.value() = dpi;
+        } else {
+            auto list = std::list<int>(sensor + 1, 0);
+            *list.rbegin() = dpi;
+            *list.begin() = dpi;
+            _parent._config.value() = list;
+        }
+    } else {
+        auto& list = std::get<std::list<int>>(_parent._config.value());
+
+        while (list.size() <= sensor) {
+            list.emplace_back(0);
+        }
+
+        if (list.size() == (size_t) (sensor + 1)) {
+            *list.rbegin() = dpi;
+        } else {
+            auto it = list.begin();
+            std::advance(it, sensor);
+            *it = dpi;
+        }
+    }
+
+    _parent.setDPI(dpi, sensor);
 }

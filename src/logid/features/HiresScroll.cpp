@@ -19,7 +19,7 @@
 #include <actions/gesture/AxisGesture.h>
 #include <Device.h>
 #include <InputDevice.h>
-#include "ipc_defs.h"
+#include <ipc_defs.h>
 
 using namespace logid;
 using namespace logid::features;
@@ -32,6 +32,13 @@ HiresScroll::HiresScroll(Device* dev) :
         _node(dev->ipcNode()->make_child("hires_scroll")),
         _up_node(_node->make_child("up")),
         _down_node(_node->make_child("down")) {
+
+    try {
+        _hires_scroll = std::make_shared<hidpp20::HiresScroll>(&dev->hidpp20());
+    } catch (hidpp20::UnsupportedFeature& e) {
+        throw UnsupportedFeature();
+    }
+
     if (_config.has_value()) {
         if (std::holds_alternative<bool>(_config.value())) {
             config::HiresScroll conf{};
@@ -60,12 +67,6 @@ HiresScroll::HiresScroll(Device* dev) :
 
         _makeGesture(_up_gesture, conf.up, "up");
         _makeGesture(_down_gesture, conf.down, "down");
-    }
-
-    try {
-        _hires_scroll = std::make_shared<hidpp20::HiresScroll>(&dev->hidpp20());
-    } catch (hidpp20::UnsupportedFeature& e) {
-        throw UnsupportedFeature();
     }
 
     _last_scroll = std::chrono::system_clock::now();

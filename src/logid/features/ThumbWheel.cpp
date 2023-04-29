@@ -73,6 +73,13 @@ ThumbWheel::ThumbWheel(Device* dev) : DeviceFeature(dev), _wheel_info(),
                                       _tap_node(_node->make_child("tap")),
                                       _touch_node(_node->make_child("touch")),
                                       _config(dev->activeProfile().thumbwheel) {
+
+    try {
+        _thumb_wheel = std::make_shared<hidpp20::ThumbWheel>(&dev->hidpp20());
+    } catch (hidpp20::UnsupportedFeature& e) {
+        throw UnsupportedFeature();
+    }
+
     if (_config.has_value()) {
         auto& conf = _config.value();
         _left_gesture = _genGesture(dev, conf.left, _left_node, "left");
@@ -80,12 +87,6 @@ ThumbWheel::ThumbWheel(Device* dev) : DeviceFeature(dev), _wheel_info(),
         _touch_action = _genAction(dev, conf.touch, _touch_node);
         _tap_action = _genAction(dev, conf.tap, _tap_node);
         _proxy_action = _genAction(dev, conf.proxy, _proxy_node);
-    }
-
-    try {
-        _thumb_wheel = std::make_shared<hidpp20::ThumbWheel>(&dev->hidpp20());
-    } catch (hidpp20::UnsupportedFeature& e) {
-        throw UnsupportedFeature();
     }
 
     _wheel_info = _thumb_wheel->getInfo();

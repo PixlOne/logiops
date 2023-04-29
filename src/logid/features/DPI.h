@@ -21,6 +21,8 @@
 #include <backend/hidpp20/features/AdjustableDPI.h>
 #include <features/DeviceFeature.h>
 #include <config/schema.h>
+#include <ipcgull/interface.h>
+#include <shared_mutex>
 
 namespace logid::features {
     class DPI : public DeviceFeature {
@@ -36,9 +38,32 @@ namespace logid::features {
         void setDPI(uint16_t dpi, uint8_t sensor = 0);
 
     private:
+        void _fillDPILists(uint8_t sensor);
+
+        class IPC : public ipcgull::interface {
+        public:
+            explicit IPC(DPI* parent);
+
+            [[nodiscard]] uint8_t getSensors() const;
+
+            [[nodiscard]] std::tuple<std::vector<uint16_t>, uint16_t, bool> getDPIs(uint8_t
+                                                                                    sensor) const;
+
+            [[nodiscard]] uint16_t getDPI(uint8_t sensor) const;
+
+            void setDPI(uint16_t dpi, uint8_t sensor);
+
+        private:
+            DPI& _parent;
+        };
+
+        mutable std::shared_mutex _config_mutex;
         std::optional<config::DPI>& _config;
         std::shared_ptr<backend::hidpp20::AdjustableDPI> _adjustable_dpi;
+        mutable std::shared_mutex _dpi_list_mutex;
         std::vector<backend::hidpp20::AdjustableDPI::SensorDPIList> _dpi_lists;
+
+        std::shared_ptr<IPC> _ipc_interface;
     };
 }
 
