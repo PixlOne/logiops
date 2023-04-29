@@ -17,7 +17,6 @@
  */
 
 #include <backend/hidpp10/Receiver.h>
-#include <backend/hidpp10/Error.h>
 #include <cassert>
 
 using namespace logid::backend::hidpp10;
@@ -36,6 +35,9 @@ Receiver::Receiver(const std::string& path, const std::shared_ptr<raw::DeviceMon
         if (e.code() == Error::InvalidAddress)
             throw InvalidReceiver();
     }
+
+    // TODO: is there a better way of checking if this is a bolt receiver?
+    _is_bolt = pid() == 0xc548;
 }
 
 Receiver::NotificationFlags Receiver::getNotificationFlags() {
@@ -118,7 +120,8 @@ struct Receiver::PairingInfo
 Receiver::getPairingInfo(hidpp::DeviceIndex index) {
     std::vector<uint8_t> request(1);
     request[0] = index;
-    request[0] += 0x1f;
+    if (!_is_bolt)
+        request[0] += 0x1f;
 
     auto response = getRegister(PairingInfo, request, hidpp::ReportType::Long);
 
@@ -136,7 +139,10 @@ struct Receiver::ExtendedPairingInfo
 Receiver::getExtendedPairingInfo(hidpp::DeviceIndex index) {
     std::vector<uint8_t> request(1);
     request[0] = index;
-    request[0] += 0x2f;
+    if (_is_bolt)
+        request[0] += 0x50;
+    else
+        request[0] += 0x2f;
 
     auto response = getRegister(PairingInfo, request, hidpp::ReportType::Long);
 
@@ -159,18 +165,47 @@ Receiver::getExtendedPairingInfo(hidpp::DeviceIndex index) {
 }
 
 std::string Receiver::getDeviceName(hidpp::DeviceIndex index) {
-    std::vector<uint8_t> request(1);
+    std::vector<uint8_t> request(2);
+    std::string name;
     request[0] = index;
-    request[0] += 0x3f;
+    if (_is_bolt) {
+        /* Undocumented, deduced the following
+         * param 1 refers to part of string, 1-indexed
+         *
+         * response at 0x01 is [reg] [param 1] [size] [str...]
+         * response at 0x02-... is [next part of str...]
+         */
+        request[1] = 0x01;
 
-    auto response = getRegister(PairingInfo, request, hidpp::ReportType::Long);
+        auto resp = getRegister(PairingInfo, request, hidpp::ReportType::Long);
+        const uint8_t size = resp[2];
+        const uint8_t chunk_size = resp.size() - 3;
+        const uint8_t chunks = size/chunk_size + (size % chunk_size ? 1 : 0);
 
-    uint8_t size = response[1];
-    assert(size <= 14);
+        name.resize(size, ' ');
+        for (int i = 0; i < chunks; ++i) {
+            for (int j = 0; j < chunk_size; ++j) {
+                name[i*chunk_size + j] = (char)resp[j + 3];
+            }
 
-    std::string name(size, ' ');
-    for (std::size_t i = 0; i < size; i++)
-        name[i] = (char) (response[i + 2]);
+            if (i < chunks - 1) {
+                request[1] = i+1;
+                resp = getRegister(PairingInfo, request, hidpp::ReportType::Long);
+            }
+        }
+
+    } else {
+        request[0] += 0x3f;
+
+        auto response = getRegister(PairingInfo, request, hidpp::ReportType::Long);
+
+        const uint8_t size = response[1];
+
+        name.resize(size, ' ');
+        for (std::size_t i = 0; i < size && i + 2 < response.size(); i++)
+            name[i] = (char) (response[i + 2]);
+
+    }
 
     return name;
 }

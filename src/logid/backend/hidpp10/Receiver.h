@@ -140,6 +140,9 @@ namespace logid::backend::hidpp10 {
         static hidpp::DeviceIndex deviceDisconnectionEvent(const hidpp::Report& report);
 
         static hidpp::DeviceConnectionEvent deviceConnectionEvent(const hidpp::Report& report);
+
+    private:
+        bool _is_bolt = false;
     };
 }
 
