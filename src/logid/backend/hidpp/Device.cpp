@@ -20,8 +20,7 @@
 #include <backend/hidpp20/features/Root.h>
 #include <backend/hidpp20/features/DeviceName.h>
 #include <backend/hidpp20/Feature.h>
-#include <backend/hidpp10/Error.h>
-#include <backend/dj/Receiver.h>
+#include <backend/hidpp10/Receiver.h>
 #include <backend/Error.h>
 #include <cassert>
 #include <utility>
@@ -68,7 +67,7 @@ Device::Device(std::shared_ptr<raw::RawDevice> raw_device, DeviceIndex index,
     _init();
 }
 
-Device::Device(const std::shared_ptr<dj::Receiver>& receiver,
+Device::Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
                hidpp::DeviceConnectionEvent event, double timeout) :
         io_timeout(duration_cast<milliseconds>(
                 duration<double, std::milli>(timeout))),
@@ -85,7 +84,7 @@ Device::Device(const std::shared_ptr<dj::Receiver>& receiver,
     _init();
 }
 
-Device::Device(const std::shared_ptr<dj::Receiver>& receiver,
+Device::Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
                DeviceIndex index, double timeout) :
         io_timeout(duration_cast<milliseconds>(
                 duration<double, std::milli>(timeout))),
@@ -130,8 +129,7 @@ void Device::_init() {
                         }});
 
         try {
-            auto rsp = sendReport(
-                    {ReportType::Short, _index,
+            auto rsp = sendReport({ReportType::Short, _index,
                      hidpp20::FeatureID::ROOT, hidpp20::Root::Ping,
                      hidpp::softwareID});
             if (rsp.deviceIndex() != _index) {
@@ -253,7 +251,7 @@ Report Device::sendReport(const Report& report) {
     if (std::holds_alternative<Report>(response)) {
         return std::get<Report>(response);
     } else if(std::holds_alternative<Report::Hidpp10Error>(response)) {
-        throw hidpp20::Error(std::get<Report::Hidpp10Error>(response).error_code);
+        throw hidpp10::Error(std::get<Report::Hidpp10Error>(response).error_code);
     } else if(std::holds_alternative<Report::Hidpp20Error>(response)) {
         throw hidpp20::Error(std::get<Report::Hidpp20Error>(response).error_code);
     }
@@ -287,6 +285,10 @@ bool Device::responseReport(const Report& report) {
         return false;
     }
 
+}
+
+const std::shared_ptr<raw::RawDevice>& Device::rawDevice() const {
+    return _raw_device;
 }
 
 void Device::_sendReport(Report report) {

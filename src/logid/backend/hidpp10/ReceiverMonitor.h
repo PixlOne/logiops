@@ -19,16 +19,16 @@
 #ifndef LOGID_BACKEND_DJ_RECEIVERMONITOR_H
 #define LOGID_BACKEND_DJ_RECEIVERMONITOR_H
 
+#include <backend/hidpp10/Receiver.h>
+#include <backend/hidpp/defs.h>
 #include <cstdint>
 #include <string>
-#include <backend/dj/Receiver.h>
-#include <backend/hidpp/defs.h>
 
-namespace logid::backend::dj {
+namespace logid::backend::hidpp10 {
     // This class will run on the RawDevice thread,
     class ReceiverMonitor {
     public:
-        ReceiverMonitor(std::string path,
+        ReceiverMonitor(const std::string& path,
                         const std::shared_ptr<raw::DeviceMonitor>& monitor,
                         double timeout);
 
@@ -55,9 +55,9 @@ namespace logid::backend::dj {
         [[nodiscard]] std::shared_ptr<Receiver> receiver() const;
 
     private:
-        static constexpr const char* ev_handler_name = "receiver_monitor";
-
         std::shared_ptr<Receiver> _receiver;
+
+        std::optional<hidpp::Device::EvHandlerId> ev_handler;
     };
 
 }

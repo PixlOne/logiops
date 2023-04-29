@@ -29,7 +29,7 @@
 #include <backend/hidpp/Report.h>
 #include <backend/hidpp/defs.h>
 
-namespace logid::backend::dj {
+namespace logid::backend::hidpp10 {
     // Need to define here for a constructor
     class Receiver;
 }
@@ -70,10 +70,10 @@ namespace logid::backend::hidpp {
         Device(std::shared_ptr<raw::RawDevice> raw_device, DeviceIndex index,
                double timeout);
 
-        Device(const std::shared_ptr<dj::Receiver>& receiver,
+        Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
                hidpp::DeviceConnectionEvent event, double timeout);
 
-        Device(const std::shared_ptr<dj::Receiver>& receiver,
+        Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
                DeviceIndex index, double timeout);
 
         virtual ~Device();
@@ -98,6 +98,8 @@ namespace logid::backend::hidpp {
 
         void handleEvent(Report& report);
 
+        [[nodiscard]] const std::shared_ptr<raw::RawDevice>& rawDevice() const;
+
     protected:
         // Returns whether the report is a response
         virtual bool responseReport(const Report& report);
@@ -116,7 +118,7 @@ namespace logid::backend::hidpp {
 
         std::shared_ptr<raw::RawDevice> _raw_device;
         raw::RawDevice::EvHandlerId _raw_handler;
-        std::shared_ptr<dj::Receiver> _receiver;
+        std::shared_ptr<hidpp10::Receiver> _receiver;
         std::string _path;
         DeviceIndex _index;
 

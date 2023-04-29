@@ -35,7 +35,7 @@ Device::Device(std::shared_ptr<raw::RawDevice> raw_dev, hidpp::DeviceIndex index
     assert(version() == std::make_tuple(1, 0));
 }
 
-Device::Device(const std::shared_ptr<dj::Receiver>& receiver,
+Device::Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
                hidpp::DeviceIndex index,
                double timeout)
         : hidpp::Device(receiver, index, timeout) {

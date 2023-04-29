@@ -21,7 +21,7 @@
 
 #include <string>
 #include <Device.h>
-#include <backend/dj/ReceiverMonitor.h>
+#include <backend/hidpp10/ReceiverMonitor.h>
 
 namespace logid {
     class ReceiverNickname {
@@ -41,7 +41,7 @@ namespace logid {
         const std::weak_ptr<DeviceManager> _manager;
     };
 
-    class Receiver : public backend::dj::ReceiverMonitor,
+    class Receiver : public backend::hidpp10::ReceiverMonitor,
                      public ipcgull::object {
     public:
         typedef std::map<backend::hidpp::DeviceIndex, std::shared_ptr<Device>>
@@ -55,7 +55,7 @@ namespace logid {
 
         [[nodiscard]] const std::string& path() const;
 
-        std::shared_ptr<backend::dj::Receiver> rawReceiver();
+        std::shared_ptr<backend::hidpp10::Receiver> rawReceiver();
 
         [[nodiscard]] const DeviceList& devices() const;
 

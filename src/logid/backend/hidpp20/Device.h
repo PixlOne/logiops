@@ -34,10 +34,10 @@ namespace logid::backend::hidpp20 {
         Device(std::shared_ptr<raw::RawDevice> raw_device,
                hidpp::DeviceIndex index, double timeout);
 
-        Device(const std::shared_ptr<dj::Receiver>& receiver,
+        Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
                hidpp::DeviceConnectionEvent event, double timeout);
 
-        Device(const std::shared_ptr<dj::Receiver>& receiver,
+        Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
                hidpp::DeviceIndex index, double timeout);
 
         std::vector<uint8_t> callFunction(uint8_t feature_index,

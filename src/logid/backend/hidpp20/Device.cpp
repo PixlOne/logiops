@@ -19,7 +19,7 @@
 #include <cassert>
 #include <backend/hidpp20/Device.h>
 #include <backend/Error.h>
-#include <backend/dj/Receiver.h>
+#include <backend/hidpp10/Receiver.h>
 
 using namespace logid::backend;
 using namespace logid::backend::hidpp20;
@@ -39,14 +39,14 @@ Device::Device(std::shared_ptr<raw::RawDevice> raw_device,
         throw std::runtime_error("Invalid HID++ version");
 }
 
-Device::Device(const std::shared_ptr<dj::Receiver>& receiver,
+Device::Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
                hidpp::DeviceConnectionEvent event, double timeout) :
         hidpp::Device(receiver, event, timeout) {
     if (std::get<0>(version()) < 2)
         throw std::runtime_error("Invalid HID++ version");
 }
 
-Device::Device(const std::shared_ptr<dj::Receiver>& receiver,
+Device::Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
                hidpp::DeviceIndex index, double timeout)
         : hidpp::Device(receiver, index, timeout) {
     if (std::get<0>(version()) < 2)

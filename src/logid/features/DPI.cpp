@@ -19,7 +19,7 @@
 #include <Device.h>
 #include <algorithm>
 #include <cmath>
-#include "ipc_defs.h"
+#include <ipc_defs.h>
 
 using namespace logid::features;
 using namespace logid::backend;

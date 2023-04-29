@@ -19,6 +19,7 @@
 #include <Receiver.h>
 #include <DeviceManager.h>
 #include <backend/Error.h>
+#include <backend/hidpp10/Error.h>
 #include <util/log.h>
 #include <ipc_defs.h>
 
@@ -61,8 +62,8 @@ std::shared_ptr<Receiver> Receiver::make(
 
 Receiver::Receiver(const std::string& path,
                    const std::shared_ptr<DeviceManager>& manager) :
-        dj::ReceiverMonitor(path, manager,
-                            manager->config()->io_timeout.value_or(
+        hidpp10::ReceiverMonitor(path, manager,
+                                 manager->config()->io_timeout.value_or(
                                     defaults::io_timeout)),
         _path(path), _manager(manager), _nickname(manager),
         _ipc_node(manager->receiversNode()->make_child(_nickname)),
@@ -162,7 +163,7 @@ const std::string& Receiver::path() const {
     return _path;
 }
 
-std::shared_ptr<dj::Receiver> Receiver::rawReceiver() {
+std::shared_ptr<hidpp10::Receiver> Receiver::rawReceiver() {
     return receiver();
 }
 

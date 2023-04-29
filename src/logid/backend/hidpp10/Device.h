@@ -34,7 +34,7 @@ namespace logid::backend::hidpp10 {
         Device(std::shared_ptr<raw::RawDevice> raw_dev,
                hidpp::DeviceIndex index, double timeout);
 
-        Device(const std::shared_ptr<dj::Receiver>& receiver,
+        Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
                hidpp::DeviceIndex index, double timeout);
 
         hidpp::Report sendReport(const hidpp::Report& report) final;

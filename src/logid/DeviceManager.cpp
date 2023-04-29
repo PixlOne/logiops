@@ -18,6 +18,7 @@
 
 #include <DeviceManager.h>
 #include <backend/Error.h>
+#include <backend/hidpp10/Error.h>
 #include <util/log.h>
 #include <ipcgull/function.h>
 #include <thread>
@@ -96,9 +97,8 @@ void DeviceManager::addDevice(std::string path) {
     }
 
     try {
-        hidpp::Device device(
-                path, hidpp::DefaultDevice, _self.lock(),
-                config()->io_timeout.value_or(defaults::io_timeout));
+        hidpp::Device device(path, hidpp::DefaultDevice, _self.lock(),
+                             config()->io_timeout.value_or(defaults::io_timeout));
         isReceiver = device.version() == std::make_tuple(1, 0);
     } catch (hidpp10::Error& e) {
         if (e.code() != hidpp10::Error::UnknownDevice)
@@ -146,14 +146,12 @@ void DeviceManager::addDevice(std::string path) {
                 if (e.code() != hidpp10::Error::UnknownDevice)
                     throw;
                 else
-                    logPrintf(WARN,
-                              "HID++ 1.0 error while trying to initialize %s:"
-                              "%s", path.c_str(), e.what());
+                    logPrintf(WARN, "HID++ 1.0 error while trying to initialize %s: %s",
+                              path.c_str(), e.what());
             } catch (hidpp::Device::InvalidDevice& e) { // Ignore
             } catch (std::system_error& e) {
                 // This error should have been thrown previously
-                logPrintf(WARN, "I/O error on %s: %s", path.c_str(),
-                          e.what());
+                logPrintf(WARN, "I/O error on %s: %s", path.c_str(), e.what());
             }
         }
     }

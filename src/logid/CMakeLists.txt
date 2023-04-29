@@ -42,9 +42,8 @@ add_executable(logid
         backend/raw/DeviceMonitor.cpp
         backend/raw/RawDevice.cpp
         backend/raw/IOMonitor.cpp
-        backend/dj/Receiver.cpp
-        backend/dj/ReceiverMonitor.cpp
-        backend/dj/Error.cpp
+        backend/hidpp10/Receiver.cpp
+        backend/hidpp10/ReceiverMonitor.cpp
         backend/hidpp/Device.cpp
         backend/hidpp/Report.cpp
         backend/hidpp10/Error.cpp
@@ -64,7 +63,6 @@ add_executable(logid
         backend/hidpp20/features/ChangeHost.cpp
         backend/hidpp20/features/WirelessDeviceStatus.cpp
         backend/hidpp20/features/ThumbWheel.cpp
-        backend/dj/Report.cpp
         util/task.cpp
         util/ExceptionHandler.cpp)
 
