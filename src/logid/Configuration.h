@@ -30,7 +30,7 @@
 
 namespace logid {
     namespace defaults {
-        static constexpr double io_timeout = 1000;
+        static constexpr double io_timeout = 500;
         static constexpr int gesture_threshold = 50;
     }
 

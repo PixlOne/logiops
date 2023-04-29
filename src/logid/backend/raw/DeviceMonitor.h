@@ -32,6 +32,8 @@ struct udev_monitor;
 }
 
 namespace logid::backend::raw {
+    static constexpr int ready_wait = 2000;
+
     class DeviceMonitor {
     public:
         virtual ~DeviceMonitor();

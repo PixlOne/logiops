@@ -95,7 +95,15 @@ void DeviceMonitor::ready() {
                 std::string dev_node = udev_device_get_devnode(device);
 
                 if (action == "add")
-                    spawn_task([this, dev_node]() { _addHandler(dev_node); });
+                    spawn_task([this, dev_node]() {
+                        /* Device was just connected, may not be ready yet.
+                         * Sleep for 2 seconds to ensure device is ready before attempting to add.
+                         * This is a bit of a hack and this time was determined through a bit of
+                         * experimentation.
+                         */
+                        std::this_thread::sleep_for(std::chrono::milliseconds(ready_wait));
+                        _addHandler(dev_node);
+                    });
                 else if (action == "remove")
                     spawn_task([this, dev_node]() { _removeHandler(dev_node); });
 
