@@ -175,8 +175,7 @@ std::string Receiver::getDeviceName(hidpp::DeviceIndex index) {
     return name;
 }
 
-hidpp::DeviceIndex Receiver::deviceDisconnectionEvent(const hidpp::Report&
-report) {
+hidpp::DeviceIndex Receiver::deviceDisconnectionEvent(const hidpp::Report& report) {
     assert(report.subId() == DeviceDisconnection);
     return report.deviceIndex();
 }

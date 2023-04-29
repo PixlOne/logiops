@@ -64,10 +64,10 @@ Receiver::Receiver(const std::string& path,
                    const std::shared_ptr<DeviceManager>& manager) :
         hidpp10::ReceiverMonitor(path, manager,
                                  manager->config()->io_timeout.value_or(
-                                    defaults::io_timeout)),
+                                         defaults::io_timeout)),
         _path(path), _manager(manager), _nickname(manager),
         _ipc_node(manager->receiversNode()->make_child(_nickname)),
-        _ipc_interface(_ipc_node->make_interface<ReceiverIPC>(this)) {
+        _ipc_interface(_ipc_node->make_interface<IPC>(this)) {
     ready();
 }
 
@@ -114,9 +114,8 @@ void Receiver::addDevice(hidpp::DeviceConnectionEvent event) {
         if (!event.linkEstablished)
             return;
 
-        hidpp::Device hidpp_device(
-                receiver(), event,
-                manager->config()->io_timeout.value_or(defaults::io_timeout));
+        hidpp::Device hidpp_device(receiver(), event,
+                                   manager->config()->io_timeout.value_or(defaults::io_timeout));
 
         auto version = hidpp_device.version();
 
@@ -132,9 +131,8 @@ void Receiver::addDevice(hidpp::DeviceConnectionEvent event) {
         manager->addExternalDevice(device);
 
     } catch (hidpp10::Error& e) {
-        logPrintf(ERROR,
-                  "Caught HID++ 1.0 error while trying to initialize "
-                  "%s:%d: %s", _path.c_str(), event.index, e.what());
+        logPrintf(ERROR, "Caught HID++ 1.0 error while trying to initialize %s:%d: %s",
+                  _path.c_str(), event.index, e.what());
     } catch (hidpp20::Error& e) {
         logPrintf(ERROR, "Caught HID++ 2.0 error while trying to initialize "
                          "%s:%d: %s", _path.c_str(), event.index, e.what());
@@ -167,6 +165,6 @@ std::shared_ptr<hidpp10::Receiver> Receiver::rawReceiver() {
     return receiver();
 }
 
-Receiver::ReceiverIPC::ReceiverIPC(Receiver* receiver) :
+Receiver::IPC::IPC(Receiver* receiver) :
         ipcgull::interface(SERVICE_ROOT_NAME ".Receiver", {}, {}, {}) {
 }

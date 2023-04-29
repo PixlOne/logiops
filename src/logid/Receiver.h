@@ -78,9 +78,9 @@ namespace logid {
         const ReceiverNickname _nickname;
         std::shared_ptr<ipcgull::node> _ipc_node;
 
-        class ReceiverIPC : public ipcgull::interface {
+        class IPC : public ipcgull::interface {
         public:
-            explicit ReceiverIPC(Receiver* receiver);
+            explicit IPC(Receiver* receiver);
         };
 
         std::shared_ptr<ipcgull::interface> _ipc_interface;

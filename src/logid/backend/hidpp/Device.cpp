@@ -117,21 +117,19 @@ void Device::_init() {
      */
     if (_index == hidpp::DefaultDevice) {
         _raw_handler = _raw_device->addEventHandler(
-                {
-                        [](
-                                const std::vector<uint8_t>& report) -> bool {
-                            return (report[Offset::Type] == Report::Type::Short ||
-                                    report[Offset::Type] == Report::Type::Long);
-                        },
-                        [this](const std::vector<uint8_t>& report) -> void {
-                            Report _report(report);
-                            this->handleEvent(_report);
-                        }});
+                {[](const std::vector<uint8_t>& report) -> bool {
+                    return (report[Offset::Type] == Report::Type::Short ||
+                            report[Offset::Type] == Report::Type::Long);
+                },
+                 [this](const std::vector<uint8_t>& report) -> void {
+                     Report _report(report);
+                     this->handleEvent(_report);
+                 }});
 
         try {
             auto rsp = sendReport({ReportType::Short, _index,
-                     hidpp20::FeatureID::ROOT, hidpp20::Root::Ping,
-                     hidpp::softwareID});
+                                   hidpp20::FeatureID::ROOT, hidpp20::Root::Ping,
+                                   hidpp::softwareID});
             if (rsp.deviceIndex() != _index) {
                 throw InvalidDevice(InvalidDevice::VirtualNode);
             }
@@ -146,18 +144,16 @@ void Device::_init() {
     }
 
     _raw_handler = _raw_device->addEventHandler(
-            {
-
-                    [index = this->_index](
-                            const std::vector<uint8_t>& report) -> bool {
-                        return (report[Offset::Type] == Report::Type::Short ||
-                                report[Offset::Type] == Report::Type::Long) &&
-                               (report[Offset::DeviceIndex] == index);
-                    },
-                    [this](const std::vector<uint8_t>& report) -> void {
-                        Report _report(report);
-                        this->handleEvent(_report);
-                    }});
+            {[index = this->_index](
+                    const std::vector<uint8_t>& report) -> bool {
+                return (report[Offset::Type] == Report::Type::Short ||
+                        report[Offset::Type] == Report::Type::Long) &&
+                       (report[Offset::DeviceIndex] == index);
+            },
+             [this](const std::vector<uint8_t>& report) -> void {
+                 Report _report(report);
+                 this->handleEvent(_report);
+             }});
 
     try {
         try {
@@ -250,9 +246,9 @@ Report Device::sendReport(const Report& report) {
 
     if (std::holds_alternative<Report>(response)) {
         return std::get<Report>(response);
-    } else if(std::holds_alternative<Report::Hidpp10Error>(response)) {
+    } else if (std::holds_alternative<Report::Hidpp10Error>(response)) {
         throw hidpp10::Error(std::get<Report::Hidpp10Error>(response).error_code);
-    } else if(std::holds_alternative<Report::Hidpp20Error>(response)) {
+    } else if (std::holds_alternative<Report::Hidpp20Error>(response)) {
         throw hidpp20::Error(std::get<Report::Hidpp20Error>(response).error_code);
     }
 

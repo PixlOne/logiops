@@ -57,8 +57,7 @@ hidpp::Report Device::sendReport(const hidpp::Report& report) {
     response_slot.sub_id = report.subId();
 
     _sendReport(report);
-    bool valid = _response_cv.wait_for(
-            lock, io_timeout,
+    bool valid = _response_cv.wait_for(lock, io_timeout,
             [&response_slot]() {
                 return response_slot.response.has_value();
             });

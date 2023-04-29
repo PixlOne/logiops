@@ -57,7 +57,7 @@ namespace logid::backend::hidpp10 {
     private:
         std::shared_ptr<Receiver> _receiver;
 
-        std::optional<hidpp::Device::EvHandlerId> ev_handler;
+        std::optional<raw::RawDevice::EvHandlerId> ev_handler;
     };
 
 }
