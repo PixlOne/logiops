@@ -70,7 +70,7 @@ HiresScroll::HiresScroll(Device* dev) :
 
     _last_scroll = std::chrono::system_clock::now();
 
-    _ipc_interface = _node->make_interface<IPC>(this);
+    _ipc_interface = dev->ipcNode()->make_interface<IPC>(this);
 }
 
 HiresScroll::~HiresScroll() noexcept {

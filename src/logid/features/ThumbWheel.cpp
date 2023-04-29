@@ -105,7 +105,7 @@ ThumbWheel::ThumbWheel(Device* dev) : DeviceFeature(dev), _wheel_info(),
         _fixGesture(_right_gesture);
     }
 
-    _ipc_interface = _node->make_interface<IPC>(this);
+    _ipc_interface = dev->ipcNode()->make_interface<IPC>(this);
 }
 
 ThumbWheel::~ThumbWheel() noexcept {
