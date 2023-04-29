@@ -218,21 +218,21 @@ void ThumbWheel::_fixGesture(const std::shared_ptr<actions::Gesture>& gesture) c
             axis->setHiresMultiplier(_wheel_info.divertedRes);
     } catch (std::bad_cast& e) {}
 
-    gesture->press(true);
+    if (gesture)
+        gesture->press(true);
 }
 
-ThumbWheel::IPC::IPC(ThumbWheel* parent) :
-        ipcgull::interface(
-                SERVICE_ROOT_NAME ".ThumbWheel", {
-                        {"GetConfig", {this, &IPC::getConfig, {"divert", "invert"}}},
-                        {"SetDivert", {this, &IPC::setDivert, {"divert"}}},
-                        {"SetInvert", {this, &IPC::setInvert, {"invert"}}},
-                        {"SetLeft",   {this, &IPC::setLeft,   {"type"}}},
-                        {"SetRight",  {this, &IPC::setRight,  {"type"}}},
-                        {"SetProxy",  {this, &IPC::setProxy,  {"type"}}},
-                        {"SetTap",    {this, &IPC::setTap,    {"type"}}},
-                        {"SetTouch",  {this, &IPC::setTouch,  {"type"}}},
-                }, {}, {}), _parent(*parent) {
+ThumbWheel::IPC::IPC(ThumbWheel* parent) : ipcgull::interface(
+        SERVICE_ROOT_NAME ".ThumbWheel", {
+                {"GetConfig", {this, &IPC::getConfig, {"divert", "invert"}}},
+                {"SetDivert", {this, &IPC::setDivert, {"divert"}}},
+                {"SetInvert", {this, &IPC::setInvert, {"invert"}}},
+                {"SetLeft",   {this, &IPC::setLeft,   {"type"}}},
+                {"SetRight",  {this, &IPC::setRight,  {"type"}}},
+                {"SetProxy",  {this, &IPC::setProxy,  {"type"}}},
+                {"SetTap",    {this, &IPC::setTap,    {"type"}}},
+                {"SetTouch",  {this, &IPC::setTouch,  {"type"}}},
+        }, {}, {}), _parent(*parent) {
 }
 
 config::ThumbWheel& ThumbWheel::IPC::_parentConfig() {

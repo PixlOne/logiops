@@ -19,14 +19,19 @@
 #include <actions/gesture/AxisGesture.h>
 #include <Device.h>
 #include <InputDevice.h>
+#include "ipc_defs.h"
 
+using namespace logid;
 using namespace logid::features;
 using namespace logid::backend;
 
-HiresScroll::HiresScroll(Device* dev) : DeviceFeature(dev),
-                                        _config(dev->activeProfile().hiresscroll), _mode(0),
-                                        _mask(0),
-                                        _node(dev->ipcNode()->make_child("hires")) {
+HiresScroll::HiresScroll(Device* dev) :
+        DeviceFeature(dev),
+        _config(dev->activeProfile().hiresscroll), _mode(0),
+        _mask(0),
+        _node(dev->ipcNode()->make_child("hires_scroll")),
+        _up_node(_node->make_child("up")),
+        _down_node(_node->make_child("down")) {
     if (_config.has_value()) {
         if (std::holds_alternative<bool>(_config.value())) {
             config::HiresScroll conf{};
@@ -53,8 +58,8 @@ HiresScroll::HiresScroll(Device* dev) : DeviceFeature(dev),
                 _mode |= hidpp20::HiresScroll::Mode::Target;
         }
 
-        _makeAction(_up_action, conf.up, "up");
-        _makeAction(_down_action, conf.down, "down");
+        _makeGesture(_up_gesture, conf.up, "up");
+        _makeGesture(_down_gesture, conf.down, "down");
     }
 
     try {
@@ -64,6 +69,8 @@ HiresScroll::HiresScroll(Device* dev) : DeviceFeature(dev),
     }
 
     _last_scroll = std::chrono::system_clock::now();
+
+    _ipc_interface = _node->make_interface<IPC>(this);
 }
 
 HiresScroll::~HiresScroll() noexcept {
@@ -72,6 +79,11 @@ HiresScroll::~HiresScroll() noexcept {
 }
 
 void HiresScroll::configure() {
+    std::shared_lock lock(_config_mutex);
+    _configure();
+}
+
+void HiresScroll::_configure() {
     auto mode = _hires_scroll->getMode();
     mode &= ~_mask;
     mode |= (_mode & _mask);
@@ -79,21 +91,19 @@ void HiresScroll::configure() {
 }
 
 void HiresScroll::listen() {
+    std::shared_lock lock(_config_mutex);
     if (!_ev_handler.has_value()) {
-        _ev_handler = _device->hidpp20().addEventHandler({
-                                                                 [index = _hires_scroll->featureIndex()](
-                                                                         const hidpp::Report& report) -> bool {
-                                                                     return (report.feature() ==
-                                                                             index) &&
-                                                                            (report.function() ==
-                                                                             hidpp20::HiresScroll::WheelMovement);
-                                                                 },
-                                                                 [this](const hidpp::Report& report) {
-                                                                     _handleScroll(
-                                                                             _hires_scroll->wheelMovementEvent(
-                                                                                     report));
-                                                                 }
-                                                         });
+        _ev_handler = _device->hidpp20().addEventHandler(
+                {
+                        [index = _hires_scroll->featureIndex()](
+                                const hidpp::Report& report) -> bool {
+                            return (report.feature() == index) &&
+                                   (report.function() == hidpp20::HiresScroll::WheelMovement);
+                        },
+                        [this](const hidpp::Report& report) {
+                            _handleScroll(_hires_scroll->wheelMovementEvent(report));
+                        }
+                });
     }
 }
 
@@ -105,35 +115,40 @@ void HiresScroll::setMode(uint8_t mode) {
     _hires_scroll->setMode(mode);
 }
 
-void HiresScroll::_makeAction(std::shared_ptr<actions::Gesture>& gesture,
-                              std::optional<config::Gesture>& config,
-                              const std::string& direction) {
+void HiresScroll::_makeGesture(std::shared_ptr<actions::Gesture>& gesture,
+                               std::optional<config::Gesture>& config,
+                               const std::string& direction) {
     if (config.has_value()) {
         gesture = actions::Gesture::makeGesture(_device, config.value(),
                                                 _node->make_child(direction));
-        try {
-            auto axis = std::dynamic_pointer_cast<actions::AxisGesture>(gesture);
-            if (axis)
-                axis->setHiresMultiplier(_hires_scroll->getCapabilities().multiplier);
-        } catch (std::bad_cast& e) {}
-        if (gesture)
-            gesture->press(true);
+
+        _fixGesture(gesture);
     } else {
         gesture.reset();
     }
 }
 
+void HiresScroll::_fixGesture(const std::shared_ptr<actions::Gesture>& gesture) {
+    try {
+        auto axis = std::dynamic_pointer_cast<actions::AxisGesture>(gesture);
+        if (axis)
+            axis->setHiresMultiplier(_hires_scroll->getCapabilities().multiplier);
+    } catch (std::bad_cast& e) {}
+    if (gesture)
+        gesture->press(true);
+}
+
 void HiresScroll::_handleScroll(hidpp20::HiresScroll::WheelStatus event) {
+    std::shared_lock lock(_config_mutex);
     auto now = std::chrono::system_clock::now();
-    if (std::chrono::duration_cast<std::chrono::seconds>(
-            now - _last_scroll).count() >= 1) {
-        if (_up_action) {
-            _up_action->release(false);
-            _up_action->press(true);
+    if (std::chrono::duration_cast<std::chrono::seconds>(now - _last_scroll).count() >= 1) {
+        if (_up_gesture) {
+            _up_gesture->release(false);
+            _up_gesture->press(true);
         }
-        if (_down_action) {
-            _down_action->release(false);
-            _down_action->press(true);
+        if (_down_gesture) {
+            _down_gesture->release(false);
+            _down_gesture->press(true);
         }
 
         _last_direction = 0;
@@ -141,25 +156,147 @@ void HiresScroll::_handleScroll(hidpp20::HiresScroll::WheelStatus event) {
 
     if (event.deltaV > 0) {
         if (_last_direction == -1) {
-            if (_down_action) {
-                _down_action->release(false);
-                _down_action->press(true);
+            if (_down_gesture) {
+                _down_gesture->release(false);
+                _down_gesture->press(true);
             }
         }
-        if (_up_action)
-            _up_action->move(event.deltaV);
+        if (_up_gesture)
+            _up_gesture->move(event.deltaV);
         _last_direction = 1;
     } else if (event.deltaV < 0) {
         if (_last_direction == 1) {
-            if (_up_action) {
-                _up_action->release(false);
-                _up_action->press(true);
+            if (_up_gesture) {
+                _up_gesture->release(false);
+                _up_gesture->press(true);
             }
         }
-        if (_down_action)
-            _down_action->move((int16_t) -event.deltaV);
+        if (_down_gesture)
+            _down_gesture->move((int16_t) -event.deltaV);
         _last_direction = -1;
     }
 
     _last_scroll = now;
+}
+
+HiresScroll::IPC::IPC(HiresScroll* parent) : ipcgull::interface(
+        SERVICE_ROOT_NAME ".HiresScroll", {
+                {"GetConfig", {this, &IPC::getConfig, {"hires", "invert", "target"}}},
+                {"SetHires",  {this, &IPC::setHires,  {"hires"}}},
+                {"SetInvert", {this, &IPC::setInvert, {"invert"}}},
+                {"SetTarget", {this, &IPC::setTarget, {"target"}}},
+                {"SetUp",     {this, &IPC::setUp,     {"type"}}},
+                {"SetDown",   {this, &IPC::setDown,   {"type"}}},
+        }, {}, {}), _parent(*parent) {
+}
+
+std::tuple<bool, bool, bool> HiresScroll::IPC::getConfig() const {
+    std::shared_lock lock(_parent._config_mutex);
+
+    if (_parent._config.has_value()) {
+        if (std::holds_alternative<bool>(_parent._config.value())) {
+            return {std::get<bool>(_parent._config.value()), false, false};
+        } else {
+            const auto& config = std::get<config::HiresScroll>(_parent._config.value());
+            return {
+                    config.hires.value_or(true),
+                    config.invert.value_or(false),
+                    config.target.value_or(false)
+            };
+        }
+    } else {
+        return {true, false, false};
+    }
+}
+
+config::HiresScroll& HiresScroll::IPC::_parentConfig() {
+    if (!_parent._config.has_value()) {
+        _parent._config = config::HiresScroll();
+    } else if (std::holds_alternative<bool>(_parent._config.value())) {
+        bool hires = std::get<bool>(_parent._config.value());
+        auto config = config::HiresScroll();
+        config.hires = hires;
+        _parent._config = hires;
+    }
+
+    return std::get<config::HiresScroll>(_parent._config.value());
+}
+
+void HiresScroll::IPC::setHires(bool hires) {
+    std::unique_lock lock(_parent._config_mutex);
+    _parentConfig().hires = hires;
+
+    _parent._mask |= hidpp20::HiresScroll::Mode::HiRes;
+    if (hires)
+        _parent._mode |= hidpp20::HiresScroll::Mode::HiRes;
+    else
+        _parent._mode &= ~hidpp20::HiresScroll::Mode::HiRes;
+
+    _parent._configure();
+}
+
+void HiresScroll::IPC::setInvert(bool invert) {
+    std::unique_lock lock(_parent._config_mutex);
+    _parentConfig().invert = invert;
+
+    _parent._mask |= hidpp20::HiresScroll::Mode::Inverted;
+    if (invert)
+        _parent._mode |= hidpp20::HiresScroll::Mode::Inverted;
+    else
+        _parent._mode &= ~hidpp20::HiresScroll::Mode::Inverted;
+
+    _parent._configure();
+}
+
+void HiresScroll::IPC::setTarget(bool target) {
+    std::unique_lock lock(_parent._config_mutex);
+    _parentConfig().target = target;
+
+    _parent._mask |= hidpp20::HiresScroll::Mode::Target;
+    if (target)
+        _parent._mode |= hidpp20::HiresScroll::Mode::Target;
+    else
+        _parent._mode &= ~hidpp20::HiresScroll::Mode::Target;
+
+    _parent._configure();
+}
+
+void HiresScroll::IPC::setUp(const std::string& type) {
+    std::unique_lock lock(_parent._config_mutex);
+
+    auto& config = _parentConfig();
+
+    if (!config.up.has_value()) {
+        config.up = config::NoGesture();
+    }
+    _parent._up_gesture = actions::Gesture::makeGesture(
+            _parent._device, type, config.up.value(), _parent._up_node);
+    if (!_parent._up_gesture->wheelCompatibility()) {
+        _parent._up_node.reset();
+        config.up.reset();
+
+        throw std::invalid_argument("incompatible gesture");
+    } else {
+        _parent._fixGesture(_parent._up_gesture);
+    }
+}
+
+void HiresScroll::IPC::setDown(const std::string& type) {
+    std::unique_lock lock(_parent._config_mutex);
+
+    auto& config = _parentConfig();
+
+    if (!config.down.has_value()) {
+        config.down = config::NoGesture();
+    }
+    _parent._down_gesture = actions::Gesture::makeGesture(
+            _parent._device, type, config.down.value(), _parent._down_node);
+    if (!_parent._down_gesture->wheelCompatibility()) {
+        _parent._down_node.reset();
+        config.down.reset();
+
+        throw std::invalid_argument("incompatible gesture");
+    } else {
+        _parent._fixGesture(_parent._down_gesture);
+    }
 }

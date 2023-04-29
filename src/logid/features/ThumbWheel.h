@@ -85,7 +85,7 @@ namespace logid::features {
         int8_t _last_direction = 0;
         bool _last_proxy = false;
         bool _last_touch = false;
-        std::shared_mutex _config_mutex;
+        mutable std::shared_mutex _config_mutex;
         std::optional<config::ThumbWheel>& _config;
 
         std::optional<backend::hidpp::Device::EvHandlerId> _ev_handler;
