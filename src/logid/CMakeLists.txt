@@ -12,6 +12,7 @@ find_package(PkgConfig REQUIRED)
 add_executable(logid
         logid.cpp
         util/log.cpp
+        config/util.cpp
         InputDevice.cpp
         DeviceManager.cpp
         Device.cpp

@@ -28,11 +28,11 @@
 #include <list>
 #include <set>
 
-/// TODO: A single element failing should not cause the container to be invalid.
-
 // Containers are chosen specifically so that no iterator is invalidated.
 
 namespace logid::config {
+    void logError(const libconfig::Setting& setting, std::exception& e);
+
     namespace {
         template<typename T>
         struct config_io {
@@ -406,10 +406,17 @@ namespace logid::config {
         struct config_io<std::optional<T>> {
             static inline std::optional<T> get(const libconfig::Setting& parent,
                                                const std::string& name) {
-                if (parent.exists(name))
-                    return config_io<T>::get(parent.lookup(name));
-                else
+                if (parent.exists(name)) {
+                    auto& setting = parent.lookup(name);
+                    try {
+                        return config_io<T>::get(setting);
+                    } catch (libconfig::SettingException& e) {
+                        logError(setting, e);
+                        return {};
+                    }
+                } else {
                     return {};
+                }
             }
 
             static inline void set(libconfig::Setting& parent,
