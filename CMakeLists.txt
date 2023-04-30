@@ -8,8 +8,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -Wall -Wextra")
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+option(USE_USER_BUS "Uses user bus" OFF)
 
 find_package(Git REQUIRED)
 
@@ -45,6 +47,10 @@ endif()
 message("LogiOps Version Number: ${LOGIOPS_VERSION}")
 
 add_definitions( -DLOGIOPS_VERSION="${LOGIOPS_VERSION}")
+
+if(USE_USER_BUS)
+    add_definitions(-DUSE_USER_BUS)
+endif()
 
 add_subdirectory(src/ipcgull)
 add_subdirectory(src/logid)

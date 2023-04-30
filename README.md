@@ -33,11 +33,17 @@ To build this project, run:
 ```bash
 mkdir build
 cd build
-cmake ..
+cmake -DCMAKE_BUILD_TYPE=Release ..
 make
 ```
 
 To install, run `sudo make install` after building. You can set the daemon to start at boot by running `sudo systemctl enable logid` or `sudo systemctl enable --now logid` if you want to enable and start the daemon.
+
+## Development
+
+The project may only run as root, but for development purposes, you may find it
+convenient to run as non-root on the user bus. You must compile with the CMake
+flag `-DUSE_USER_BUS=ON` to use the user bus.
 
 ## Donate
 This program is (and will always be) provided free of charge. If you would like to support the development of this project by donating, you can donate to my Ko-Fi below.

@@ -69,6 +69,7 @@ add_executable(logid
 set_target_properties(logid PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 pkg_check_modules(PC_EVDEV libevdev REQUIRED)
+pkg_check_modules(DBUS "dbus-1")
 pkg_check_modules(SYSTEMD "systemd")
 pkg_check_modules(LIBCONFIG libconfig REQUIRED)
 pkg_check_modules(LIBUDEV libudev REQUIRED)
@@ -88,13 +89,17 @@ target_link_libraries(logid ${CMAKE_THREAD_LIBS_INIT} ${EVDEV_LIBRARY} config++
 
 install(TARGETS logid DESTINATION bin)
 
-if (SYSTEMD_FOUND AND "${SYSTEMD_SERVICES_INSTALL_DIR}" STREQUAL "")
-    execute_process(COMMAND ${PKG_CONFIG_EXECUTABLE}
-            --variable=systemdsystemunitdir systemd
-            OUTPUT_VARIABLE SYSTEMD_SERVICES_INSTALL_DIR)
-    string(REGEX REPLACE "[ \t\n]+" "" SYSTEMD_SERVICES_INSTALL_DIR
-            "${SYSTEMD_SERVICES_INSTALL_DIR}")
-    configure_file(logid.service.cmake ${CMAKE_BINARY_DIR}/logid.service)
+if (SYSTEMD_FOUND)
+    if ("${SYSTEMD_SERVICES_INSTALL_DIR}" STREQUAL "")
+        execute_process(COMMAND ${PKG_CONFIG_EXECUTABLE}
+                --variable=systemdsystemunitdir systemd
+                OUTPUT_VARIABLE SYSTEMD_SERVICES_INSTALL_DIR)
+        string(REGEX REPLACE "[ \t\n]+" "" SYSTEMD_SERVICES_INSTALL_DIR
+                "${SYSTEMD_SERVICES_INSTALL_DIR}")
+    endif ()
+
+    # Install systemd service
+    configure_file(logid.service.in ${CMAKE_BINARY_DIR}/logid.service)
     message(STATUS "systemd units will be installed at ${SYSTEMD_SERVICES_INSTALL_DIR}")
     install(FILES ${CMAKE_BINARY_DIR}/logid.service
             DESTINATION ${SYSTEMD_SERVICES_INSTALL_DIR}
@@ -102,3 +107,14 @@ if (SYSTEMD_FOUND AND "${SYSTEMD_SERVICES_INSTALL_DIR}" STREQUAL "")
 elseif (NOT SYSTEMD_FOUND AND SYSTEMD_SERVICES_INSTALL_DIR)
     message(FATAL_ERROR "systemd is not found w/ pkg-config but SYSTEMD_SERVICES_INSTALL_DIR is defined.")
 endif ()
+
+if(DBUS_FOUND)
+    # Install DBus conf
+    # TODO: Is there a better way of setting the system policy directory?
+    set(DBUS_SYSTEM_POLICY_INSTALL_DIR "/usr/share/dbus-1/system.d")
+    configure_file(logiops-dbus.conf.in ${CMAKE_BINARY_DIR}/pizza.pixl.LogiOps.conf)
+    message(STATUS "dbus system policy will be installed at ${DBUS_SYSTEM_POLICY_INSTALL_DIR}")
+    install(FILES ${CMAKE_BINARY_DIR}/pizza.pixl.LogiOps.conf
+            DESTINATION ${DBUS_SYSTEM_POLICY_INSTALL_DIR}
+            COMPONENT cp)
+endif()

@@ -142,7 +142,13 @@ int main(int argc, char** argv) {
         config = std::make_shared<Configuration>();
     }
 
-    auto server = ipcgull::make_server(SERVICE_ROOT_NAME, server_root_node, ipcgull::IPCGULL_USER);
+#ifdef USE_USER_BUS
+    auto server_bus = ipcgull::IPCGULL_USER;
+#else
+    auto server_bus = ipcgull::IPCGULL_SYSTEM;
+#endif
+
+    auto server = ipcgull::make_server(SERVICE_ROOT_NAME, server_root_node, server_bus);
 
     //Create a virtual input device
     try {
@@ -161,6 +167,7 @@ int main(int argc, char** argv) {
         server->start();
     } catch (ipcgull::connection_failed& e) {
         logPrintf(ERROR, "Lost IPC connection, terminating.");
+        return EXIT_FAILURE;
     }
 
     return EXIT_SUCCESS;
