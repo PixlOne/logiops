@@ -33,14 +33,22 @@ ReceiverMonitor::ReceiverMonitor(const std::string& path,
 }
 
 ReceiverMonitor::~ReceiverMonitor() {
-    if (ev_handler.has_value())
-        _receiver->rawDevice()->removeEventHandler(ev_handler.value());
+    if (_pair_status_handler.has_value())
+        _receiver->removeEventHandler(_pair_status_handler.value());
+
+    if (_passkey_ev_handler.has_value())
+        _receiver->removeEventHandler(_passkey_ev_handler.value());
+
+    if (_discover_ev_handler.has_value())
+        _receiver->removeEventHandler(_discover_ev_handler.value());
+
+    if (_connect_ev_handler.has_value())
+        _receiver->rawDevice()->removeEventHandler(_connect_ev_handler.value());
 }
 
 void ReceiverMonitor::ready() {
-    if (!ev_handler.has_value()) {
-        hidpp::EventHandler event_handler;
-        ev_handler = _receiver->rawDevice()->addEventHandler(
+    if (!_connect_ev_handler.has_value()) {
+        _connect_ev_handler = _receiver->rawDevice()->addEventHandler(
                 {[](const std::vector<uint8_t>& report) -> bool {
                     if (report[Offset::Type] == Report::Type::Short ||
                         report[Offset::Type] == Report::Type::Long) {
@@ -75,6 +83,78 @@ void ReceiverMonitor::ready() {
                         }
                     });
                 }
+                });
+    }
+
+    if (!_discover_ev_handler.has_value()) {
+        _discover_ev_handler = _receiver->addEventHandler(
+                {[](const hidpp::Report& report) -> bool {
+                    return (report.subId() == Receiver::DeviceDiscovered) &&
+                           (report.type() == Report::Type::Long);
+                },
+                 [this](const hidpp::Report& report) {
+                     std::lock_guard lock(_pair_mutex);
+                     if (_pair_state == Discovering) {
+                         bool filled = Receiver::fillDeviceDiscoveryEvent(_discovery_event, report);
+
+                         if (filled) {
+                             _pair_state = FindingPasskey;
+                             spawn_task([this, event = _discovery_event]() {
+                                 receiver()->startBoltPairing(event);
+                             });
+                         }
+                     }
+                 }
+                });
+    }
+
+    if (!_passkey_ev_handler.has_value()) {
+        _passkey_ev_handler = _receiver->addEventHandler(
+                {[](const hidpp::Report& report) -> bool {
+                    return report.subId() == Receiver::PasskeyRequest &&
+                        report.type() == hidpp::Report::Type::Long;
+                },
+                 [this](const hidpp::Report& report) {
+                     std::lock_guard lock(_pair_mutex);
+                     if (_pair_state == FindingPasskey) {
+                         auto passkey = Receiver::passkeyEvent(report);
+
+                         _pair_state = Pairing;
+                         pairReady(_discovery_event, passkey);
+                     }
+                 }
+                });
+    }
+
+    if (!_pair_status_handler.has_value()) {
+        _pair_status_handler = _receiver->addEventHandler(
+                {[](const hidpp::Report& report) -> bool {
+                    return report.subId() == Receiver::DiscoveryStatus ||
+                           report.subId() == Receiver::PairStatus ||
+                           report.subId() == Receiver::BoltPairStatus;
+                },
+                 [this](const hidpp::Report& report) {
+                     std::lock_guard lock(_pair_mutex);
+                     // TODO: forward status to user
+                     if (report.subId() == Receiver::DiscoveryStatus) {
+                         auto event = Receiver::discoveryStatusEvent(report);
+
+                         if (_pair_state == Discovering && !event.discovering)
+                             _pair_state = NotPairing;
+                     } else if (report.subId() == Receiver::PairStatus) {
+                         auto event = Receiver::pairStatusEvent(report);
+
+                         if ((_pair_state == FindingPasskey || _pair_state == Pairing) &&
+                             !event.pairing)
+                             _pair_state = NotPairing;
+                     } else if (report.subId() == Receiver::BoltPairStatus) {
+                         auto event = Receiver::boltPairStatusEvent(report);
+
+                         if ((_pair_state == FindingPasskey || _pair_state == Pairing) &&
+                             !event.pairing)
+                             _pair_state = NotPairing;
+                     }
+                 }
                 });
     }
 
@@ -116,4 +196,31 @@ void ReceiverMonitor::waitForDevice(hidpp::DeviceIndex index) {
 
 std::shared_ptr<Receiver> ReceiverMonitor::receiver() const {
     return _receiver;
+}
+
+void ReceiverMonitor::_startPair(uint8_t timeout) {
+    {
+        std::lock_guard lock(_pair_mutex);
+        _pair_state = _receiver->bolt() ? Discovering : Pairing;
+        _discovery_event = {};
+    }
+
+    if (_receiver->bolt())
+        receiver()->startDiscover(timeout);
+    else
+        receiver()->startPairing(timeout);
+}
+
+void ReceiverMonitor::_stopPair() {
+    PairState last_state;
+    {
+        std::lock_guard lock(_pair_mutex);
+        last_state = _pair_state;
+        _pair_state = NotPairing;
+    }
+
+    if (last_state == Discovering)
+        receiver()->stopDiscover();
+    else if (last_state == Pairing || last_state == FindingPasskey)
+        receiver()->stopPairing();
 }

@@ -59,10 +59,22 @@ namespace logid {
 
         [[nodiscard]] const DeviceList& devices() const;
 
+        [[nodiscard]] std::vector<std::tuple<int, uint16_t, std::string, uint32_t>>
+        pairedDevices() const;
+
+        void startPair(uint8_t timeout);
+
+        void stopPair();
+
+        void unpair(int device);
+
     protected:
         void addDevice(backend::hidpp::DeviceConnectionEvent event) override;
 
         void removeDevice(backend::hidpp::DeviceIndex index) override;
+
+        void pairReady(const backend::hidpp10::DeviceDiscoveryEvent& event,
+                       const std::string& passkey) override;
 
     private:
         friend class ReceiverWrapper;

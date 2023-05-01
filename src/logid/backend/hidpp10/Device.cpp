@@ -130,6 +130,11 @@ std::vector<uint8_t> Device::accessRegister(uint8_t sub_id, uint8_t address,
     hidpp::Report::Type type = params.size() <= hidpp::ShortParamLength ?
                                hidpp::Report::Type::Short : hidpp::Report::Type::Long;
 
+    if (sub_id == SetRegisterLong) {
+        // When setting a long register, the report must be long.
+        type = hidpp::Report::Type::Long;
+    }
+
     hidpp::Report request(type, deviceIndex(), sub_id, address);
     std::copy(params.begin(), params.end(), request.paramBegin());
 

@@ -19,7 +19,6 @@
 #include <Receiver.h>
 #include <DeviceManager.h>
 #include <backend/Error.h>
-#include <backend/hidpp10/Error.h>
 #include <util/log.h>
 #include <ipc_defs.h>
 
@@ -88,8 +87,7 @@ void Receiver::addDevice(hidpp::DeviceConnectionEvent event) {
     auto manager = _manager.lock();
     if (!manager) {
         logPrintf(ERROR, "Orphan Receiver, missing DeviceManager");
-        logPrintf(ERROR,
-                  "Fatal error, file a bug report. Program will now exit.");
+        logPrintf(ERROR, "Fatal error, file a bug report. Program will now exit.");
         std::terminate();
     }
 
@@ -157,6 +155,35 @@ void Receiver::removeDevice(hidpp::DeviceIndex index) {
     }
 }
 
+void Receiver::pairReady(const hidpp10::DeviceDiscoveryEvent& event,
+                         const std::string& passkey) {
+    std::string type;
+    switch (event.deviceType) {
+        case hidpp::DeviceUnknown:
+            type = "unknown";
+            break;
+        case hidpp::DeviceKeyboard:
+            type = "keyboard";
+            break;
+        case hidpp::DeviceMouse:
+            type = "mouse";
+            break;
+        case hidpp::DeviceNumpad:
+            type = "numpad";
+            break;
+        case hidpp::DevicePresenter:
+            type = "presenter";
+            break;
+        case hidpp::DeviceTouchpad:
+            type = "touchpad";
+            break;
+        case hidpp::DeviceTrackball:
+            type = "trackball";
+            break;
+    }
+    _ipc_interface->emit_signal("PairReady", event.name, event.pid, type, passkey);
+}
+
 const std::string& Receiver::path() const {
     return _path;
 }
@@ -165,6 +192,52 @@ std::shared_ptr<hidpp10::Receiver> Receiver::rawReceiver() {
     return receiver();
 }
 
+std::vector<std::tuple<int, uint16_t, std::string, uint32_t>> Receiver::pairedDevices() const {
+    std::vector<std::tuple<int, uint16_t, std::string, uint32_t>> ret;
+    for (int i = hidpp::WirelessDevice1; i <= hidpp::WirelessDevice6; ++i) {
+        try {
+            auto index(static_cast<hidpp::DeviceIndex>(i));
+            auto pair_info = receiver()->getPairingInfo(index);
+            auto extended_pair_info = receiver()->getExtendedPairingInfo(index);
+            auto name = receiver()->getDeviceName(index);
+
+            ret.emplace_back(i, pair_info.pid, name, extended_pair_info.serialNumber);
+        } catch (hidpp10::Error& e) {
+        }
+    }
+
+    return ret;
+}
+
+void Receiver::startPair(uint8_t timeout) {
+    _startPair(timeout);
+}
+
+void Receiver::stopPair() {
+    _stopPair();
+}
+
+void Receiver::unpair(int device) {
+    receiver()->disconnect(static_cast<hidpp::DeviceIndex>(device));
+}
+
 Receiver::IPC::IPC(Receiver* receiver) :
-        ipcgull::interface(SERVICE_ROOT_NAME ".Receiver", {}, {}, {}) {
+        ipcgull::interface(
+                SERVICE_ROOT_NAME ".Receiver",
+                {
+                        {"GetPaired",     {receiver, &Receiver::pairedDevices, {"devices"}}},
+                        {"StartPair",     {receiver, &Receiver::startPair,     {"timeout"}}},
+                        {"StopPair",      {receiver, &Receiver::stopPair}},
+                        {"Unpair",        {receiver, &Receiver::unpair,        {"device"}}}
+                },
+                {
+                        {"Bolt", ipcgull::property<bool>(ipcgull::property_readable,
+                                                         receiver->receiver()->bolt())}
+                }, {
+                        {"PairReady",
+                         ipcgull::signal::make_signal<std::string, uint16_t, std::string,
+                            std::string>(
+                                 {"name", "pid", "type", "passkey"})
+                        }
+                }) {
 }

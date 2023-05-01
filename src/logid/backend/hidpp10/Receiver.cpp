@@ -31,7 +31,7 @@ Receiver::Receiver(const std::string& path, const std::shared_ptr<raw::DeviceMon
     // Check if the device is a receiver
     try {
         getNotificationFlags();
-    } catch(hidpp10::Error& e) {
+    } catch (hidpp10::Error& e) {
         if (e.code() == Error::InvalidAddress)
             throw InvalidReceiver();
     }
@@ -76,34 +76,80 @@ uint8_t Receiver::getConnectionState(hidpp::DeviceIndex index) {
 }
 
 void Receiver::startPairing(uint8_t timeout) {
-    ///TODO: Device number == Device index?
     std::vector<uint8_t> request(3);
+
+    if (_is_bolt)
+        throw std::invalid_argument("unifying pairing on bolt");
 
     request[0] = 1;
     request[1] = hidpp::DefaultDevice;
     request[2] = timeout;
 
-    setRegister(DevicePairing, request, hidpp::ReportType::Short);
+    if (_is_bolt) {
+        setRegister(BoltDevicePairing, request, hidpp::ReportType::Long);
+    } else {
+        setRegister(DevicePairing, request, hidpp::ReportType::Short);
+    }
+}
+
+// bolt pairing request from solaar
+void Receiver::startBoltPairing(const DeviceDiscoveryEvent& discovery) {
+    std::vector<uint8_t> request(10);
+
+    request[0] = 1; // start pair
+    request[1] = 0; // slot, from solaar. what does this mean?
+
+    for(int i = 0; i < 6; ++i)
+        request[2 + i]  = (discovery.address >> (i*8)) & 0xff;
+
+    request[8] = discovery.authentication;
+
+    // TODO: what does entropy do?
+    request[9] = (discovery.deviceType == hidpp::DeviceKeyboard) ? 10 : 20;
+
+    setRegister(BoltDevicePairing, request, hidpp::ReportType::Long);
 }
 
 void Receiver::stopPairing() {
-    ///TODO: Device number == Device index?
     std::vector<uint8_t> request(3);
 
     request[0] = 2;
     request[1] = hidpp::DefaultDevice;
 
-    setRegister(DevicePairing, request, hidpp::ReportType::Short);
+    if (_is_bolt)
+        setRegister(BoltDevicePairing, request, hidpp::ReportType::Long);
+    else
+        setRegister(DevicePairing, request, hidpp::ReportType::Short);
+}
+
+void Receiver::startDiscover(uint8_t timeout) {
+    std::vector<uint8_t> request = {timeout, 1};
+
+    if (!_is_bolt)
+        throw std::invalid_argument("not a bolt receiver");
+
+    setRegister(BoltDeviceDiscovery, request, hidpp::ReportType::Short);
+}
+
+void Receiver::stopDiscover() {
+    std::vector<uint8_t> request = {0, 2};
+
+    if (!_is_bolt)
+        throw std::invalid_argument("not a bolt receiver");
+
+    setRegister(BoltDeviceDiscovery, request, hidpp::ReportType::Short);
 }
 
 void Receiver::disconnect(hidpp::DeviceIndex index) {
-    ///TODO: Device number == Device index?
-    std::vector<uint8_t> request(3);
+    std::vector<uint8_t> request(2);
 
-    request[0] = 3;
+    request[0] = _is_bolt ? 3 : 2;
     request[1] = index;
 
-    setRegister(DevicePairing, request, hidpp::ReportType::Short);
+    if (_is_bolt)
+        setRegister(BoltDevicePairing, request, hidpp::ReportType::Long);
+    else
+        setRegister(DevicePairing, request, hidpp::ReportType::Short);
 }
 
 std::map<hidpp::DeviceIndex, uint8_t> Receiver::getDeviceActivity() {
@@ -120,29 +166,42 @@ struct Receiver::PairingInfo
 Receiver::getPairingInfo(hidpp::DeviceIndex index) {
     std::vector<uint8_t> request(1);
     request[0] = index;
-    if (!_is_bolt)
+    if (_is_bolt)
+        request[0] += 0x50;
+    else
         request[0] += 0x1f;
 
     auto response = getRegister(PairingInfo, request, hidpp::ReportType::Long);
 
     struct PairingInfo info{};
-    info.destinationId = response[1];
-    info.reportInterval = response[2];
-    info.pid = response[4];
-    info.pid |= (response[3] << 8);
-    info.deviceType = static_cast<hidpp::DeviceType>(response[7]);
+    if (_is_bolt) {
+        info = {
+                .destinationId = 0, // no longer given?
+                .reportInterval = 0, // no longer given?
+                .pid = (uint16_t) ((response[3] << 8) | response[2]),
+                .deviceType = static_cast<hidpp::DeviceType>(response[1])
+        };
+    } else {
+        info = {
+                .destinationId = response[1],
+                .reportInterval = response[2],
+                .pid = (uint16_t) ((response[3] << 8) | response[4]),
+                .deviceType = static_cast<hidpp::DeviceType>(response[7])
+        };
+    }
+
 
     return info;
 }
 
 struct Receiver::ExtendedPairingInfo
 Receiver::getExtendedPairingInfo(hidpp::DeviceIndex index) {
-    std::vector<uint8_t> request(1);
-    request[0] = index;
-    if (_is_bolt)
-        request[0] += 0x50;
-    else
-        request[0] += 0x2f;
+    const int device_num_offset = _is_bolt ? 0x50 : 0x2f;
+    const int serial_num_offset = _is_bolt ? 4 : 1;
+    const int report_offset = _is_bolt ? 8 : 5;
+    const int psl_offset = _is_bolt ? 12 : 8;
+
+    std::vector<uint8_t> request(1, index + device_num_offset);
 
     auto response = getRegister(PairingInfo, request, hidpp::ReportType::Long);
 
@@ -150,12 +209,12 @@ Receiver::getExtendedPairingInfo(hidpp::DeviceIndex index) {
 
     info.serialNumber = 0;
     for (uint8_t i = 0; i < 4; i++)
-        info.serialNumber |= (response[i + 1] << 8 * i);
+        info.serialNumber |= (response[i + serial_num_offset] << 8 * i);
 
     for (uint8_t i = 0; i < 4; i++)
-        info.reportTypes[i] = response[i + 5];
+        info.reportTypes[i] = response[i + report_offset];
 
-    uint8_t psl = response[8] & 0xf;
+    uint8_t psl = response[psl_offset] & 0xf;
     if (psl > 0xc)
         info.powerSwitchLocation = PowerSwitchLocation::Reserved;
     else
@@ -175,21 +234,22 @@ std::string Receiver::getDeviceName(hidpp::DeviceIndex index) {
          * response at 0x01 is [reg] [param 1] [size] [str...]
          * response at 0x02-... is [next part of str...]
          */
+        request[0] += 0x60;
         request[1] = 0x01;
 
         auto resp = getRegister(PairingInfo, request, hidpp::ReportType::Long);
         const uint8_t size = resp[2];
         const uint8_t chunk_size = resp.size() - 3;
-        const uint8_t chunks = size/chunk_size + (size % chunk_size ? 1 : 0);
+        const uint8_t chunks = size / chunk_size + (size % chunk_size ? 1 : 0);
 
         name.resize(size, ' ');
         for (int i = 0; i < chunks; ++i) {
             for (int j = 0; j < chunk_size; ++j) {
-                name[i*chunk_size + j] = (char)resp[j + 3];
+                name[i * chunk_size + j] = (char) resp[j + 3];
             }
 
             if (i < chunks - 1) {
-                request[1] = i+1;
+                request[1] = i + 1;
                 resp = getRegister(PairingInfo, request, hidpp::ReportType::Long);
             }
         }
@@ -218,20 +278,100 @@ hidpp::DeviceIndex Receiver::deviceDisconnectionEvent(const hidpp::Report& repor
 hidpp::DeviceConnectionEvent Receiver::deviceConnectionEvent(const hidpp::Report& report) {
     assert(report.subId() == DeviceConnection);
 
-    hidpp::DeviceConnectionEvent event{};
+    auto data = report.paramBegin();
 
-    event.index = report.deviceIndex();
-    event.unifying = ((report.address() & 0b111) == 0x04);
+    return {
+            .index = report.deviceIndex(),
+            .pid = (uint16_t) ((data[2] << 8) | data[1]),
+            .deviceType = static_cast<hidpp::DeviceType>(data[0] & 0x0f),
+            .unifying = ((report.address() & 0b111) == 0x04),
+            .softwarePresent = bool(data[0] & (1 << 4)),
+            .encrypted = (bool) (data[0] & (1 << 5)),
+            .linkEstablished = !(data[0] & (1 << 6)),
+            .withPayload = (bool) (data[0] & (1 << 7)),
 
-    event.deviceType = static_cast<hidpp::DeviceType>(report.paramBegin()[0] & 0x0f);
-    event.softwarePresent = report.paramBegin()[0] & (1 << 4);
-    event.encrypted = report.paramBegin()[0] & (1 << 5);
-    event.linkEstablished = !(report.paramBegin()[0] & (1 << 6));
-    event.withPayload = report.paramBegin()[0] & (1 << 7);
-    event.fromTimeoutCheck = false;
+            .fromTimeoutCheck = false,
+    };
+}
 
-    event.pid = (report.paramBegin()[2] << 8);
-    event.pid |= report.paramBegin()[1];
+bool Receiver::fillDeviceDiscoveryEvent(DeviceDiscoveryEvent& event,
+                                        const hidpp::Report& report) {
+    assert(report.subId() == DeviceDiscovered);
 
-    return event;
+    auto data = report.paramBegin();
+
+    if (data[1] == 0) {
+        // device discovery event
+
+        uint64_t address = 0 ;
+        for (int i = 0; i < 6; ++i)
+            address |= ((uint64_t)(data[6 + i]) << (8*i));
+
+        event.deviceType = static_cast<hidpp::DeviceType>(data[3]);
+        event.pid = (data[5] << 8) | data[4];
+        event.address = address;
+        event.authentication = data[14];
+        event.seq_num = report.address();
+        event.name = "";
+
+        return false;
+    } else {
+        /* bad sequence, do not continue */
+        if (event.seq_num != report.address())
+            return false;
+
+        const int block_size = hidpp::LongParamLength - 3;
+
+        if (data[1] == 1) {
+            event.name.resize(data[2], ' ');
+        }
+
+        for(int i = 0; i < block_size; ++i) {
+            const size_t j = (data[1]-1)*block_size + i;
+            if (j < event.name.size()) {
+                event.name[j] = (char)data[i + 3];
+            } else {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
+PairStatusEvent Receiver::pairStatusEvent(const hidpp::Report& report) {
+    assert(report.subId() == PairStatus);
+
+    return {
+        .pairing = (bool)(report.paramBegin()[0] & 1),
+        .error = static_cast<PairingError>(report.paramBegin()[1])
+    };
+}
+
+BoltPairStatusEvent Receiver::boltPairStatusEvent(const hidpp::Report& report) {
+    assert(report.subId() == BoltPairStatus);
+
+    return {
+            .pairing = report.address() == 0,
+            .error = report.paramBegin()[1]
+    };
+}
+
+DiscoveryStatusEvent Receiver::discoveryStatusEvent(const hidpp::Report& report) {
+    assert(report.subId() == DiscoveryStatus);
+
+    return {
+        .discovering = report.address() == 0,
+        .error = report.paramBegin()[1]
+    };
+}
+
+std::string Receiver::passkeyEvent(const hidpp::Report& report) {
+    assert(report.subId() == PasskeyRequest);
+
+    return {report.paramBegin(), report.paramBegin() + 6};
+}
+
+bool Receiver::bolt() const {
+    return _is_bolt;
 }

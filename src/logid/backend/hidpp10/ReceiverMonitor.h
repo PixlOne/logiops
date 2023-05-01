@@ -43,21 +43,36 @@ namespace logid::backend::hidpp10 {
 
         virtual void removeDevice(hidpp::DeviceIndex index) = 0;
 
+        virtual void pairReady(const hidpp10::DeviceDiscoveryEvent& event,
+                               const std::string& passkey) = 0;
+
+        void _startPair(uint8_t timeout = 0);
+
+        void _stopPair();
+
         void waitForDevice(hidpp::DeviceIndex index);
-
-        // Internal methods for derived class
-        void _pair(uint8_t timeout = 0);
-
-        void _stopPairing();
-
-        void _unpair();
 
         [[nodiscard]] std::shared_ptr<Receiver> receiver() const;
 
     private:
         std::shared_ptr<Receiver> _receiver;
 
-        std::optional<raw::RawDevice::EvHandlerId> ev_handler;
+        enum PairState {
+            NotPairing,
+            Discovering,
+            FindingPasskey,
+            Pairing,
+        };
+
+        std::mutex _pair_mutex;
+        DeviceDiscoveryEvent _discovery_event;
+        PairState _pair_state = NotPairing;
+
+        std::optional<raw::RawDevice::EvHandlerId> _connect_ev_handler;
+
+        std::optional<hidpp::Device::EvHandlerId> _discover_ev_handler;
+        std::optional<hidpp::Device::EvHandlerId> _passkey_ev_handler;
+        std::optional<hidpp::Device::EvHandlerId> _pair_status_handler;
     };
 
 }

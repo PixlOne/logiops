@@ -35,7 +35,7 @@ namespace logid::backend::hidpp {
     };
 
     struct DeviceConnectionEvent {
-        DeviceIndex index;
+        DeviceIndex index{};
         uint16_t pid{};
         DeviceType deviceType = DeviceUnknown;
         bool unifying{};
@@ -48,6 +48,39 @@ namespace logid::backend::hidpp {
 }
 
 namespace logid::backend::hidpp10 {
+
+    struct DeviceDiscoveryEvent {
+        hidpp::DeviceType deviceType = hidpp::DeviceUnknown;
+        uint8_t seq_num{};
+        uint64_t address{};
+        uint16_t pid{};
+        uint8_t authentication{};
+        std::string name;
+    };
+
+    enum PairingError : uint8_t {
+        NoPairingError = 0x00,
+        Timeout = 0x01,
+        UnsupportedDevice = 0x02,
+        TooManyDevices = 0x03,
+        /* Errors 0x04-0x05 are reserved */
+        ConnectionSeqTimeout = 0x06,
+    };
+
+    struct PairStatusEvent {
+        bool pairing{};
+        PairingError error = NoPairingError;
+    };
+
+    struct BoltPairStatusEvent {
+        bool pairing{};
+        uint8_t error;
+    };
+
+    struct DiscoveryStatusEvent {
+        bool discovering{};
+        uint8_t error{}; // don't know the error codes
+    };
 
     class InvalidReceiver : public std::exception {
     public:
@@ -69,7 +102,11 @@ namespace logid::backend::hidpp10 {
             // These events are identical to their DJ counterparts
             DeviceDisconnection = 0x40,
             DeviceConnection = 0x41,
-            LockingChange = 0x4a
+            PairStatus = 0x4a,
+            PasskeyRequest = 0x4d,
+            DeviceDiscovered = 0x4f,
+            DiscoveryStatus = 0x53,
+            BoltPairStatus = 0x54,
         };
 
         enum Registers : uint8_t {
@@ -77,7 +114,9 @@ namespace logid::backend::hidpp10 {
             ConnectionState = 0x02,
             DevicePairing = 0xb2,
             DeviceActivity = 0xb3,
-            PairingInfo = 0xb5
+            PairingInfo = 0xb5,
+            BoltDeviceDiscovery = 0xc0,
+            BoltDevicePairing = 0xc1,
         };
 
         struct NotificationFlags {
@@ -96,11 +135,19 @@ namespace logid::backend::hidpp10 {
 
         void startPairing(uint8_t timeout = 0);
 
+        void startBoltPairing(const DeviceDiscoveryEvent& discovery);
+
         void stopPairing();
+
+        void startDiscover(uint8_t timeout = 0);
+
+        void stopDiscover();
 
         void disconnect(hidpp::DeviceIndex index);
 
         std::map<hidpp::DeviceIndex, uint8_t> getDeviceActivity();
+
+        [[nodiscard]] bool bolt() const;
 
         struct PairingInfo {
             uint8_t destinationId;
@@ -140,6 +187,17 @@ namespace logid::backend::hidpp10 {
         static hidpp::DeviceIndex deviceDisconnectionEvent(const hidpp::Report& report);
 
         static hidpp::DeviceConnectionEvent deviceConnectionEvent(const hidpp::Report& report);
+
+        static PairStatusEvent pairStatusEvent(const hidpp::Report& report);
+
+        static BoltPairStatusEvent boltPairStatusEvent(const hidpp::Report& report);
+
+        static DiscoveryStatusEvent discoveryStatusEvent(const hidpp::Report& report);
+
+        static bool fillDeviceDiscoveryEvent(DeviceDiscoveryEvent& event,
+                                             const hidpp::Report& report);
+
+        static std::string passkeyEvent(const hidpp::Report& report);
 
     private:
         bool _is_bolt = false;
