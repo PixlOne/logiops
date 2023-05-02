@@ -17,6 +17,7 @@
  */
 
 #include <backend/hidpp10/ReceiverMonitor.h>
+#include <backend/Error.h>
 #include <util/task.h>
 #include <util/log.h>
 
@@ -49,29 +50,15 @@ void ReceiverMonitor::_ready() {
                     hidpp::Report report(raw);
 
                     if (auto self = self_weak.lock()) {
-                        run_task([self_weak, report,
-                                         path = self->_receiver->rawDevice()->rawPath()]() {
+                        run_task([self_weak, report]() {
                             auto self = self_weak.lock();
                             if (!self)
                                 return;
 
                             if (report.subId() == Receiver::DeviceConnection) {
-                                try {
-                                    self->addDevice(self->_receiver->deviceConnectionEvent(report));
-                                } catch (std::exception& e) {
-                                    logPrintf(ERROR,
-                                              "Failed to add device %d to receiver on %s: %s",
-                                              report.deviceIndex(), path.c_str(), e.what());
-                                }
+                                self->_addHandler(Receiver::deviceConnectionEvent(report));
                             } else if (report.subId() == Receiver::DeviceDisconnection) {
-                                try {
-                                    self->removeDevice(
-                                            self->_receiver->deviceDisconnectionEvent(report));
-                                } catch (std::exception& e) {
-                                    logPrintf(ERROR, "Failed to remove device %d from "
-                                                     "receiver on %s: %s",
-                                              report.deviceIndex(), path.c_str(), e.what());
-                                }
+                                self->_removeHandler(Receiver::deviceDisconnectionEvent(report));
                             }
                         });
                     }
@@ -188,14 +175,7 @@ void ReceiverMonitor::waitForDevice(hidpp::DeviceIndex index) {
                  run_task([self_weak, event, handler_id]() {
                      *handler_id = {};
                      if (auto self = self_weak.lock()) {
-                         try {
-                             self->addDevice(event);
-                         } catch (std::exception& e) {
-                             logPrintf(ERROR, "Failed to add device %d to receiver on %s: %s",
-                                       event.index,
-                                       self->_receiver->rawDevice()->rawPath().c_str(),
-                                       e.what());
-                         }
+                         self->_addHandler(event);
                      }
                  });
              }
@@ -231,4 +211,37 @@ void ReceiverMonitor::_stopPair() {
         receiver()->stopDiscover();
     else if (last_state == Pairing || last_state == FindingPasskey)
         receiver()->stopPairing();
+}
+
+void ReceiverMonitor::_addHandler(const hidpp::DeviceConnectionEvent& event, int tries) {
+    auto device_path = _receiver->devicePath();
+    try {
+        addDevice(event);
+    } catch (DeviceNotReady& e) {
+        if (tries == max_tries) {
+            logPrintf(WARN, "Failed to add device %s:%d after %d tries."
+                            "Treating as failure.", device_path.c_str(), event.index, max_tries);
+        } else {
+            /* Do exponential backoff for 2^tries * backoff ms. */
+            std::chrono::milliseconds wait((1 << tries) * ready_backoff);
+            logPrintf(DEBUG, "Failed to add device %s:%d on try %d, backing off for %dms",
+                      device_path.c_str(), event.index, tries + 1, wait.count());
+            run_task_after([self_weak = _self, event, tries]() {
+                if (auto self = self_weak.lock())
+                    self->_addHandler(event, tries + 1);
+            }, wait);
+        }
+    } catch (std::exception& e) {
+        logPrintf(ERROR, "Failed to add device %d to receiver on %s: %s",
+                  event.index, device_path.c_str(), e.what());
+    }
+}
+
+void ReceiverMonitor::_removeHandler(hidpp::DeviceIndex index) {
+    try {
+        removeDevice(index);
+    } catch (std::exception& e) {
+        logPrintf(ERROR, "Failed to remove device %d from receiver on %s: %s",
+                  index, _receiver->devicePath().c_str(), e.what());
+    }
 }

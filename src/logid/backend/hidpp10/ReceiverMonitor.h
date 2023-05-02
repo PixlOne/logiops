@@ -41,6 +41,9 @@ namespace logid::backend::hidpp10 {
         };
     }
 
+    static constexpr int max_tries = 5;
+    static constexpr int ready_backoff = 250;
+
     // This class will run on the RawDevice thread,
     class ReceiverMonitor {
     public:
@@ -71,6 +74,10 @@ namespace logid::backend::hidpp10 {
 
     private:
         void _ready();
+
+        void _addHandler(const hidpp::DeviceConnectionEvent& event, int tries = 0);
+
+        void _removeHandler(hidpp::DeviceIndex index);
 
         std::shared_ptr<Receiver> _receiver;
 
