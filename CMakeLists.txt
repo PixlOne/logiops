@@ -17,7 +17,7 @@ find_package(Git REQUIRED)
 
 # Set version number and update submodules
 if(EXISTS ${CMAKE_SOURCE_DIR}/.git)
-    execute_process(COMMAND ${GIT_EXECUTABLE} describe
+    execute_process(COMMAND ${GIT_EXECUTABLE} describe --tags
          OUTPUT_VARIABLE LOGIOPS_VERSION
          RESULT_VARIABLE LOGIOPS_VERSION_RET
          ERROR_QUIET)
