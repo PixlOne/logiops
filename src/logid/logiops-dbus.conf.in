@@ -3,12 +3,10 @@
  "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
 
 <busconfig>
-  <!-- Only root user can own the service -->
   <policy user="root">
     <allow own="pizza.pixl.LogiOps"/>
   </policy>
 
-  <!-- Allow anyone to invoke methods on server, except SetHostName -->
   <policy context="default">
     <allow send_destination="pizza.pixl.LogiOps"/>
     <allow receive_sender="pizza.pixl.LogiOps"/>

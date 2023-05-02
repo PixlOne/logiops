@@ -17,7 +17,6 @@
  */
 
 #include <backend/hidpp10/ReceiverMonitor.h>
-#include <cassert>
 #include <util/task.h>
 #include <util/log.h>
 

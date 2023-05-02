@@ -214,11 +214,6 @@ std::shared_ptr<ipcgull::node> Device::ipcNode() const {
     return _ipc_node;
 }
 
-/*config::Device& Device::config()
-{
-    return _config;
-}*/
-
 config::Profile& Device::activeProfile() {
     return _profile->second;
 }
@@ -270,15 +265,13 @@ config::Device& Device::_getConfig(
         const std::string& name) {
     static std::mutex config_mutex;
     std::lock_guard<std::mutex> lock(config_mutex);
-    auto& devices = manager->config()->devices;
-    if (!devices.has_value())
-        devices = decltype(config::Config::devices)();
+    auto& devices = manager->config()->devices.value();
 
-    if (!devices.value().count(name)) {
-        devices.value().emplace(name, config::Device());
+    if (!devices.count(name)) {
+        devices.emplace(name, config::Device());
     }
 
-    auto& device = devices.value().at(name);
+    auto& device = devices.at(name);
     if (std::holds_alternative<config::Profile>(device)) {
         config::Device d;
         d.profiles["default"] = std::get<config::Profile>(device);

@@ -17,7 +17,6 @@
  */
 #include <backend/hidpp20/features/ChangeHost.h>
 #include <backend/hidpp20/Device.h>
-#include <backend/hidpp20/Error.h>
 
 using namespace logid::backend::hidpp20;
 

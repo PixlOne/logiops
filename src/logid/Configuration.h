@@ -37,7 +37,7 @@ namespace logid {
     public:
         explicit Configuration(std::string config_file);
 
-        Configuration() = default;
+        Configuration();
 
         // Reloading is not safe, references will be invalidated
         //void reload();

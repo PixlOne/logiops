@@ -165,7 +165,7 @@ void IOMonitor::_interrupt() noexcept {
     _interrupting = true;
 
     uint64_t counter = 1;
-    ssize_t ret = ::write(_event_fd, &counter, sizeof(counter));
+    [[maybe_unused]] ssize_t ret = ::write(_event_fd, &counter, sizeof(counter));
     assert(ret == sizeof(counter));
 
     // Wait for the IO monitor to _stop
@@ -177,7 +177,7 @@ void IOMonitor::_continue() noexcept {
     std::unique_lock<std::mutex> run_lock(_run_lock, std::try_to_lock);
 
     uint64_t counter;
-    ssize_t ret = ::read(_event_fd, &counter, sizeof(counter));
+    [[maybe_unused]] ssize_t ret = ::read(_event_fd, &counter, sizeof(counter));
 
     assert(ret != -1);
 

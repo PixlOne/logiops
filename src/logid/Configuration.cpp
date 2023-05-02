@@ -42,7 +42,11 @@ Configuration::Configuration(std::string config_file) :
     Config::operator=(get<Config>(_config.getRoot()));
 
     if (!devices.has_value())
-        devices = decltype(config::Config::devices)();
+        devices.emplace();
+}
+
+Configuration::Configuration() {
+    devices.emplace();
 }
 
 void Configuration::save() {
