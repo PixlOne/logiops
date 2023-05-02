@@ -26,7 +26,7 @@ For popular distributions, I've included commands below.
 
 **Solus:** `sudo eopkg install libevdev-devel libconfig-devel libgudev-devel glib2`
 
-**openSUSE:** `sudo zypper install cmake libevdev-devel systemd-devel libconfig-devel gcc-c++ libconfig++-devel libudev-devel`
+**openSUSE:** `sudo zypper install cmake libevdev-devel systemd-devel libconfig-devel gcc-c++ libconfig++-devel libudev-devel glib2`
 
 ## Building
 
