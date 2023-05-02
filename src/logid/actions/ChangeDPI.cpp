@@ -48,21 +48,20 @@ void ChangeDPI::press() {
     _pressed = true;
     std::shared_lock lock(_config_mutex);
     if (_dpi && _config.inc.has_value()) {
-        spawn_task(
-                [this, sensor = _config.sensor.value_or(0),
-                 inc = _config.inc.value()] {
-                    try {
-                        uint16_t last_dpi = _dpi->getDPI(sensor);
-                        _dpi->setDPI(last_dpi + inc,sensor);
-                    } catch (backend::hidpp20::Error& e) {
-                        if (e.code() == backend::hidpp20::Error::InvalidArgument)
-                            logPrintf(WARN, "%s:%d: Could not get/set DPI for sensor %d",
-                                      _device->hidpp20().devicePath().c_str(),
-                                      _device->hidpp20().deviceIndex(), sensor);
-                        else
-                            throw e;
-                    }
-                });
+        run_task([this, sensor = _config.sensor.value_or(0),
+                         inc = _config.inc.value()] {
+            try {
+                uint16_t last_dpi = _dpi->getDPI(sensor);
+                _dpi->setDPI(last_dpi + inc, sensor);
+            } catch (backend::hidpp20::Error& e) {
+                if (e.code() == backend::hidpp20::Error::InvalidArgument)
+                    logPrintf(WARN, "%s:%d: Could not get/set DPI for sensor %d",
+                              _device->hidpp20().devicePath().c_str(),
+                              _device->hidpp20().deviceIndex(), sensor);
+                else
+                    throw e;
+            }
+        });
     }
 }
 

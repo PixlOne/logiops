@@ -41,12 +41,11 @@ ToggleHiresScroll::ToggleHiresScroll(
 void ToggleHiresScroll::press() {
     _pressed = true;
     if (_hires_scroll) {
-        spawn_task(
-                [hires = this->_hires_scroll]() {
-                    auto mode = hires->getMode();
-                    mode ^= backend::hidpp20::HiresScroll::HiRes;
-                    hires->setMode(mode);
-                });
+        run_task([hires = this->_hires_scroll]() {
+            auto mode = hires->getMode();
+            mode ^= backend::hidpp20::HiresScroll::HiRes;
+            hires->setMode(mode);
+        });
     }
 }
 

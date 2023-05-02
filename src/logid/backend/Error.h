@@ -22,7 +22,7 @@
 #include <stdexcept>
 
 namespace logid::backend {
-    class DeviceNotReady : std::exception {
+    class DeviceNotReady : public std::exception {
     public:
         [[nodiscard]] const char* what() const noexcept override;
     };

@@ -57,7 +57,8 @@ void DeviceStatus::listen() {
                             auto event =
                                     hidpp20::WirelessDeviceStatus::statusBroadcastEvent(report);
                             if (event.reconfNeeded)
-                                spawn_task([dev]() { dev->wakeup(); });
+                                run_task_after([dev]() { dev->wakeup(); },
+                                               std::chrono::milliseconds(100));
                         }
                 });
     }

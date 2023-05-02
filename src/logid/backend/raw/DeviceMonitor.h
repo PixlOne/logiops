@@ -55,7 +55,7 @@ namespace logid::backend::raw {
         virtual void removeDevice(std::string device) = 0;
 
     private:
-        void _addHandler(const std::string& device);
+        void _addHandler(const std::string& device, int tries = 0);
 
         void _removeHandler(const std::string& device);
 

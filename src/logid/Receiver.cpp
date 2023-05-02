@@ -93,8 +93,7 @@ void Receiver::addDevice(hidpp::DeviceConnectionEvent event) {
 
     try {
         // Check if device is ignored before continuing
-        if (manager->config()->ignore.value_or(
-                std::set<uint16_t>()).contains(event.pid)) {
+        if (manager->config()->ignore.value_or(std::set<uint16_t>()).contains(event.pid)) {
             logPrintf(DEBUG, "%s:%d: Device 0x%04x ignored.",
                       _path.c_str(), event.index, event.pid);
             return;

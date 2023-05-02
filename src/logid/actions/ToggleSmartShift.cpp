@@ -42,13 +42,12 @@ ToggleSmartShift::ToggleSmartShift(
 void ToggleSmartShift::press() {
     _pressed = true;
     if (_smartshift) {
-        spawn_task(
-                [ss = this->_smartshift]() {
-                    auto status = ss->getStatus();
-                    status.setActive = true;
-                    status.active = !status.active;
-                    ss->setStatus(status);
-                });
+        run_task([ss = this->_smartshift]() {
+            auto status = ss->getStatus();
+            status.setActive = true;
+            status.active = !status.active;
+            ss->setStatus(status);
+        });
     }
 }
 

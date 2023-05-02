@@ -18,6 +18,7 @@
 
 #include <DeviceManager.h>
 #include <InputDevice.h>
+#include <util/task.h>
 #include <util/log.h>
 #include <algorithm>
 #include <ipc_defs.h>
@@ -141,6 +142,8 @@ int main(int argc, char** argv) {
     catch (std::exception& e) {
         config = std::make_shared<Configuration>();
     }
+
+    init_workers(config->workers.value_or(defaults::workers));
 
 #ifdef USE_USER_BUS
     auto server_bus = ipcgull::IPCGULL_USER;

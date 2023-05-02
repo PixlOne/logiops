@@ -178,7 +178,6 @@ void Device::sleep() {
 void Device::wakeup() {
     std::lock_guard<std::mutex> lock(_state_lock);
     logPrintf(INFO, "%s:%d woke up.", _path.c_str(), _index);
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
     reset();
 

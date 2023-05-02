@@ -24,10 +24,16 @@
 #include <future>
 
 namespace logid {
-    /* This function spawns a new task into the least used worker queue
-    * and forgets about it.
-    */
-    void spawn_task(const std::function<void()>& function);
+    struct task {
+        std::function<void()> function;
+        std::chrono::time_point<std::chrono::system_clock> time;
+    };
+
+    void init_workers(int worker_count);
+
+    void run_task(std::function<void()> function);
+    void run_task_after(std::function<void()> function, std::chrono::milliseconds delay);
+    void run_task(task t);
 }
 
 #endif //LOGID_TASK_H

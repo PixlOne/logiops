@@ -49,7 +49,7 @@ void ReceiverMonitor::ready() {
                      */
                     hidpp::Report report(raw);
 
-                    spawn_task([this, report, path = this->_receiver->rawDevice()->rawPath()]() {
+                    run_task([this, report, path = this->_receiver->rawDevice()->rawPath()]() {
                         if (report.subId() == Receiver::DeviceConnection) {
                             try {
                                 this->addDevice(this->_receiver->deviceConnectionEvent(report));
@@ -85,7 +85,7 @@ void ReceiverMonitor::ready() {
 
                          if (filled) {
                              _pair_state = FindingPasskey;
-                             spawn_task([this, event = _discovery_event]() {
+                             run_task([this, event = _discovery_event]() {
                                  receiver()->startBoltPairing(event);
                              });
                          }
@@ -165,7 +165,7 @@ void ReceiverMonitor::waitForDevice(hidpp::DeviceIndex index) {
                  event.index = index;
                  event.fromTimeoutCheck = true;
 
-                 spawn_task([this, event, handler_id]() {
+                 run_task([this, event, handler_id]() {
                      *handler_id = {};
                      try {
                          addDevice(event);

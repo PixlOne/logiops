@@ -96,9 +96,9 @@ void DeviceMonitor::ready() {
                 std::string dev_node = udev_device_get_devnode(device);
 
                 if (action == "add")
-                    spawn_task([this, dev_node]() { _addHandler(dev_node); });
+                    run_task([this, dev_node]() { _addHandler(dev_node); });
                 else if (action == "remove")
-                    spawn_task([this, dev_node]() { _removeHandler(dev_node); });
+                    run_task([this, dev_node]() { _removeHandler(dev_node); });
 
                 udev_device_unref(device);
             },
@@ -129,45 +129,40 @@ void DeviceMonitor::enumerate() {
                             udev_enumerate_get_list_entry(udev_enum)) {
         const char* name = udev_list_entry_get_name(udev_enum_entry);
 
-        struct udev_device* device = udev_device_new_from_syspath(_udev_context,
-                                                                  name);
+        struct udev_device* device = udev_device_new_from_syspath(_udev_context, name);
         if (!device)
             throw std::runtime_error("udev_device_new_from_syspath failed");
 
         std::string dev_node = udev_device_get_devnode(device);
         udev_device_unref(device);
 
-        spawn_task([this, dev_node]() { _addHandler(dev_node); });
+        _addHandler(dev_node);
     }
 
     udev_enumerate_unref(udev_enum);
 }
 
-void DeviceMonitor::_addHandler(const std::string& device) {
-    int tries;
-    for (tries = 0; tries < max_tries; ++tries) {
-        try {
-            auto supported_reports = backend::hidpp::getSupportedReports(
-                    RawDevice::getReportDescriptor(device));
-            if (supported_reports)
-                this->addDevice(device);
-            else
-                logPrintf(DEBUG, "Unsupported device %s ignored", device.c_str());
-            break;
-        } catch (backend::DeviceNotReady& e) {
+void DeviceMonitor::_addHandler(const std::string& device, int tries) {
+    try {
+        auto supported_reports = backend::hidpp::getSupportedReports(
+                RawDevice::getReportDescriptor(device));
+        if (supported_reports)
+            this->addDevice(device);
+        else
+            logPrintf(DEBUG, "Unsupported device %s ignored", device.c_str());
+    } catch (backend::DeviceNotReady& e) {
+        if (tries == max_tries) {
+            logPrintf(WARN, "Failed to add device %s after %d tries. Treating as failure.",
+                      device.c_str(), max_tries);
+        } else {
             /* Do exponential backoff for 2^tries * backoff ms. */
-            std::chrono::milliseconds timeout((1 << tries) * ready_backoff);
+            std::chrono::milliseconds wait((1 << tries) * ready_backoff);
             logPrintf(DEBUG, "Failed to add device %s on try %d, backing off for %dms",
-                      device.c_str(), tries + 1, timeout.count());
-            std::this_thread::sleep_for(timeout);
-        } catch (std::exception& e) {
-            logPrintf(WARN, "Error adding device %s: %s", device.c_str(), e.what());
-            break;
+                      device.c_str(), tries + 1, wait.count());
+            run_task_after([this, device, tries](){ _addHandler(device, tries + 1); }, wait);
         }
-    }
-    if (tries == max_tries) {
-        logPrintf(WARN, "Failed to add device %s after %d tries. Treating as failure.",
-                  device.c_str(), max_tries);
+    } catch (std::exception& e) {
+        logPrintf(WARN, "Error adding device %s: %s", device.c_str(), e.what());
     }
 }
 
