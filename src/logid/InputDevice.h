@@ -80,6 +80,8 @@ namespace logid {
         bool registered_axis[REL_CNT]{};
         libevdev* device;
         libevdev_uinput* ui_device{};
+
+        std::mutex _input_mutex;
     };
 }
 

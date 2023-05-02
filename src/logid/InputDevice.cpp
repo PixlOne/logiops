@@ -18,6 +18,7 @@
 
 #include <InputDevice.h>
 #include <system_error>
+#include <mutex>
 
 extern "C"
 {
@@ -159,6 +160,7 @@ uint InputDevice::_toEventCode(uint type, const std::string& name) {
 }
 
 void InputDevice::_enableEvent(const uint type, const uint code) {
+    std::unique_lock lock(_input_mutex);
     libevdev_uinput_destroy(ui_device);
 
     libevdev_enable_event_code(device, type, code, nullptr);
@@ -175,6 +177,7 @@ void InputDevice::_enableEvent(const uint type, const uint code) {
 }
 
 void InputDevice::_sendEvent(uint type, uint code, int value) {
+    std::unique_lock lock(_input_mutex);
     libevdev_uinput_write_event(ui_device, type, code, value);
     libevdev_uinput_write_event(ui_device, EV_SYN, SYN_REPORT, 0);
 }
