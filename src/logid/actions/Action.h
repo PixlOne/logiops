@@ -89,6 +89,14 @@ namespace logid::actions {
         Device* _device;
         std::atomic<bool> _pressed;
         mutable std::shared_mutex _config_mutex;
+
+        template <typename T>
+        [[nodiscard]] std::weak_ptr<T> self() const {
+            return std::dynamic_pointer_cast<T>(_self.lock());
+        }
+
+    private:
+        std::weak_ptr<Action> _self;
     };
 }
 

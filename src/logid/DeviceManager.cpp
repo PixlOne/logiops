@@ -27,15 +27,6 @@
 using namespace logid;
 using namespace logid::backend;
 
-namespace logid {
-    class DevManagerWrapper : public logid::DeviceManager {
-    public:
-        template<typename... Args>
-        explicit DevManagerWrapper(Args... args) :
-                DeviceManager(std::forward<Args>(args)...) {}
-    };
-}
-
 DeviceManager::DeviceManager(std::shared_ptr<Configuration> config,
                              std::shared_ptr<InputDevice> virtual_input,
                              std::shared_ptr<ipcgull::server> server) :
@@ -51,16 +42,6 @@ DeviceManager::DeviceManager(std::shared_ptr<Configuration> config,
     _device_node->add_server(_server);
     _receiver_node->add_server(_server);
     _root_node->add_server(_server);
-    ready();
-}
-
-std::shared_ptr<DeviceManager> DeviceManager::make(
-        const std::shared_ptr<Configuration>& config,
-        const std::shared_ptr<InputDevice>& virtual_input,
-        const std::shared_ptr<ipcgull::server>& server) {
-    auto ret = std::make_shared<DevManagerWrapper>(config, virtual_input, server);
-    ret->_self = ret;
-    return ret;
 }
 
 std::shared_ptr<Configuration> DeviceManager::config() const {
@@ -85,7 +66,7 @@ void DeviceManager::addDevice(std::string path) {
 
     // Check if device is ignored before continuing
     {
-        raw::RawDevice raw_dev(path, _self.lock());
+        raw::RawDevice raw_dev(path, self<DeviceManager>().lock());
         if (config()->ignore.has_value() &&
             config()->ignore.value().contains(raw_dev.productId())) {
             logPrintf(DEBUG, "%s: Device 0x%04x ignored.",
@@ -96,7 +77,7 @@ void DeviceManager::addDevice(std::string path) {
 
     try {
         auto device = hidpp::Device::make(
-                path, hidpp::DefaultDevice, _self.lock(),
+                path, hidpp::DefaultDevice, self<DeviceManager>().lock(),
                 config()->io_timeout.value_or(defaults::io_timeout));
         isReceiver = device->version() == std::make_tuple(1, 0);
     } catch (hidpp20::Error& e) {
@@ -126,7 +107,7 @@ void DeviceManager::addDevice(std::string path) {
 
     if (isReceiver) {
         logPrintf(INFO, "Detected receiver at %s", path.c_str());
-        auto receiver = Receiver::make(path, _self.lock());
+        auto receiver = Receiver::make(path, self<DeviceManager>().lock());
         std::lock_guard<std::mutex> lock(_map_lock);
         _receivers.emplace(path, receiver);
         _ipc_receivers->receiverAdded(receiver);
@@ -134,13 +115,13 @@ void DeviceManager::addDevice(std::string path) {
         /* TODO: Can non-receivers only contain 1 device?
         * If the device exists, it is guaranteed to be an HID++ 2.0 device */
         if (defaultExists) {
-            auto device = Device::make(path, hidpp::DefaultDevice, _self.lock());
+            auto device = Device::make(path, hidpp::DefaultDevice, self<DeviceManager>().lock());
             std::lock_guard<std::mutex> lock(_map_lock);
             _devices.emplace(path, device);
             _ipc_devices->deviceAdded(device);
         } else {
             try {
-                auto device = Device::make(path, hidpp::CordedDevice, _self.lock());
+                auto device = Device::make(path, hidpp::CordedDevice, self<DeviceManager>().lock());
                 std::lock_guard<std::mutex> lock(_map_lock);
                 _devices.emplace(path, device);
                 _ipc_devices->deviceAdded(device);

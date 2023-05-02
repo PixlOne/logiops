@@ -26,7 +26,6 @@
 namespace logid::features {
     class SmartShift : public DeviceFeature {
     public:
-        explicit SmartShift(Device* dev);
 
         void configure() final;
 
@@ -37,6 +36,9 @@ namespace logid::features {
         [[nodiscard]] Status getStatus() const;
 
         void setStatus(Status status);
+
+    protected:
+        explicit SmartShift(Device* dev);
 
     private:
         std::optional<config::SmartShift>& _config;
@@ -66,7 +68,7 @@ namespace logid::features {
             SmartShift& _parent;
         };
 
-        std::shared_ptr<IPC> _ipc;
+        std::shared_ptr<IPC> _ipc_interface;
     };
 }
 

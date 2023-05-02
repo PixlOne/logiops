@@ -19,6 +19,7 @@
 #ifndef LOGID_FEATURES_DEVICEFEATURE_H
 #define LOGID_FEATURES_DEVICEFEATURE_H
 
+#include <memory>
 #include <string>
 
 namespace logid {
@@ -35,19 +36,51 @@ namespace logid::features {
         }
     };
 
-    class DeviceFeature {
-    public:
-        explicit DeviceFeature(Device* dev) : _device(dev) {
-        }
+    namespace {
+        template<typename T>
+        class FeatureWrapper : public T {
+            friend class DeviceFeature;
 
+        public:
+            template<typename... Args>
+            explicit FeatureWrapper(Args... args) : T(std::forward<Args>(args)...) {}
+
+            template<typename... Args>
+            static std::shared_ptr<T> make(Args... args) {
+                return std::make_shared<FeatureWrapper>(std::forward<Args>(args)...);
+            }
+        };
+    }
+
+    class DeviceFeature {
+        std::weak_ptr<DeviceFeature> _self;
+    public:
         virtual void configure() = 0;
 
         virtual void listen() = 0;
 
         virtual ~DeviceFeature() = default;
 
+        DeviceFeature(const DeviceFeature&) = delete;
+        DeviceFeature(DeviceFeature&&) = delete;
     protected:
+        explicit DeviceFeature(Device* dev) : _device(dev) {}
+
         Device* _device;
+
+        template<typename T>
+        [[nodiscard]] std::weak_ptr<T> self() const {
+            return std::dynamic_pointer_cast<T>(_self.lock());
+        }
+
+    public:
+        template<typename T, typename... Args>
+        static std::shared_ptr<T> make(Args... args) {
+            auto feature = FeatureWrapper<T>::make(std::forward<Args>(args)...);
+            feature->_self = feature;
+
+            return feature;
+        }
     };
 }
 

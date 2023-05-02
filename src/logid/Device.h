@@ -106,6 +106,8 @@ namespace logid {
             }
         }
 
+        Device(const Device&) = delete;
+        Device(Device&&) = delete;
     private:
         friend class DeviceWrapper;
 
@@ -129,7 +131,7 @@ namespace logid {
         template<typename T>
         void _addFeature(std::string name) {
             try {
-                _features.emplace(name, std::make_shared<T>(this));
+                _features.emplace(name, features::DeviceFeature::make<T>(this));
             } catch (features::UnsupportedFeature& e) {
             }
         }
@@ -163,9 +165,10 @@ namespace logid {
 
         ipcgull::property<bool> _awake;
         std::mutex _state_lock;
-        std::shared_ptr<IPC> _ipc_interface;
 
         std::weak_ptr<Device> _self;
+
+        std::shared_ptr<IPC> _ipc_interface;
     };
 }
 

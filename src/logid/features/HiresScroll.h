@@ -30,8 +30,6 @@
 namespace logid::features {
     class HiresScroll : public DeviceFeature {
     public:
-        explicit HiresScroll(Device* dev);
-
         void configure() final;
 
         void listen() final;
@@ -39,6 +37,9 @@ namespace logid::features {
         [[nodiscard]] uint8_t getMode();
 
         void setMode(uint8_t mode);
+
+    protected:
+        explicit HiresScroll(Device* dev);
 
     private:
         EventHandlerLock<backend::hidpp::Device> _ev_handler;
@@ -71,6 +72,7 @@ namespace logid::features {
 
         private:
             config::HiresScroll& _parentConfig();
+
             HiresScroll& _parent;
         };
 

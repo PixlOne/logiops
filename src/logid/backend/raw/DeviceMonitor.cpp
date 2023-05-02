@@ -90,15 +90,20 @@ void DeviceMonitor::ready() {
 
     _io_monitor->add(_fd, {
             [this]() {
-                struct udev_device* device = udev_monitor_receive_device(
-                        _udev_monitor);
+                struct udev_device* device = udev_monitor_receive_device(_udev_monitor);
                 std::string action = udev_device_get_action(device);
                 std::string dev_node = udev_device_get_devnode(device);
 
                 if (action == "add")
-                    run_task([this, dev_node]() { _addHandler(dev_node); });
+                    run_task([self_weak = _self, dev_node]() {
+                        if (auto self = self_weak.lock())
+                            self->_addHandler(dev_node);
+                    });
                 else if (action == "remove")
-                    run_task([this, dev_node]() { _removeHandler(dev_node); });
+                    run_task([self_weak = _self, dev_node]() {
+                        if (auto self = self_weak.lock())
+                            self->_removeHandler(dev_node);
+                    });
 
                 udev_device_unref(device);
             },
@@ -147,7 +152,7 @@ void DeviceMonitor::_addHandler(const std::string& device, int tries) {
         auto supported_reports = backend::hidpp::getSupportedReports(
                 RawDevice::getReportDescriptor(device));
         if (supported_reports)
-            this->addDevice(device);
+            addDevice(device);
         else
             logPrintf(DEBUG, "Unsupported device %s ignored", device.c_str());
     } catch (backend::DeviceNotReady& e) {
@@ -159,7 +164,10 @@ void DeviceMonitor::_addHandler(const std::string& device, int tries) {
             std::chrono::milliseconds wait((1 << tries) * ready_backoff);
             logPrintf(DEBUG, "Failed to add device %s on try %d, backing off for %dms",
                       device.c_str(), tries + 1, wait.count());
-            run_task_after([this, device, tries](){ _addHandler(device, tries + 1); }, wait);
+            run_task_after([self_weak = _self, device, tries]() {
+                if (auto self = self_weak.lock())
+                    self->_addHandler(device, tries + 1);
+            }, wait);
         }
     } catch (std::exception& e) {
         logPrintf(WARN, "Error adding device %s: %s", device.c_str(), e.what());
@@ -168,7 +176,7 @@ void DeviceMonitor::_addHandler(const std::string& device, int tries) {
 
 void DeviceMonitor::_removeHandler(const std::string& device) {
     try {
-        this->removeDevice(device);
+        removeDevice(device);
     } catch (std::exception& e) {
         logPrintf(WARN, "Error removing device %s: %s",
                   device.c_str(), e.what());

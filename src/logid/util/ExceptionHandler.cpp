@@ -27,16 +27,12 @@ void ExceptionHandler::Default(std::exception& error) {
     try {
         throw error;
     } catch (backend::hidpp10::Error& e) {
-        logPrintf(WARN, "HID++ 1.0 error ignored on detached thread/task: %s",
-                  error.what());
+        logPrintf(WARN, "HID++ 1.0 error ignored on task: %s", error.what());
     } catch (backend::hidpp20::Error& e) {
-        logPrintf(WARN, "HID++ 2.0 error ignored on detached thread/task: %s",
-                  error.what());
+        logPrintf(WARN, "HID++ 2.0 error ignored on task: %s", error.what());
     } catch (std::system_error& e) {
-        logPrintf(WARN, "System error ignored on detached thread/task: %s",
-                  error.what());
+        logPrintf(WARN, "System error ignored on task: %s", error.what());
     } catch (std::exception& e) {
-        logPrintf(WARN, "Error ignored on detached thread/task: %s",
-                  error.what());
+        logPrintf(WARN, "Error ignored on task: %s", error.what());
     }
 }

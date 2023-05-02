@@ -86,7 +86,10 @@ std::shared_ptr<Action> Action::makeAction(
         Device* device, const std::string& name,
         std::optional<config::BasicAction>& config,
         const std::shared_ptr<ipcgull::node>& parent) {
-    return _makeAction(device, name, config, parent);
+    auto ret = _makeAction(device, name, config, parent);
+    if (ret)
+        ret->_self = ret;
+    return ret;
 }
 
 std::shared_ptr<Action> Action::makeAction(
@@ -94,7 +97,10 @@ std::shared_ptr<Action> Action::makeAction(
         std::optional<config::Action>& config,
         const std::shared_ptr<ipcgull::node>& parent) {
     try {
-        return _makeAction(device, name, config, parent);
+        auto ret = _makeAction(device, name, config, parent);
+        if (ret)
+            ret->_self = ret;
+        return ret;
     } catch (actions::InvalidAction& e) {
         if (name == GestureAction::interface_name) {
             config = config::GestureAction();
@@ -111,6 +117,8 @@ std::shared_ptr<Action> Action::makeAction(
     std::visit([&device, &ret, &parent](auto&& x) {
         ret = _makeAction(device, x, parent);
     }, action);
+    if (ret)
+        ret->_self = ret;
     return ret;
 }
 
@@ -121,6 +129,8 @@ std::shared_ptr<Action> Action::makeAction(
     std::visit([&device, &ret, &parent](auto&& x) {
         ret = _makeAction(device, x, parent);
     }, action);
+    if (ret)
+        ret->_self = ret;
     return ret;
 }
 

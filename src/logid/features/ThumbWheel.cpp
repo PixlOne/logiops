@@ -121,19 +121,17 @@ void ThumbWheel::configure() {
 void ThumbWheel::listen() {
     if (_ev_handler.empty()) {
         _ev_handler = _device->hidpp20().addEventHandler(
-                {
-                        [index = _thumb_wheel->featureIndex()]
-                                (const hidpp::Report& report) -> bool {
-                            return (report.feature() ==
-                                    index) &&
-                                   (report.function() ==
-                                    hidpp20::ThumbWheel::Event);
-                        },
-                        [this](const hidpp::Report& report) -> void {
-                            _handleEvent(
-                                    _thumb_wheel->thumbwheelEvent(
-                                            report));
-                        }
+                {[index = _thumb_wheel->featureIndex()]
+                         (const hidpp::Report& report) -> bool {
+                    return (report.feature() ==
+                            index) &&
+                           (report.function() ==
+                            hidpp20::ThumbWheel::Event);
+                },
+                 [self_weak = self<ThumbWheel>()](const hidpp::Report& report) -> void {
+                     if (auto self = self_weak.lock())
+                        self->_handleEvent(self->_thumb_wheel->thumbwheelEvent(report));
+                 }
                 });
     }
 }
@@ -177,7 +175,6 @@ void ThumbWheel::_handleEvent(hidpp20::ThumbWheel::ThumbwheelEvent event) {
                 _right_gesture->press(true);
             if (_left_gesture)
                 _left_gesture->press(true);
-            _last_direction = 0;
         }
 
         if (event.rotation) {
@@ -193,8 +190,6 @@ void ThumbWheel::_handleEvent(hidpp20::ThumbWheel::ThumbwheelEvent event) {
                 scroll_action->press(true);
                 scroll_action->move((int16_t) (direction * event.rotation));
             }
-
-            _last_direction = direction;
         }
 
         if (event.rotationStatus == hidpp20::ThumbWheel::Stop) {

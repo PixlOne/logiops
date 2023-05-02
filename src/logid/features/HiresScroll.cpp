@@ -90,15 +90,15 @@ void HiresScroll::listen() {
     std::shared_lock lock(_config_mutex);
     if (_ev_handler.empty()) {
         _ev_handler = _device->hidpp20().addEventHandler(
-                {
-                        [index = _hires_scroll->featureIndex()](
-                                const hidpp::Report& report) -> bool {
-                            return (report.feature() == index) &&
-                                   (report.function() == hidpp20::HiresScroll::WheelMovement);
-                        },
-                        [this](const hidpp::Report& report) {
-                            _handleScroll(_hires_scroll->wheelMovementEvent(report));
-                        }
+                {[index = _hires_scroll->featureIndex()](
+                        const hidpp::Report& report) -> bool {
+                    return (report.feature() == index) &&
+                           (report.function() == hidpp20::HiresScroll::WheelMovement);
+                },
+                 [self_weak = self<HiresScroll>()](const hidpp::Report& report) {
+                     if (auto self = self_weak.lock())
+                         self->_handleScroll(self->_hires_scroll->wheelMovementEvent(report));
+                 }
                 });
     }
 }

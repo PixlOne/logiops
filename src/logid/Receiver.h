@@ -69,6 +69,9 @@ namespace logid {
         void unpair(int device);
 
     protected:
+        Receiver(const std::string& path,
+                 const std::shared_ptr<DeviceManager>& manager);
+
         void addDevice(backend::hidpp::DeviceConnectionEvent event) override;
 
         void removeDevice(backend::hidpp::DeviceIndex index) override;
@@ -77,11 +80,6 @@ namespace logid {
                        const std::string& passkey) override;
 
     private:
-        friend class ReceiverWrapper;
-
-        Receiver(const std::string& path,
-                 const std::shared_ptr<DeviceManager>& manager);
-
         std::mutex _devices_change;
         DeviceList _devices;
         std::string _path;
@@ -96,8 +94,6 @@ namespace logid {
         };
 
         std::shared_ptr<ipcgull::interface> _ipc_interface;
-
-        std::weak_ptr<Receiver> _self;
     };
 }
 

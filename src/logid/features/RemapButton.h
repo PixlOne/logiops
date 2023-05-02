@@ -68,7 +68,7 @@ namespace logid::features {
         };
 
         std::shared_ptr<ipcgull::node> _node;
-        std::shared_ptr<IPC> _interface;
+
         Device* _device;
         const ConfigFunction _conf_func;
 
@@ -79,15 +79,18 @@ namespace logid::features {
         const Info _info;
 
         std::weak_ptr<Button> _self;
+
+        std::shared_ptr<IPC> _ipc_interface;
     };
 
     class RemapButton : public DeviceFeature {
     public:
-        explicit RemapButton(Device* dev);
-
         void configure() final;
 
         void listen() final;
+
+    protected:
+        explicit RemapButton(Device* dev);
 
     private:
         void _buttonEvent(const std::set<uint16_t>& new_state);
@@ -111,8 +114,9 @@ namespace logid::features {
             RemapButton& _parent;
         };
 
-        std::shared_ptr<IPC> _ipc_interface;
         EventHandlerLock<backend::hidpp::Device> _ev_handler;
+
+        std::shared_ptr<IPC> _ipc_interface;
     };
 }
 

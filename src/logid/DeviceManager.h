@@ -30,10 +30,6 @@ namespace logid {
 
     class DeviceManager : public backend::raw::DeviceMonitor {
     public:
-        static std::shared_ptr<DeviceManager> make(
-                const std::shared_ptr<Configuration>& config,
-                const std::shared_ptr<InputDevice>& virtual_input,
-                const std::shared_ptr<ipcgull::server>& server);
 
         [[nodiscard]] std::shared_ptr<Configuration> config() const;
 
@@ -51,6 +47,10 @@ namespace logid {
         std::mutex& mutex() const;
 
     protected:
+        DeviceManager(std::shared_ptr<Configuration> config,
+                      std::shared_ptr<InputDevice> virtual_input,
+                      std::shared_ptr<ipcgull::server> server);
+
         void addDevice(std::string path) final;
 
         void removeDevice(std::string path) final;
@@ -80,13 +80,6 @@ namespace logid {
         [[nodiscard]]
         std::vector<std::shared_ptr<Receiver>> listReceivers() const;
 
-        friend class DevManagerWrapper;
-
-        DeviceManager(std::shared_ptr<Configuration> config,
-                      std::shared_ptr<InputDevice> virtual_input,
-                      std::shared_ptr<ipcgull::server> server);
-
-        std::weak_ptr<DeviceManager> _self;
         std::shared_ptr<ipcgull::server> _server;
         std::shared_ptr<Configuration> _config;
         std::shared_ptr<InputDevice> _virtual_input;

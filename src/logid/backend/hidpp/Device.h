@@ -129,11 +129,6 @@ namespace logid::backend::hidpp {
 
         void reportFixup(Report& report) const;
 
-        template <typename T>
-        [[nodiscard]] std::weak_ptr<T> self() const {
-            return std::dynamic_pointer_cast<T>(_self);
-        }
-
         const std::chrono::milliseconds io_timeout;
         uint8_t supported_reports{};
 

@@ -71,17 +71,20 @@ void CycleDPI::press() {
         if (_current_dpi == _config.dpis.value().end())
             _current_dpi = _config.dpis.value().begin();
 
-        run_task([this, dpi = *_current_dpi] {
-            try {
-                _dpi->setDPI(dpi, _config.sensor.value_or(0));
-            } catch (backend::hidpp20::Error& e) {
-                if (e.code() == backend::hidpp20::Error::InvalidArgument)
-                    logPrintf(WARN, "%s:%d: Could not set DPI to %d for "
-                                    "sensor %d", _device->hidpp20().devicePath().c_str(),
-                              _device->hidpp20().deviceIndex(), dpi,
-                              _config.sensor.value_or(0));
-                else
-                    throw e;
+        run_task([self_weak = self<CycleDPI>(), dpi = *_current_dpi] {
+            if (auto self = self_weak.lock()) {
+                try {
+                    self->_dpi->setDPI(dpi, self->_config.sensor.value_or(0));
+                } catch (backend::hidpp20::Error& e) {
+                    if (e.code() == backend::hidpp20::Error::InvalidArgument)
+                        logPrintf(WARN, "%s:%d: Could not set DPI to %d for "
+                                        "sensor %d",
+                                        self->_device->hidpp20().devicePath().c_str(),
+                                        self->_device->hidpp20().deviceIndex(), dpi,
+                                        self->_config.sensor.value_or(0));
+                    else
+                        throw e;
+                }
             }
         });
     }

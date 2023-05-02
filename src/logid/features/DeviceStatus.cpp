@@ -31,8 +31,7 @@ DeviceStatus::DeviceStatus(logid::Device* dev) : DeviceFeature(dev) {
         throw UnsupportedFeature();
 
     try {
-        _wireless_device_status = std::make_shared<
-                hidpp20::WirelessDeviceStatus>(&dev->hidpp20());
+        _wireless_device_status = std::make_shared<hidpp20::WirelessDeviceStatus>(&dev->hidpp20());
     } catch (hidpp20::UnsupportedFeature& e) {
         throw UnsupportedFeature();
     }
@@ -45,21 +44,21 @@ void DeviceStatus::configure() {
 void DeviceStatus::listen() {
     if (_ev_handler.empty()) {
         _ev_handler = _device->hidpp20().addEventHandler(
-                {
-                        [index = _wireless_device_status->featureIndex()](
-                                const hidpp::Report& report) -> bool {
-                            return report.feature() == index &&
-                                   report.function() ==
-                                   hidpp20::WirelessDeviceStatus::StatusBroadcast;
-                        },
-                        [dev = this->_device](
-                                const hidpp::Report& report) {
-                            auto event =
-                                    hidpp20::WirelessDeviceStatus::statusBroadcastEvent(report);
-                            if (event.reconfNeeded)
-                                run_task_after([dev]() { dev->wakeup(); },
-                                               std::chrono::milliseconds(100));
-                        }
+                {[index = _wireless_device_status->featureIndex()](
+                        const hidpp::Report& report) -> bool {
+                    return report.feature() == index &&
+                           report.function() ==
+                           hidpp20::WirelessDeviceStatus::StatusBroadcast;
+                },
+                 [self_weak = self<DeviceStatus>()](
+                         const hidpp::Report& report) {
+                     auto event = hidpp20::WirelessDeviceStatus::statusBroadcastEvent(report);
+                     if (event.reconfNeeded)
+                         run_task_after([self_weak]() {
+                             if (auto self = self_weak.lock())
+                                 self->_device->wakeup();
+                         }, std::chrono::milliseconds(100));
+                 }
                 });
     }
 }

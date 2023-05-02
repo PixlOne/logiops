@@ -25,17 +25,34 @@
 #include <string>
 
 namespace logid::backend::hidpp10 {
+
+    namespace {
+        template <typename T>
+        class ReceiverMonitorWrapper : public T {
+            friend class ReceiverMonitor;
+        public:
+            template <typename... Args>
+            explicit ReceiverMonitorWrapper(Args... args) : T(std::forward<Args>(args)...) { }
+
+            template <typename... Args>
+            static std::shared_ptr<T> make(Args... args) {
+                return std::make_shared<ReceiverMonitorWrapper>(std::forward<Args>(args)...);
+            }
+        };
+    }
+
     // This class will run on the RawDevice thread,
     class ReceiverMonitor {
     public:
+        void enumerate();
+
+        ReceiverMonitor(const ReceiverMonitor&) = delete;
+        ReceiverMonitor(ReceiverMonitor&&) = delete;
+    protected:
         ReceiverMonitor(const std::string& path,
                         const std::shared_ptr<raw::DeviceMonitor>& monitor,
                         double timeout);
 
-        void enumerate();
-
-    protected:
-        void ready();
 
         virtual void addDevice(hidpp::DeviceConnectionEvent event) = 0;
 
@@ -53,6 +70,8 @@ namespace logid::backend::hidpp10 {
         [[nodiscard]] std::shared_ptr<Receiver> receiver() const;
 
     private:
+        void _ready();
+
         std::shared_ptr<Receiver> _receiver;
 
         enum PairState {
@@ -71,6 +90,17 @@ namespace logid::backend::hidpp10 {
         EventHandlerLock<hidpp::Device> _discover_ev_handler;
         EventHandlerLock<hidpp::Device> _passkey_ev_handler;
         EventHandlerLock<hidpp::Device> _pair_status_handler;
+
+        std::weak_ptr<ReceiverMonitor> _self;
+
+    public:
+        template <typename T, typename... Args>
+        static std::shared_ptr<T> make(Args... args) {
+            auto receiver_monitor = ReceiverMonitorWrapper<T>::make(std::forward<Args>(args)...);
+            receiver_monitor->_self = receiver_monitor;
+            receiver_monitor->_ready();
+            return receiver_monitor;
+        }
     };
 
 }

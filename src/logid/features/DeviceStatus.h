@@ -26,11 +26,12 @@
 namespace logid::features {
     class DeviceStatus : public DeviceFeature {
     public:
-        explicit DeviceStatus(Device* dev);
-
         void configure() final;
 
         void listen() final;
+
+    protected:
+        explicit DeviceStatus(Device* dev);
 
     private:
         EventHandlerLock<backend::hidpp::Device> _ev_handler;

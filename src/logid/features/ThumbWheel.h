@@ -78,15 +78,15 @@ namespace logid::features {
         std::shared_ptr<actions::Action> _touch_action;
         std::shared_ptr<ipcgull::node> _touch_node;
 
-        std::shared_ptr<IPC> _ipc_interface;
-
-        int8_t _last_direction = 0;
         bool _last_proxy = false;
         bool _last_touch = false;
+
         mutable std::shared_mutex _config_mutex;
         std::optional<config::ThumbWheel>& _config;
 
         EventHandlerLock<backend::hidpp::Device> _ev_handler;
+
+        std::shared_ptr<IPC> _ipc_interface;
     };
 }
 

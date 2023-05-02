@@ -30,7 +30,7 @@ SmartShift::SmartShift(Device* device) : DeviceFeature(device),
         throw UnsupportedFeature();
     }
 
-    _ipc = _device->ipcNode()->make_interface<IPC>(this);
+    _ipc_interface = _device->ipcNode()->make_interface<IPC>(this);
 }
 
 void SmartShift::configure() {

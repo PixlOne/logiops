@@ -31,7 +31,7 @@ ReceiverMonitor::ReceiverMonitor(const std::string& path,
     _receiver->setNotifications(notification_flags);
 }
 
-void ReceiverMonitor::ready() {
+void ReceiverMonitor::_ready() {
     if (_connect_ev_handler.empty()) {
         _connect_ev_handler = _receiver->rawDevice()->addEventHandler(
                 {[](const std::vector<uint8_t>& report) -> bool {
@@ -42,31 +42,40 @@ void ReceiverMonitor::ready() {
                                 sub_id == Receiver::DeviceDisconnection);
                     }
                     return false;
-                }, [this](const std::vector<uint8_t>& raw) -> void {
+                }, [self_weak = _self](const std::vector<uint8_t>& raw) -> void {
                     /* Running in a new thread prevents deadlocks since the
                      * receiver may be enumerating.
                      */
                     hidpp::Report report(raw);
 
-                    run_task([this, report, path = this->_receiver->rawDevice()->rawPath()]() {
-                        if (report.subId() == Receiver::DeviceConnection) {
-                            try {
-                                this->addDevice(this->_receiver->deviceConnectionEvent(report));
-                            } catch (std::exception& e) {
-                                logPrintf(ERROR, "Failed to add device %d to receiver on %s: %s",
-                                          report.deviceIndex(), path.c_str(), e.what());
+                    if (auto self = self_weak.lock()) {
+                        run_task([self_weak, report,
+                                         path = self->_receiver->rawDevice()->rawPath()]() {
+                            auto self = self_weak.lock();
+                            if (!self)
+                                return;
+
+                            if (report.subId() == Receiver::DeviceConnection) {
+                                try {
+                                    self->addDevice(self->_receiver->deviceConnectionEvent(report));
+                                } catch (std::exception& e) {
+                                    logPrintf(ERROR,
+                                              "Failed to add device %d to receiver on %s: %s",
+                                              report.deviceIndex(), path.c_str(), e.what());
+                                }
+                            } else if (report.subId() == Receiver::DeviceDisconnection) {
+                                try {
+                                    self->removeDevice(
+                                            self->_receiver->deviceDisconnectionEvent(report));
+                                } catch (std::exception& e) {
+                                    logPrintf(ERROR, "Failed to remove device %d from "
+                                                     "receiver on %s: %s",
+                                              report.deviceIndex(), path.c_str(), e.what());
+                                }
                             }
-                        } else if (report.subId() == Receiver::DeviceDisconnection) {
-                            try {
-                                this->removeDevice(
-                                        this->_receiver->deviceDisconnectionEvent(report));
-                            } catch (std::exception& e) {
-                                logPrintf(ERROR, "Failed to remove device %d from "
-                                                 "receiver on %s: %s", report.deviceIndex(),
-                                          path.c_str(), e.what());
-                            }
-                        }
-                    });
+                        });
+                    }
+
                 }
                 });
     }
@@ -77,15 +86,20 @@ void ReceiverMonitor::ready() {
                     return (report.subId() == Receiver::DeviceDiscovered) &&
                            (report.type() == Report::Type::Long);
                 },
-                 [this](const hidpp::Report& report) {
-                     std::lock_guard lock(_pair_mutex);
-                     if (_pair_state == Discovering) {
-                         bool filled = Receiver::fillDeviceDiscoveryEvent(_discovery_event, report);
+                 [self_weak = _self](const hidpp::Report& report) {
+                     auto self = self_weak.lock();
+                     if (!self)
+                         return;
+                     std::lock_guard lock(self->_pair_mutex);
+                     if (self->_pair_state == Discovering) {
+                         bool filled = Receiver::fillDeviceDiscoveryEvent(
+                                 self->_discovery_event, report);
 
                          if (filled) {
-                             _pair_state = FindingPasskey;
-                             run_task([this, event = _discovery_event]() {
-                                 receiver()->startBoltPairing(event);
+                             self->_pair_state = FindingPasskey;
+                             run_task([self_weak, event = self->_discovery_event]() {
+                                 if (auto self = self_weak.lock())
+                                     self->receiver()->startBoltPairing(event);
                              });
                          }
                      }
@@ -97,15 +111,17 @@ void ReceiverMonitor::ready() {
         _passkey_ev_handler = _receiver->addEventHandler(
                 {[](const hidpp::Report& report) -> bool {
                     return report.subId() == Receiver::PasskeyRequest &&
-                        report.type() == hidpp::Report::Type::Long;
+                           report.type() == hidpp::Report::Type::Long;
                 },
-                 [this](const hidpp::Report& report) {
-                     std::lock_guard lock(_pair_mutex);
-                     if (_pair_state == FindingPasskey) {
-                         auto passkey = Receiver::passkeyEvent(report);
+                 [self_weak = _self](const hidpp::Report& report) {
+                     if (auto self = self_weak.lock()) {
+                         std::lock_guard lock(self->_pair_mutex);
+                         if (self->_pair_state == FindingPasskey) {
+                             auto passkey = Receiver::passkeyEvent(report);
 
-                         _pair_state = Pairing;
-                         pairReady(_discovery_event, passkey);
+                             self->_pair_state = Pairing;
+                             self->pairReady(self->_discovery_event, passkey);
+                         }
                      }
                  }
                 });
@@ -118,26 +134,30 @@ void ReceiverMonitor::ready() {
                            report.subId() == Receiver::PairStatus ||
                            report.subId() == Receiver::BoltPairStatus;
                 },
-                 [this](const hidpp::Report& report) {
-                     std::lock_guard lock(_pair_mutex);
+                 [self_weak = _self](const hidpp::Report& report) {
+                     auto self = self_weak.lock();
+                     if (!self)
+                         return;
+
+                     std::lock_guard lock(self->_pair_mutex);
                      // TODO: forward status to user
                      if (report.subId() == Receiver::DiscoveryStatus) {
                          auto event = Receiver::discoveryStatusEvent(report);
 
-                         if (_pair_state == Discovering && !event.discovering)
-                             _pair_state = NotPairing;
+                         if (self->_pair_state == Discovering && !event.discovering)
+                             self->_pair_state = NotPairing;
                      } else if (report.subId() == Receiver::PairStatus) {
                          auto event = Receiver::pairStatusEvent(report);
 
-                         if ((_pair_state == FindingPasskey || _pair_state == Pairing) &&
-                             !event.pairing)
-                             _pair_state = NotPairing;
+                         if ((self->_pair_state == FindingPasskey ||
+                              self->_pair_state == Pairing) && !event.pairing)
+                             self->_pair_state = NotPairing;
                      } else if (report.subId() == Receiver::BoltPairStatus) {
                          auto event = Receiver::boltPairStatusEvent(report);
 
-                         if ((_pair_state == FindingPasskey || _pair_state == Pairing) &&
-                             !event.pairing)
-                             _pair_state = NotPairing;
+                         if ((self->_pair_state == FindingPasskey ||
+                              self->_pair_state == Pairing) && !event.pairing)
+                             self->_pair_state = NotPairing;
                      }
                  }
                 });
@@ -157,21 +177,25 @@ void ReceiverMonitor::waitForDevice(hidpp::DeviceIndex index) {
             {[index](const std::vector<uint8_t>& report) -> bool {
                 return report[Offset::DeviceIndex] == index;
             },
-             [this, index, handler_id]([[maybe_unused]] const std::vector<uint8_t>& report) {
+             [self_weak = _self, index, handler_id](
+                     [[maybe_unused]] const std::vector<uint8_t>& report) {
                  hidpp::DeviceConnectionEvent event{};
                  event.withPayload = false;
                  event.linkEstablished = true;
                  event.index = index;
                  event.fromTimeoutCheck = true;
 
-                 run_task([this, event, handler_id]() {
+                 run_task([self_weak, event, handler_id]() {
                      *handler_id = {};
-                     try {
-                         addDevice(event);
-                     } catch (std::exception& e) {
-                         logPrintf(ERROR, "Failed to add device %d to receiver on %s: %s",
-                                   event.index, _receiver->rawDevice()->rawPath().c_str(),
-                                   e.what());
+                     if (auto self = self_weak.lock()) {
+                         try {
+                             self->addDevice(event);
+                         } catch (std::exception& e) {
+                             logPrintf(ERROR, "Failed to add device %d to receiver on %s: %s",
+                                       event.index,
+                                       self->_receiver->rawDevice()->rawPath().c_str(),
+                                       e.what());
+                         }
                      }
                  });
              }

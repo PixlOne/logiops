@@ -41,19 +41,10 @@ ReceiverNickname::~ReceiverNickname() {
     }
 }
 
-namespace logid {
-    class ReceiverWrapper : public Receiver {
-    public:
-        template<typename... Args>
-        explicit ReceiverWrapper(Args... args) : Receiver(std::forward<Args>(args)...) {}
-    };
-}
-
 std::shared_ptr<Receiver> Receiver::make(
         const std::string& path,
         const std::shared_ptr<DeviceManager>& manager) {
-    auto ret = std::make_shared<ReceiverWrapper>(path, manager);
-    ret->_self = ret;
+    auto ret = ReceiverMonitor::make<Receiver>(path, manager);
     ret->_ipc_node->manage(ret);
     return ret;
 }
@@ -67,7 +58,6 @@ Receiver::Receiver(const std::string& path,
         _path(path), _manager(manager), _nickname(manager),
         _ipc_node(manager->receiversNode()->make_child(_nickname)),
         _ipc_interface(_ipc_node->make_interface<IPC>(this)) {
-    ready();
 }
 
 const Receiver::DeviceList& Receiver::devices() const {

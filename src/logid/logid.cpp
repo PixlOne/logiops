@@ -162,7 +162,7 @@ int main(int argc, char** argv) {
     }
 
     // Device manager runs on its own I/O thread asynchronously
-    auto device_manager = DeviceManager::make(config, virtual_input, server);
+    auto device_manager = DeviceManager::make<DeviceManager>(config, virtual_input, server);
 
     device_manager->enumerate();
 

@@ -99,38 +99,40 @@ void RemapButton::configure() {
 void RemapButton::listen() {
     if (_ev_handler.empty()) {
         _ev_handler = _device->hidpp20().addEventHandler(
-                {
-                        [index = _reprog_controls->featureIndex()](
-                                const hidpp::Report& report) -> bool {
-                            if (report.feature() == index) {
-                                switch (report.function()) {
-                                    case hidpp20::ReprogControls::DivertedButtonEvent:
-                                    case hidpp20::ReprogControls::DivertedRawXYEvent:
-                                        return true;
-                                    default:
-                                        return false;
-                                }
-                            }
-                            return false;
-                        },
-                        [this](const hidpp::Report& report) -> void {
-                            switch (report.function()) {
-                                case hidpp20::ReprogControls::DivertedButtonEvent:
-                                    this->_buttonEvent(
-                                            _reprog_controls->divertedButtonEvent(
-                                                    report));
-                                    break;
-                                case hidpp20::ReprogControls::DivertedRawXYEvent: {
-                                    auto divertedXY = _reprog_controls->divertedRawXYEvent(report);
-                                    for (const auto& button: this->_buttons)
-                                        if (button.second->pressed())
-                                            button.second->move(divertedXY.x, divertedXY.y);
-                                    break;
-                                }
-                                default:
-                                    break;
-                            }
+                {[index = _reprog_controls->featureIndex()](
+                        const hidpp::Report& report) -> bool {
+                    if (report.feature() == index) {
+                        switch (report.function()) {
+                            case hidpp20::ReprogControls::DivertedButtonEvent:
+                            case hidpp20::ReprogControls::DivertedRawXYEvent:
+                                return true;
+                            default:
+                                return false;
                         }
+                    }
+                    return false;
+                },
+                 [self_weak = self<RemapButton>()](const hidpp::Report& report) -> void {
+                    auto self = self_weak.lock();
+                    if (!self)
+                        return;
+
+                     switch (report.function()) {
+                         case hidpp20::ReprogControls::DivertedButtonEvent:
+                             self->_buttonEvent(
+                                     self->_reprog_controls->divertedButtonEvent(report));
+                             break;
+                         case hidpp20::ReprogControls::DivertedRawXYEvent: {
+                             auto divertedXY = self->_reprog_controls->divertedRawXYEvent(report);
+                             for (const auto& button: self->_buttons)
+                                 if (button.second->pressed())
+                                     button.second->move(divertedXY.x, divertedXY.y);
+                             break;
+                         }
+                         default:
+                             break;
+                     }
+                 }
                 });
     }
 }
@@ -198,7 +200,7 @@ Button::Button(Info info, int index,
         }
     }
 
-    _interface = _node->make_interface<IPC>(this, _info);
+    _ipc_interface = _node->make_interface<IPC>(this, _info);
 }
 
 void Button::press() const {

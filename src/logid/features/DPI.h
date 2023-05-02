@@ -27,8 +27,6 @@
 namespace logid::features {
     class DPI : public DeviceFeature {
     public:
-        explicit DPI(Device* dev);
-
         void configure() final;
 
         void listen() final;
@@ -36,6 +34,9 @@ namespace logid::features {
         uint16_t getDPI(uint8_t sensor = 0);
 
         void setDPI(uint16_t dpi, uint8_t sensor = 0);
+
+    protected:
+        explicit DPI(Device* dev);
 
     private:
         void _fillDPILists(uint8_t sensor);
@@ -46,8 +47,8 @@ namespace logid::features {
 
             [[nodiscard]] uint8_t getSensors() const;
 
-            [[nodiscard]] std::tuple<std::vector<uint16_t>, uint16_t, bool> getDPIs(uint8_t
-                                                                                    sensor) const;
+            [[nodiscard]] std::tuple<std::vector<uint16_t>, uint16_t, bool> getDPIs(
+                    uint8_t sensor) const;
 
             [[nodiscard]] uint16_t getDPI(uint8_t sensor) const;
 
