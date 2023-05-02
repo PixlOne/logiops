@@ -95,9 +95,10 @@ void DeviceManager::addDevice(std::string path) {
     }
 
     try {
-        hidpp::Device device(path, hidpp::DefaultDevice, _self.lock(),
-                             config()->io_timeout.value_or(defaults::io_timeout));
-        isReceiver = device.version() == std::make_tuple(1, 0);
+        auto device = hidpp::Device::make(
+                path, hidpp::DefaultDevice, _self.lock(),
+                config()->io_timeout.value_or(defaults::io_timeout));
+        isReceiver = device->version() == std::make_tuple(1, 0);
     } catch (hidpp20::Error& e) {
         if (e.code() != hidpp20::Error::UnknownDevice)
             throw DeviceNotReady();

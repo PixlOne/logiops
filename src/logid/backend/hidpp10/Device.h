@@ -28,14 +28,6 @@
 namespace logid::backend::hidpp10 {
     class Device : public hidpp::Device {
     public:
-        Device(const std::string& path, hidpp::DeviceIndex index,
-               const std::shared_ptr<raw::DeviceMonitor>& monitor, double timeout);
-
-        Device(std::shared_ptr<raw::RawDevice> raw_dev,
-               hidpp::DeviceIndex index, double timeout);
-
-        Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
-               hidpp::DeviceIndex index, double timeout);
 
         hidpp::Report sendReport(const hidpp::Report& report) final;
 
@@ -48,6 +40,15 @@ namespace logid::backend::hidpp10 {
                                          hidpp::Report::Type type);
 
     protected:
+        Device(const std::string& path, hidpp::DeviceIndex index,
+               const std::shared_ptr<raw::DeviceMonitor>& monitor, double timeout);
+
+        Device(std::shared_ptr<raw::RawDevice> raw_dev,
+               hidpp::DeviceIndex index, double timeout);
+
+        Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
+               hidpp::DeviceIndex index, double timeout);
+
         bool responseReport(const hidpp::Report& report) final;
 
     private:
@@ -61,6 +62,22 @@ namespace logid::backend::hidpp10 {
 
         std::vector<uint8_t> accessRegister(
                 uint8_t sub_id, uint8_t address, const std::vector<uint8_t>& params);
+
+    protected:
+        template <typename T, typename... Args>
+        static std::shared_ptr<T> makeDerived(Args... args) {
+            auto device = hidpp::Device::makeDerived<T>(std::forward<Args>(args)...);
+
+            if (std::get<0>(device->version()) != 1)
+                throw std::invalid_argument("not a hid++ 1.0 device");
+
+            return device;
+        }
+    public:
+        template <typename... Args>
+        static std::shared_ptr<Device> make(Args... args) {
+            return makeDerived<Device>(std::forward<Args>(args)...);
+        }
     };
 }
 

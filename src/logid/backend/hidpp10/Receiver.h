@@ -89,9 +89,6 @@ namespace logid::backend::hidpp10 {
 
     class Receiver : public Device {
     public:
-        Receiver(const std::string& path,
-                 const std::shared_ptr<raw::DeviceMonitor>& monitor,
-                 double timeout);
 
         /* The following functions deal with HID++ 1.0 features.
          * While these are not technically DJ functions, it is redundant
@@ -199,8 +196,25 @@ namespace logid::backend::hidpp10 {
 
         static std::string passkeyEvent(const hidpp::Report& report);
 
+    protected:
+        Receiver(const std::string& path,
+                 const std::shared_ptr<raw::DeviceMonitor>& monitor,
+                 double timeout);
+
     private:
+        void _receiverCheck();
+
         bool _is_bolt = false;
+
+    public:
+        template <typename... Args>
+        static std::shared_ptr<Receiver> make(Args... args) {
+            auto receiver = makeDerived<Receiver>(std::forward<Args>(args)...);
+
+            receiver->_receiverCheck();
+
+            return receiver;
+        }
     };
 }
 

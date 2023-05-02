@@ -28,6 +28,9 @@ const char* InvalidReceiver::what() const noexcept {
 
 Receiver::Receiver(const std::string& path, const std::shared_ptr<raw::DeviceMonitor>& monitor,
                    double timeout) : Device(path, hidpp::DefaultDevice, monitor, timeout) {
+}
+
+void Receiver::_receiverCheck() {
     // Check if the device is a receiver
     try {
         getNotificationFlags();

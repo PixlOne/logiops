@@ -28,18 +28,6 @@
 namespace logid::backend::hidpp20 {
     class Device : public hidpp::Device {
     public:
-        Device(const std::string& path, hidpp::DeviceIndex index,
-               const std::shared_ptr<raw::DeviceMonitor>& monitor, double timeout);
-
-        Device(std::shared_ptr<raw::RawDevice> raw_device,
-               hidpp::DeviceIndex index, double timeout);
-
-        Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
-               hidpp::DeviceConnectionEvent event, double timeout);
-
-        Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
-               hidpp::DeviceIndex index, double timeout);
-
         std::vector<uint8_t> callFunction(uint8_t feature_index,
                                           uint8_t function,
                                           std::vector<uint8_t>& params);
@@ -53,6 +41,18 @@ namespace logid::backend::hidpp20 {
         void sendReportNoACK(const hidpp::Report& report) final;
 
     protected:
+        Device(const std::string& path, hidpp::DeviceIndex index,
+               const std::shared_ptr<raw::DeviceMonitor>& monitor, double timeout);
+
+        Device(std::shared_ptr<raw::RawDevice> raw_device,
+               hidpp::DeviceIndex index, double timeout);
+
+        Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
+               hidpp::DeviceConnectionEvent event, double timeout);
+
+        Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
+               hidpp::DeviceIndex index, double timeout);
+
         bool responseReport(const hidpp::Report& report) final;
 
     private:
@@ -65,6 +65,17 @@ namespace logid::backend::hidpp20 {
 
         /* Multiplex responses on lower nibble of SubID, ignore upper nibble for space */
         std::array<ResponseSlot, 16> _responses;
+
+    public:
+        template <typename... Args>
+        static std::shared_ptr<Device> make(Args... args) {
+            auto device = makeDerived<Device>(std::forward<Args>(args)...);
+
+            if (std::get<0>(device->version()) < 2)
+                throw std::invalid_argument("not a hid++ 2.0 device");
+
+            return device;
+        }
     };
 }
 

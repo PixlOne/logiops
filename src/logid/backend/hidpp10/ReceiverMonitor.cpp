@@ -25,7 +25,7 @@ using namespace logid::backend::hidpp;
 
 ReceiverMonitor::ReceiverMonitor(const std::string& path,
                                  const std::shared_ptr<raw::DeviceMonitor>& monitor, double timeout)
-        : _receiver(std::make_shared<Receiver>(path, monitor, timeout)) {
+        : _receiver(Receiver::make(path, monitor, timeout)) {
 
     Receiver::NotificationFlags notification_flags{true, true, true};
     _receiver->setNotifications(notification_flags);

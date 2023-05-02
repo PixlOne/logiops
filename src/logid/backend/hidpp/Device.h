@@ -38,7 +38,24 @@ namespace logid::backend::hidpp10 {
 namespace logid::backend::hidpp {
     struct DeviceConnectionEvent;
 
+    namespace {
+        template <typename T>
+        class DeviceWrapper : public T {
+            friend class Device;
+        public:
+            template <typename... Args>
+            explicit DeviceWrapper(Args... args) : T(std::forward<Args>(args)...) { }
+
+            template <typename... Args>
+            static std::shared_ptr<T> make(Args... args) {
+                return std::make_shared<DeviceWrapper>(std::forward<Args>(args)...);
+            }
+        };
+    }
+
     class Device {
+        template <typename T>
+        friend class DeviceWrapper;
     public:
         struct EventHandler {
             std::function<bool(Report&)> condition;
@@ -64,18 +81,6 @@ namespace logid::backend::hidpp {
             Reason _reason;
         };
 
-        Device(const std::string& path, DeviceIndex index,
-               const std::shared_ptr<raw::DeviceMonitor>& monitor, double timeout);
-
-        Device(std::shared_ptr<raw::RawDevice> raw_device, DeviceIndex index,
-               double timeout);
-
-        Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
-               hidpp::DeviceConnectionEvent event, double timeout);
-
-        Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
-               DeviceIndex index, double timeout);
-
         [[nodiscard]] const std::string& devicePath() const;
 
         [[nodiscard]] DeviceIndex deviceIndex() const;
@@ -96,7 +101,23 @@ namespace logid::backend::hidpp {
 
         [[nodiscard]] const std::shared_ptr<raw::RawDevice>& rawDevice() const;
 
+        Device(const Device&) = delete;
+        Device(Device&&) = delete;
+        virtual ~Device() = default;
+
     protected:
+        Device(const std::string& path, DeviceIndex index,
+               const std::shared_ptr<raw::DeviceMonitor>& monitor, double timeout);
+
+        Device(std::shared_ptr<raw::RawDevice> raw_device, DeviceIndex index,
+               double timeout);
+
+        Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
+               hidpp::DeviceConnectionEvent event, double timeout);
+
+        Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
+               DeviceIndex index, double timeout);
+
         // Returns whether the report is a response
         virtual bool responseReport(const Report& report);
 
@@ -107,6 +128,11 @@ namespace logid::backend::hidpp {
         void _sendReport(Report report);
 
         void reportFixup(Report& report) const;
+
+        template <typename T>
+        [[nodiscard]] std::weak_ptr<T> self() const {
+            return std::dynamic_pointer_cast<T>(_self);
+        }
 
         const std::chrono::milliseconds io_timeout;
         uint8_t supported_reports{};
@@ -136,6 +162,23 @@ namespace logid::backend::hidpp {
         std::optional<uint8_t> _sent_sub_id{};
 
         std::shared_ptr<EventHandlerList<Device>> _event_handlers;
+
+        std::weak_ptr<Device> _self;
+
+    protected:
+        template <typename T, typename... Args>
+        static std::shared_ptr<T> makeDerived(Args... args) {
+            auto device = DeviceWrapper<T>::make(std::forward<Args>(args)...);
+            device->_self = device;
+            device->_setupReportsAndInit();
+            return device;
+        }
+
+    public:
+        template <typename... Args>
+        static std::shared_ptr<Device> make(Args... args) {
+            return makeDerived<Device>(std::forward<Args>(args)...);
+        }
     };
 
     typedef Device::EventHandler EventHandler;

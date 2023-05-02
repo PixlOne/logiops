@@ -27,19 +27,16 @@ using namespace logid::backend::hidpp10;
 Device::Device(const std::string& path, hidpp::DeviceIndex index,
                const std::shared_ptr<raw::DeviceMonitor>& monitor, double timeout) :
         hidpp::Device(path, index, monitor, timeout) {
-    assert(version() == std::make_tuple(1, 0));
 }
 
 Device::Device(std::shared_ptr<raw::RawDevice> raw_dev, hidpp::DeviceIndex index,
                double timeout) : hidpp::Device(std::move(raw_dev), index, timeout) {
-    assert(version() == std::make_tuple(1, 0));
 }
 
 Device::Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
                hidpp::DeviceIndex index,
                double timeout)
         : hidpp::Device(receiver, index, timeout) {
-    assert(version() == std::make_tuple(1, 0));
 }
 
 void Device::ResponseSlot::reset() {

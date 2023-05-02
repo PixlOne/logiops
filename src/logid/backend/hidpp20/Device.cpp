@@ -27,30 +27,21 @@ using namespace logid::backend::hidpp20;
 Device::Device(const std::string& path, hidpp::DeviceIndex index,
                const std::shared_ptr<raw::DeviceMonitor>& monitor, double timeout) :
         hidpp::Device(path, index, monitor, timeout) {
-    // TODO: Fix version check
-    if (std::get<0>(version()) < 2)
-        throw std::runtime_error("Invalid HID++ version");
 }
 
 Device::Device(std::shared_ptr<raw::RawDevice> raw_device,
                hidpp::DeviceIndex index, double timeout) :
         hidpp::Device(std::move(raw_device), index, timeout) {
-    if (std::get<0>(version()) < 2)
-        throw std::runtime_error("Invalid HID++ version");
 }
 
 Device::Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
                hidpp::DeviceConnectionEvent event, double timeout) :
         hidpp::Device(receiver, event, timeout) {
-    if (std::get<0>(version()) < 2)
-        throw std::runtime_error("Invalid HID++ version");
 }
 
 Device::Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
                hidpp::DeviceIndex index, double timeout)
         : hidpp::Device(receiver, index, timeout) {
-    if (std::get<0>(version()) < 2)
-        throw std::runtime_error("Invalid HID++ version");
 }
 
 std::vector<uint8_t> Device::callFunction(uint8_t feature_index,

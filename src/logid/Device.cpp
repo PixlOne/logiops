@@ -93,10 +93,10 @@ std::shared_ptr<Device> Device::make(
 
 Device::Device(std::string path, backend::hidpp::DeviceIndex index,
                const std::shared_ptr<DeviceManager>& manager) :
-        _hidpp20(path, index, manager,
-                 manager->config()->io_timeout.value_or(defaults::io_timeout)),
+        _hidpp20(hidpp20::Device::make(path, index, manager,
+                 manager->config()->io_timeout.value_or(defaults::io_timeout))),
         _path(std::move(path)), _index(index),
-        _config(_getConfig(manager, _hidpp20.name())),
+        _config(_getConfig(manager, _hidpp20->name())),
         _receiver(nullptr),
         _manager(manager),
         _nickname(manager),
@@ -107,10 +107,11 @@ Device::Device(std::string path, backend::hidpp::DeviceIndex index,
 
 Device::Device(std::shared_ptr<backend::raw::RawDevice> raw_device,
                hidpp::DeviceIndex index, const std::shared_ptr<DeviceManager>& manager) :
-        _hidpp20(std::move(raw_device), index,
-                 manager->config()->io_timeout.value_or(defaults::io_timeout)),
+        _hidpp20(hidpp20::Device::make(
+                std::move(raw_device), index,
+                manager->config()->io_timeout.value_or(defaults::io_timeout))),
         _path(raw_device->rawPath()), _index(index),
-        _config(_getConfig(manager, _hidpp20.name())),
+        _config(_getConfig(manager, _hidpp20->name())),
         _receiver(nullptr),
         _manager(manager),
         _nickname(manager),
@@ -121,11 +122,11 @@ Device::Device(std::shared_ptr<backend::raw::RawDevice> raw_device,
 
 Device::Device(Receiver* receiver, hidpp::DeviceIndex index,
                const std::shared_ptr<DeviceManager>& manager) :
-        _hidpp20(receiver->rawReceiver(), index,
-                 manager->config()->io_timeout.value_or(
-                         defaults::io_timeout)),
+        _hidpp20(hidpp20::Device::make(
+                receiver->rawReceiver(), index,
+                manager->config()->io_timeout.value_or(defaults::io_timeout))),
         _path(receiver->path()), _index(index),
-        _config(_getConfig(manager, _hidpp20.name())),
+        _config(_getConfig(manager, _hidpp20->name())),
         _receiver(receiver),
         _manager(manager),
         _nickname(manager),
@@ -159,11 +160,11 @@ void Device::_init() {
 }
 
 std::string Device::name() {
-    return _hidpp20.name();
+    return _hidpp20->name();
 }
 
 uint16_t Device::pid() {
-    return _hidpp20.pid();
+    return _hidpp20->pid();
 }
 
 void Device::sleep() {
@@ -223,15 +224,15 @@ const config::Profile& Device::activeProfile() const {
 }
 
 hidpp20::Device& Device::hidpp20() {
-    return _hidpp20;
+    return *_hidpp20;
 }
 
 void Device::_makeResetMechanism() {
     try {
-        hidpp20::Reset reset(&_hidpp20);
+        hidpp20::Reset reset(_hidpp20.get());
         _reset_mechanism = std::make_unique<std::function<void()>>(
-                [dev = &this->_hidpp20] {
-                    hidpp20::Reset reset(dev);
+                [dev = _hidpp20] {
+                    hidpp20::Reset reset(dev.get());
                     reset.reset(reset.getProfile());
                 });
     } catch (hidpp20::UnsupportedFeature& e) {

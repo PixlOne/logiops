@@ -111,16 +111,18 @@ void Receiver::addDevice(hidpp::DeviceConnectionEvent event) {
         if (!event.linkEstablished)
             return;
 
-        hidpp::Device hidpp_device(receiver(), event,
-                                   manager->config()->io_timeout.value_or(defaults::io_timeout));
+        auto hidpp_device = hidpp::Device::make(
+                receiver(), event, manager->config()->io_timeout.value_or(defaults::io_timeout));
 
-        auto version = hidpp_device.version();
+        auto version = hidpp_device->version();
 
         if (std::get<0>(version) < 2) {
             logPrintf(INFO, "Unsupported HID++ 1.0 device on %s:%d connected.",
                       _path.c_str(), event.index);
             return;
         }
+
+        hidpp_device.reset();
 
         auto device = Device::make(this, event.index, manager);
         std::lock_guard<std::mutex> manager_lock(manager->mutex());

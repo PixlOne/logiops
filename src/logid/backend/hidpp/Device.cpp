@@ -55,7 +55,6 @@ Device::Device(const std::string& path, DeviceIndex index,
                 duration<double, std::milli>(timeout))),
         _raw_device(std::make_shared<raw::RawDevice>(path, monitor)),
         _receiver(nullptr), _path(path), _index(index) {
-    _setupReportsAndInit();
 }
 
 Device::Device(std::shared_ptr<raw::RawDevice> raw_device, DeviceIndex index,
@@ -64,7 +63,6 @@ Device::Device(std::shared_ptr<raw::RawDevice> raw_device, DeviceIndex index,
                 duration<double, std::milli>(timeout))),
         _raw_device(std::move(raw_device)), _receiver(nullptr),
         _path(_raw_device->rawPath()), _index(index) {
-    _setupReportsAndInit();
 }
 
 Device::Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
@@ -81,7 +79,6 @@ Device::Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
         _pid = event.pid;
     else
         _pid = receiver->getPairingInfo(_index).pid;
-    _setupReportsAndInit();
 }
 
 Device::Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
@@ -92,7 +89,6 @@ Device::Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
         _receiver(receiver), _path(receiver->rawDevice()->rawPath()),
         _index(index) {
     _pid = receiver->getPairingInfo(_index).pid;
-    _setupReportsAndInit();
 }
 
 const std::string& Device::devicePath() const {
@@ -124,9 +120,10 @@ void Device::_setupReportsAndInit() {
                     return (report[Offset::Type] == Report::Type::Short ||
                             report[Offset::Type] == Report::Type::Long);
                 },
-                 [this](const std::vector<uint8_t>& report) -> void {
+                 [self_weak = _self](const std::vector<uint8_t>& report) -> void {
                      Report _report(report);
-                     this->handleEvent(_report);
+                     if(auto self = self_weak.lock())
+                        self->handleEvent(_report);
                  }});
 
         try {
@@ -154,9 +151,10 @@ void Device::_setupReportsAndInit() {
                         report[Offset::Type] == Report::Type::Long) &&
                        (report[Offset::DeviceIndex] == index);
             },
-             [this](const std::vector<uint8_t>& report) -> void {
+             [self_weak = _self](const std::vector<uint8_t>& report) -> void {
                  Report _report(report);
-                 this->handleEvent(_report);
+                 if(auto self = self_weak.lock())
+                     self->handleEvent(_report);
              }});
 
     _init();

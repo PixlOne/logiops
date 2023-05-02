@@ -134,7 +134,7 @@ namespace logid {
             }
         }
 
-        backend::hidpp20::Device _hidpp20;
+        std::shared_ptr<backend::hidpp20::Device> _hidpp20;
         std::string _path;
         backend::hidpp::DeviceIndex _index;
         std::map<std::string, std::shared_ptr<features::DeviceFeature>>
