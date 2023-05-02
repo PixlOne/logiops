@@ -67,9 +67,16 @@ public:
     EventHandlerLock& operator=(const EventHandlerLock&) = delete;
 
     EventHandlerLock& operator=(EventHandlerLock&& o) noexcept {
-        this->_list = o._list;
-        this->_iterator = o._iterator;
-        o._list.reset();
+        if (this != &o) {
+            if (auto list = _list.lock()) {
+                this->_list.reset();
+                list->remove(_iterator);
+            }
+
+            this->_list = o._list;
+            o._list.reset();
+            this->_iterator = o._iterator;
+        }
 
         return *this;
     }
