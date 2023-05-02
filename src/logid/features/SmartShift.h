@@ -22,6 +22,7 @@
 #include <backend/hidpp20/features/SmartShift.h>
 #include <ipcgull/interface.h>
 #include <config/schema.h>
+#include <shared_mutex>
 
 namespace logid::features {
     class SmartShift : public DeviceFeature {
@@ -30,6 +31,8 @@ namespace logid::features {
         void configure() final;
 
         void listen() final;
+
+        void setProfile(config::Profile& profile) final;
 
         typedef backend::hidpp20::SmartShift::SmartshiftStatus Status;
 
@@ -41,7 +44,8 @@ namespace logid::features {
         explicit SmartShift(Device* dev);
 
     private:
-        std::optional<config::SmartShift>& _config;
+        mutable std::shared_mutex _config_mutex;
+        std::reference_wrapper<std::optional<config::SmartShift>> _config;
         std::shared_ptr<backend::hidpp20::SmartShift> _smartshift;
 
         class IPC : public ipcgull::interface {

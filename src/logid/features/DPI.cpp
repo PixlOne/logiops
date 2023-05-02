@@ -69,8 +69,8 @@ DPI::DPI(Device* device) : DeviceFeature(device), _config(device->activeProfile(
 void DPI::configure() {
     std::shared_lock lock(_config_mutex);
 
-    if (_config.has_value()) {
-        const auto& config = _config.value();
+    if (_config.get().has_value()) {
+        const auto& config = _config.get().value();
         if (std::holds_alternative<int>(config)) {
             const auto& dpi = std::get<int>(config);
             _fillDPILists(0);
@@ -94,6 +94,11 @@ void DPI::configure() {
 }
 
 void DPI::listen() {
+}
+
+void DPI::setProfile(config::Profile& profile) {
+    std::unique_lock lock(_config_mutex);
+    _config = profile.dpi;
 }
 
 uint16_t DPI::getDPI(uint8_t sensor) {
@@ -145,17 +150,19 @@ std::tuple<std::vector<uint16_t>, uint16_t, bool> DPI::IPC::getDPIs(uint8_t sens
 
 uint16_t DPI::IPC::getDPI(uint8_t sensor) const {
     std::shared_lock lock(_parent._config_mutex);
-    if (!_parent._config.has_value())
+    auto& config = _parent._config.get();
+
+    if (!config.has_value())
         return _parent.getDPI(sensor);
 
-    if (std::holds_alternative<int>(_parent._config.value())) {
+    if (std::holds_alternative<int>(config.value())) {
         if (sensor == 0)
-            return std::get<int>(_parent._config.value());
+            return std::get<int>(config.value());
         else
             return _parent.getDPI(sensor);
     }
 
-    const auto& list = std::get<std::list<int>>(_parent._config.value());
+    const auto& list = std::get<std::list<int>>(config.value());
 
     if (list.size() > sensor) {
         auto it = list.begin();
@@ -168,21 +175,22 @@ uint16_t DPI::IPC::getDPI(uint8_t sensor) const {
 
 void DPI::IPC::setDPI(uint16_t dpi, uint8_t sensor) {
     std::unique_lock lock(_parent._config_mutex);
+    auto& config = _parent._config.get();
 
-    if (!_parent._config.has_value())
-        _parent._config.emplace(std::list<int>());
+    if (!config.has_value())
+        config.emplace(std::list<int>());
 
-    if (std::holds_alternative<int>(_parent._config.value())) {
+    if (std::holds_alternative<int>(config.value())) {
         if (sensor == 0) {
-            _parent._config.value() = dpi;
+            config.value() = dpi;
         } else {
             auto list = std::list<int>(sensor + 1, 0);
             *list.rbegin() = dpi;
             *list.begin() = dpi;
-            _parent._config.value() = list;
+            config.value() = list;
         }
     } else {
-        auto& list = std::get<std::list<int>>(_parent._config.value());
+        auto& list = std::get<std::list<int>>(config.value());
 
         while (list.size() <= sensor) {
             list.emplace_back(0);

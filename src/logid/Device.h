@@ -62,10 +62,17 @@ namespace logid {
 
         uint16_t pid();
 
-        //config::Device& config();
-        config::Profile& activeProfile();
+        [[nodiscard]] config::Profile& activeProfile();
 
-        [[nodiscard]] const config::Profile& activeProfile() const;
+        [[nodiscard]] std::vector<std::string> getProfiles() const;
+
+        void setProfile(const std::string& profile);
+
+        void setProfileDelayed(const std::string& profile);
+
+        void removeProfile(const std::string& profile);
+
+        void clearProfile(const std::string& profile);
 
         backend::hidpp20::Device& hidpp20();
 
@@ -88,6 +95,8 @@ namespace logid {
 
         void sleep();
 
+        void reconfigure();
+
         void reset();
 
         [[nodiscard]] std::shared_ptr<InputDevice> virtualInput() const;
@@ -107,7 +116,9 @@ namespace logid {
         }
 
         Device(const Device&) = delete;
+
         Device(Device&&) = delete;
+
     private:
         friend class DeviceWrapper;
 
@@ -139,9 +150,11 @@ namespace logid {
         std::shared_ptr<backend::hidpp20::Device> _hidpp20;
         std::string _path;
         backend::hidpp::DeviceIndex _index;
-        std::map<std::string, std::shared_ptr<features::DeviceFeature>>
-                _features;
+        std::map<std::string, std::shared_ptr<features::DeviceFeature>> _features;
+
         config::Device& _config;
+        mutable std::shared_mutex _profile_mutex;
+        ipcgull::property<std::string> _profile_name;
         std::map<std::string, config::Profile>::iterator _profile;
 
         Receiver* _receiver;

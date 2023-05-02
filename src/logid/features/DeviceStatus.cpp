@@ -62,3 +62,6 @@ void DeviceStatus::listen() {
                 });
     }
 }
+
+void DeviceStatus::setProfile(config::Profile&) {
+}

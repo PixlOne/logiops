@@ -34,6 +34,8 @@ namespace logid::features {
 
         void listen() final;
 
+        void setProfile(config::Profile& profile) final;
+
         [[nodiscard]] uint8_t getMode();
 
         void setMode(uint8_t mode);
@@ -42,6 +44,8 @@ namespace logid::features {
         explicit HiresScroll(Device* dev);
 
     private:
+        void _makeConfig();
+
         EventHandlerLock<backend::hidpp::Device> _ev_handler;
 
         void _makeGesture(std::shared_ptr<actions::Gesture>& gesture,
@@ -81,7 +85,7 @@ namespace logid::features {
         int16_t _last_direction = 0;
 
         mutable std::shared_mutex _config_mutex;
-        std::optional<std::variant<bool, config::HiresScroll>>& _config;
+        std::reference_wrapper<std::optional<std::variant<bool, config::HiresScroll>>> _config;
 
         uint8_t _mode;
         uint8_t _mask;

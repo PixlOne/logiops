@@ -31,6 +31,8 @@ namespace logid::features {
 
         void listen() final;
 
+        void setProfile(config::Profile& profile) final;
+
         uint16_t getDPI(uint8_t sensor = 0);
 
         void setDPI(uint16_t dpi, uint8_t sensor = 0);
@@ -59,7 +61,7 @@ namespace logid::features {
         };
 
         mutable std::shared_mutex _config_mutex;
-        std::optional<config::DPI>& _config;
+        std::reference_wrapper<std::optional<config::DPI>> _config;
         std::shared_ptr<backend::hidpp20::AdjustableDPI> _adjustable_dpi;
         mutable std::shared_mutex _dpi_list_mutex;
         std::vector<backend::hidpp20::AdjustableDPI::SensorDPIList> _dpi_lists;

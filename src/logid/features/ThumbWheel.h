@@ -32,7 +32,11 @@ namespace logid::features {
 
         void listen() final;
 
+        void setProfile(config::Profile& profile) final;
+
     private:
+        void _makeConfig();
+
         void _handleEvent(backend::hidpp20::ThumbWheel::ThumbwheelEvent event);
 
         void _fixGesture(const std::shared_ptr<actions::Gesture>& gesture) const;
@@ -59,6 +63,7 @@ namespace logid::features {
 
         private:
             config::ThumbWheel& _parentConfig();
+
             ThumbWheel& _parent;
         };
 
@@ -82,7 +87,7 @@ namespace logid::features {
         bool _last_touch = false;
 
         mutable std::shared_mutex _config_mutex;
-        std::optional<config::ThumbWheel>& _config;
+        std::reference_wrapper<std::optional<config::ThumbWheel>> _config;
 
         EventHandlerLock<backend::hidpp::Device> _ev_handler;
 

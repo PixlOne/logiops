@@ -39,16 +39,28 @@ HiresScroll::HiresScroll(Device* dev) :
         throw UnsupportedFeature();
     }
 
-    if (_config.has_value()) {
-        if (std::holds_alternative<bool>(_config.value())) {
+    _makeConfig();
+
+    _last_scroll = std::chrono::system_clock::now();
+
+    _ipc_interface = dev->ipcNode()->make_interface<IPC>(this);
+}
+
+void HiresScroll::_makeConfig() {
+    auto& config = _config.get();
+    _mode = 0;
+    _mask = 0;
+
+    if (config.has_value()) {
+        if (std::holds_alternative<bool>(config.value())) {
             config::HiresScroll conf{};
-            conf.hires = std::get<bool>(_config.value());
+            conf.hires = std::get<bool>(config.value());
             conf.invert = false;
             conf.target = false;
             _mask |= hidpp20::HiresScroll::Mode::HiRes;
-            _config.value() = conf;
+            config.value() = conf;
         }
-        auto& conf = std::get<config::HiresScroll>(_config.value());
+        auto& conf = std::get<config::HiresScroll>(config.value());
         if (conf.hires.has_value()) {
             _mask |= hidpp20::HiresScroll::Mode::HiRes;
             if (conf.hires.value())
@@ -68,10 +80,6 @@ HiresScroll::HiresScroll(Device* dev) :
         _makeGesture(_up_gesture, conf.up, "up");
         _makeGesture(_down_gesture, conf.down, "down");
     }
-
-    _last_scroll = std::chrono::system_clock::now();
-
-    _ipc_interface = dev->ipcNode()->make_interface<IPC>(this);
 }
 
 void HiresScroll::configure() {
@@ -101,6 +109,15 @@ void HiresScroll::listen() {
                  }
                 });
     }
+}
+
+void HiresScroll::setProfile(config::Profile& profile) {
+    std::unique_lock lock(_config_mutex);
+
+    _up_gesture.reset();
+    _down_gesture.reset();
+    _config = profile.hiresscroll;
+    _makeConfig();
 }
 
 uint8_t HiresScroll::getMode() {
@@ -189,15 +206,17 @@ HiresScroll::IPC::IPC(HiresScroll* parent) : ipcgull::interface(
 std::tuple<bool, bool, bool> HiresScroll::IPC::getConfig() const {
     std::shared_lock lock(_parent._config_mutex);
 
-    if (_parent._config.has_value()) {
-        if (std::holds_alternative<bool>(_parent._config.value())) {
-            return {std::get<bool>(_parent._config.value()), false, false};
+    auto& config = _parent._config.get();
+
+    if (config.has_value()) {
+        if (std::holds_alternative<bool>(config.value())) {
+            return {std::get<bool>(config.value()), false, false};
         } else {
-            const auto& config = std::get<config::HiresScroll>(_parent._config.value());
+            const auto& config_obj = std::get<config::HiresScroll>(config.value());
             return {
-                    config.hires.value_or(true),
-                    config.invert.value_or(false),
-                    config.target.value_or(false)
+                    config_obj.hires.value_or(true),
+                    config_obj.invert.value_or(false),
+                    config_obj.target.value_or(false)
             };
         }
     } else {
@@ -206,16 +225,17 @@ std::tuple<bool, bool, bool> HiresScroll::IPC::getConfig() const {
 }
 
 config::HiresScroll& HiresScroll::IPC::_parentConfig() {
-    if (!_parent._config.has_value()) {
-        _parent._config = config::HiresScroll();
-    } else if (std::holds_alternative<bool>(_parent._config.value())) {
-        bool hires = std::get<bool>(_parent._config.value());
-        auto config = config::HiresScroll();
-        config.hires = hires;
-        _parent._config = hires;
+    auto& config = _parent._config.get();
+    if (!config.has_value()) {
+        config = config::HiresScroll();
+    } else if (std::holds_alternative<bool>(config.value())) {
+        bool hires = std::get<bool>(config.value());
+        auto new_config = config::HiresScroll();
+        new_config.hires = hires;
+        config = new_config;
     }
 
-    return std::get<config::HiresScroll>(_parent._config.value());
+    return std::get<config::HiresScroll>(config.value());
 }
 
 void HiresScroll::IPC::setHires(bool hires) {

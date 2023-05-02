@@ -42,6 +42,8 @@ namespace logid::features {
 
         void move(int16_t x, int16_t y) const;
 
+        void setProfile(config::Button& config);
+
         [[nodiscard]] std::shared_ptr<ipcgull::node> node() const;
 
         void configure() const;
@@ -50,6 +52,8 @@ namespace logid::features {
 
     private:
         friend class ButtonWrapper;
+
+        void _makeConfig();
 
         Button(Info info, int index,
                Device* device, ConfigFunction conf_func,
@@ -72,9 +76,9 @@ namespace logid::features {
         Device* _device;
         const ConfigFunction _conf_func;
 
-        config::Button& _config;
+        std::reference_wrapper<config::Button> _config;
 
-        mutable std::mutex _action_lock;
+        mutable std::shared_mutex _action_lock;
         std::shared_ptr<actions::Action> _action;
         const Info _info;
 
@@ -89,6 +93,8 @@ namespace logid::features {
 
         void listen() final;
 
+        void setProfile(config::Profile& profile) final;
+
     protected:
         explicit RemapButton(Device* dev);
 
@@ -99,7 +105,7 @@ namespace logid::features {
         std::set<uint16_t> _pressed_buttons;
         std::mutex _button_lock;
 
-        std::optional<config::RemapButton>& _config;
+        std::reference_wrapper<std::optional<config::RemapButton>> _config;
         std::map<uint16_t, std::shared_ptr<Button>> _buttons;
 
         std::shared_ptr<ipcgull::node> _ipc_node;

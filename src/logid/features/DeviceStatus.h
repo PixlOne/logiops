@@ -30,6 +30,8 @@ namespace logid::features {
 
         void listen() final;
 
+        void setProfile(config::Profile& profile) final;
+
     protected:
         explicit DeviceStatus(Device* dev);
 

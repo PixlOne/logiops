@@ -26,6 +26,10 @@ namespace logid {
     class Device;
 }
 
+namespace logid::config {
+    struct Profile;
+}
+
 namespace logid::features {
     class UnsupportedFeature : public std::exception {
     public:
@@ -58,6 +62,8 @@ namespace logid::features {
         virtual void configure() = 0;
 
         virtual void listen() = 0;
+
+        virtual void setProfile(config::Profile& profile) = 0;
 
         virtual ~DeviceFeature() = default;
 

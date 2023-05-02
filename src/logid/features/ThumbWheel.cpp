@@ -80,14 +80,7 @@ ThumbWheel::ThumbWheel(Device* dev) : DeviceFeature(dev), _wheel_info(),
         throw UnsupportedFeature();
     }
 
-    if (_config.has_value()) {
-        auto& conf = _config.value();
-        _left_gesture = _genGesture(dev, conf.left, _left_node, "left");
-        _right_gesture = _genGesture(dev, conf.right, _right_node, "right");
-        _touch_action = _genAction(dev, conf.touch, _touch_node);
-        _tap_action = _genAction(dev, conf.tap, _tap_node);
-        _proxy_action = _genAction(dev, conf.proxy, _proxy_node);
-    }
+    _makeConfig();
 
     _wheel_info = _thumb_wheel->getInfo();
 
@@ -109,12 +102,24 @@ ThumbWheel::ThumbWheel(Device* dev) : DeviceFeature(dev), _wheel_info(),
     _ipc_interface = dev->ipcNode()->make_interface<IPC>(this);
 }
 
+void ThumbWheel::_makeConfig() {
+    if (_config.get().has_value()) {
+        auto& conf = _config.get().value();
+        _left_gesture = _genGesture(_device, conf.left, _left_node, "left");
+        _right_gesture = _genGesture(_device, conf.right, _right_node, "right");
+        _touch_action = _genAction(_device, conf.touch, _touch_node);
+        _tap_action = _genAction(_device, conf.tap, _tap_node);
+        _proxy_action = _genAction(_device, conf.proxy, _proxy_node);
+    }
+}
+
 void ThumbWheel::configure() {
     std::shared_lock lock(_config_mutex);
-    if (_config.has_value()) {
-        const auto& config = _config.value();
-        _thumb_wheel->setStatus(config.divert.value_or(false),
-                                config.invert.value_or(false));
+    auto& config = _config.get();
+    if (config.has_value()) {
+        const auto& value = config.value();
+        _thumb_wheel->setStatus(value.divert.value_or(false),
+                                value.invert.value_or(false));
     }
 }
 
@@ -123,10 +128,8 @@ void ThumbWheel::listen() {
         _ev_handler = _device->hidpp20().addEventHandler(
                 {[index = _thumb_wheel->featureIndex()]
                          (const hidpp::Report& report) -> bool {
-                    return (report.feature() ==
-                            index) &&
-                           (report.function() ==
-                            hidpp20::ThumbWheel::Event);
+                    return (report.feature() == index) &&
+                           (report.function() == hidpp20::ThumbWheel::Event);
                 },
                  [self_weak = self<ThumbWheel>()](const hidpp::Report& report) -> void {
                      if (auto self = self_weak.lock())
@@ -134,6 +137,17 @@ void ThumbWheel::listen() {
                  }
                 });
     }
+}
+
+void ThumbWheel::setProfile(config::Profile& profile) {
+    std::unique_lock lock(_config_mutex);
+    _config = profile.thumbwheel;
+    _left_gesture.reset();
+    _right_gesture.reset();
+    _touch_action.reset();
+    _tap_action.reset();
+    _proxy_action.reset();
+    _makeConfig();
 }
 
 void ThumbWheel::_handleEvent(hidpp20::ThumbWheel::ThumbwheelEvent event) {
@@ -227,22 +241,24 @@ ThumbWheel::IPC::IPC(ThumbWheel* parent) : ipcgull::interface(
 }
 
 config::ThumbWheel& ThumbWheel::IPC::_parentConfig() {
-    if (!_parent._config.has_value()) {
-        _parent._config.emplace();
+    auto& config = _parent._config.get();
+    if (!config.has_value()) {
+        config.emplace();
     }
 
-    return _parent._config.value();
+    return config.value();
 }
 
 std::tuple<bool, bool> ThumbWheel::IPC::getConfig() const {
     std::shared_lock lock(_parent._config_mutex);
 
-    if (!_parent._config.has_value()) {
+    auto& config = _parent._config.get();
+    if (!config.has_value()) {
         return {false, false};
     }
 
-    return {_parent._config.value().divert.value_or(false),
-            _parent._config.value().invert.value_or(false)};
+    return {config.value().divert.value_or(false),
+            config.value().invert.value_or(false)};
 }
 
 void ThumbWheel::IPC::setDivert(bool divert) {

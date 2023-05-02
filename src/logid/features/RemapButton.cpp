@@ -46,8 +46,10 @@ RemapButton::RemapButton(Device* dev) : DeviceFeature(dev),
 
     _reprog_controls->initCidMap();
 
-    if (!_config.has_value())
-        _config = config::RemapButton();
+    auto& config = _config.get();
+
+    if (!config.has_value())
+        config = config::RemapButton();
 
     for (const auto& control: _reprog_controls->getControls()) {
         const auto i = _buttons.size();
@@ -58,8 +60,7 @@ RemapButton::RemapButton(Device* dev) : DeviceFeature(dev),
             report.flags = hidpp20_reprog_rebind;
 
             if (action) {
-                if ((action->reprogFlags() &
-                     hidpp20::ReprogControls::RawXYDiverted) &&
+                if ((action->reprogFlags() & hidpp20::ReprogControls::RawXYDiverted) &&
                     (!_reprog_controls->supportsRawXY() ||
                      !(info.additionalFlags & hidpp20::ReprogControls::RawXY)))
                     logPrintf(WARN, "%s: Cannot divert raw XY movements for CID 0x%02x",
@@ -72,7 +73,7 @@ RemapButton::RemapButton(Device* dev) : DeviceFeature(dev),
         _buttons.emplace(control.second.controlID,
                          Button::make(control.second, (int) i,
                                       _device, func, _ipc_node,
-                                      _config.value()[control.first]));
+                                      config.value()[control.first]));
     }
 
     _ipc_interface = _device->ipcNode()->make_interface<IPC>(this);
@@ -137,6 +138,18 @@ void RemapButton::listen() {
     }
 }
 
+void RemapButton::setProfile(config::Profile& profile) {
+    std::lock_guard<std::mutex> lock(_button_lock);
+
+    _config = profile.buttons;
+    if (!_config.get().has_value())
+        _config.get().emplace();
+    auto& config = _config.get().value();
+
+    for(auto& button : _buttons)
+        button.second->setProfile(config[button.first]);
+}
+
 void RemapButton::_buttonEvent(const std::set<uint16_t>& new_state) {
     // Ensure I/O doesn't occur while updating button state
     std::lock_guard<std::mutex> lock(_button_lock);
@@ -191,46 +204,57 @@ Button::Button(Info info, int index,
         _device(device), _conf_func(std::move(conf_func)),
         _config(config),
         _info(info) {
-    if (_config.action.has_value()) {
-        try {
-            _action = Action::makeAction(_device, _config.action.value(), _node);
-        } catch (std::exception& e) {
-            logPrintf(WARN, "Error creating button action: %s",
-                      e.what());
-        }
-    }
+    _makeConfig();
 
     _ipc_interface = _node->make_interface<IPC>(this, _info);
 }
 
+void Button::_makeConfig() {
+    auto& config = _config.get();
+    if (config.action.has_value()) {
+        try {
+            _action = Action::makeAction(_device, config.action.value(), _node);
+        } catch (std::exception& e) {
+            logPrintf(WARN, "Error creating button action: %s", e.what());
+        }
+    }
+}
+
 void Button::press() const {
-    std::lock_guard<std::mutex> lock(_action_lock);
+    std::shared_lock lock(_action_lock);
     if (_action)
         _action->press();
 }
 
 void Button::release() const {
-    std::lock_guard<std::mutex> lock(_action_lock);
+    std::shared_lock lock(_action_lock);
     if (_action)
         _action->release();
 }
 
 void Button::move(int16_t x, int16_t y) const {
-    std::lock_guard<std::mutex> lock(_action_lock);
+    std::shared_lock lock(_action_lock);
     if (_action)
         _action->move(x, y);
 }
 
 bool Button::pressed() const {
-    std::lock_guard<std::mutex> lock(_action_lock);
+    std::shared_lock lock(_action_lock);
     if (_action)
         return _action->pressed();
     return false;
 }
 
 void Button::configure() const {
-    std::lock_guard<std::mutex> lock(_action_lock);
+    std::shared_lock lock(_action_lock);
     _conf_func(_action);
+}
+
+void Button::setProfile(config::Button& config) {
+    std::unique_lock lock(_action_lock);
+    _config = config;
+    _action.reset();
+    _makeConfig();
 }
 
 std::shared_ptr<ipcgull::node> Button::node() const {
@@ -265,11 +289,11 @@ void Button::IPC::setAction(const std::string& type) {
         throw std::invalid_argument("No gesture support");
 
     {
-        std::lock_guard<std::mutex> lock(_button._action_lock);
+        std::unique_lock lock(_button._action_lock);
         _button._action.reset();
         _button._action = Action::makeAction(
                 _button._device, type,
-                _button._config.action, _button._node);
+                _button._config.get().action, _button._node);
     }
     _button.configure();
 }

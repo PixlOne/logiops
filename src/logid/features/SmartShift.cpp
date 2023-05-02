@@ -34,8 +34,10 @@ SmartShift::SmartShift(Device* device) : DeviceFeature(device),
 }
 
 void SmartShift::configure() {
-    if (_config.has_value()) {
-        const auto& conf = _config.value();
+    std::shared_lock lock(_config_mutex);
+    auto& config = _config.get();
+    if (config.has_value()) {
+        const auto& conf = config.value();
         Status settings{};
         settings.setActive = conf.on.has_value();
         if (settings.setActive)
@@ -49,6 +51,11 @@ void SmartShift::configure() {
 }
 
 void SmartShift::listen() {
+}
+
+void SmartShift::setProfile(config::Profile& profile) {
+    std::unique_lock lock(_config_mutex);
+    _config = profile.smartshift;
 }
 
 SmartShift::Status SmartShift::getStatus() const {
@@ -94,39 +101,51 @@ void SmartShift::IPC::setThreshold(uint8_t threshold) {
 }
 
 std::tuple<bool, bool, bool, uint8_t> SmartShift::IPC::getDefault() const {
-    if (!_parent._config.has_value())
+    std::shared_lock lock(_parent._config_mutex);
+
+    auto& config = _parent._config.get();
+
+    if (!config.has_value())
         return {false, false, false, 0};
 
     std::tuple<bool, bool, bool, uint8_t> ret;
-    std::get<0>(ret) = _parent._config.value().on.has_value();
+    std::get<0>(ret) = config.value().on.has_value();
     if (std::get<0>(ret))
-        std::get<1>(ret) = _parent._config.value().on.value();
-    std::get<2>(ret) = _parent._config.value().threshold.has_value();
+        std::get<1>(ret) = config.value().on.value();
+    std::get<2>(ret) = config.value().threshold.has_value();
     if (std::get<2>(ret))
-        std::get<3>(ret) = _parent._config.value().threshold.value();
+        std::get<3>(ret) = config.value().threshold.value();
 
     return ret;
 }
 
 void SmartShift::IPC::clearDefaultActive() {
-    if (_parent._config.has_value())
-        _parent._config.value().on.reset();
+    std::unique_lock lock(_parent._config_mutex);
+    auto& config = _parent._config.get();
+    if (config.has_value())
+        config.value().on.reset();
 }
 
 void SmartShift::IPC::setDefaultActive(bool active) {
-    if (!_parent._config.has_value())
-        _parent._config = config::SmartShift{};
-    _parent._config.value().on = active;
+    std::unique_lock lock(_parent._config_mutex);
+    auto& config = _parent._config.get();
+    if (!config.has_value())
+        config = config::SmartShift{};
+    config.value().on = active;
 }
 
 
 void SmartShift::IPC::clearDefaultThreshold() {
-    if (_parent._config.has_value())
-        _parent._config.value().threshold.reset();
+    std::unique_lock lock(_parent._config_mutex);
+    auto& config = _parent._config.get();
+    if (config.has_value())
+        config.value().threshold.reset();
 }
 
 void SmartShift::IPC::setDefaultThreshold(uint8_t threshold) {
-    if (!_parent._config.has_value())
-        _parent._config = config::SmartShift{};
-    _parent._config.value().threshold = threshold;
+    std::unique_lock lock(_parent._config_mutex);
+    auto& config = _parent._config.get();
+    if (!config.has_value())
+        config = config::SmartShift{};
+    config.value().threshold = threshold;
 }
