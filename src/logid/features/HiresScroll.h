@@ -32,8 +32,6 @@ namespace logid::features {
     public:
         explicit HiresScroll(Device* dev);
 
-        ~HiresScroll() noexcept override;
-
         void configure() final;
 
         void listen() final;
@@ -43,7 +41,7 @@ namespace logid::features {
         void setMode(uint8_t mode);
 
     private:
-        std::optional<backend::hidpp::Device::EvHandlerId> _ev_handler;
+        EventHandlerLock<backend::hidpp::Device> _ev_handler;
 
         void _makeGesture(std::shared_ptr<actions::Gesture>& gesture,
                           std::optional<config::Gesture>& config,

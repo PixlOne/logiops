@@ -109,11 +109,6 @@ ThumbWheel::ThumbWheel(Device* dev) : DeviceFeature(dev), _wheel_info(),
     _ipc_interface = dev->ipcNode()->make_interface<IPC>(this);
 }
 
-ThumbWheel::~ThumbWheel() noexcept {
-    if (_ev_handler.has_value())
-        _device->hidpp20().removeEventHandler(_ev_handler.value());
-}
-
 void ThumbWheel::configure() {
     std::shared_lock lock(_config_mutex);
     if (_config.has_value()) {
@@ -124,7 +119,7 @@ void ThumbWheel::configure() {
 }
 
 void ThumbWheel::listen() {
-    if (!_ev_handler.has_value()) {
+    if (_ev_handler.empty()) {
         _ev_handler = _device->hidpp20().addEventHandler(
                 {
                         [index = _thumb_wheel->featureIndex()]

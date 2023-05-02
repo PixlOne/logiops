@@ -28,16 +28,13 @@ namespace logid::features {
     public:
         explicit DeviceStatus(Device* dev);
 
-        ~DeviceStatus() noexcept override;
-
         void configure() final;
 
         void listen() final;
 
     private:
-        std::optional<backend::hidpp::Device::EvHandlerId> _ev_handler;
-        std::shared_ptr<backend::hidpp20::WirelessDeviceStatus>
-                _wireless_device_status;
+        EventHandlerLock<backend::hidpp::Device> _ev_handler;
+        std::shared_ptr<backend::hidpp20::WirelessDeviceStatus> _wireless_device_status;
     };
 }
 

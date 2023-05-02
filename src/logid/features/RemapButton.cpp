@@ -91,18 +91,13 @@ RemapButton::RemapButton(Device* dev) : DeviceFeature(dev),
     }
 }
 
-RemapButton::~RemapButton() noexcept {
-    if (_ev_handler.has_value())
-        _device->hidpp20().removeEventHandler(_ev_handler.value());
-}
-
 void RemapButton::configure() {
     for (const auto& button: _buttons)
         button.second->configure();
 }
 
 void RemapButton::listen() {
-    if (!_ev_handler.has_value()) {
+    if (_ev_handler.empty()) {
         _ev_handler = _device->hidpp20().addEventHandler(
                 {
                         [index = _reprog_controls->featureIndex()](

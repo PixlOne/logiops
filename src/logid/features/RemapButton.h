@@ -85,8 +85,6 @@ namespace logid::features {
     public:
         explicit RemapButton(Device* dev);
 
-        ~RemapButton() noexcept override;
-
         void configure() final;
 
         void listen() final;
@@ -114,7 +112,7 @@ namespace logid::features {
         };
 
         std::shared_ptr<IPC> _ipc_interface;
-        std::optional<backend::hidpp::Device::EvHandlerId> _ev_handler;
+        EventHandlerLock<backend::hidpp::Device> _ev_handler;
     };
 }
 

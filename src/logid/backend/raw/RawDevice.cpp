@@ -74,7 +74,8 @@ std::string get_name(int fd) {
 RawDevice::RawDevice(std::string path, const std::shared_ptr<DeviceMonitor>& monitor) :
         _valid(true), _path(std::move(path)), _fd(get_fd(_path)),
         _dev_info(get_dev_info(_fd)), _name(get_name(_fd)),
-        _report_desc(getReportDescriptor(_fd)), _io_monitor(monitor->ioMonitor()) {
+        _report_desc(getReportDescriptor(_fd)), _io_monitor(monitor->ioMonitor()),
+        _event_handlers(std::make_shared<EventHandlerList<RawDevice>>()) {
     _io_monitor->add(_fd, {
             [this]() { _readReports(); },
             [this]() { _valid = false; },
@@ -154,15 +155,10 @@ void RawDevice::sendReport(const std::vector<uint8_t>& report) {
                                 "sendReport write failed");
 }
 
-RawDevice::EvHandlerId RawDevice::addEventHandler(RawEventHandler handler) {
-    std::unique_lock<std::shared_mutex> lock(_event_handler_mutex);
-    _event_handlers.emplace_front(std::move(handler));
-    return _event_handlers.cbegin();
-}
-
-void RawDevice::removeEventHandler(RawDevice::EvHandlerId id) {
-    std::unique_lock<std::shared_mutex> lock(_event_handler_mutex);
-    _event_handlers.erase(id);
+EventHandlerLock<RawDevice> RawDevice::addEventHandler(RawEventHandler handler) {
+    std::unique_lock<std::shared_mutex> lock(_event_handlers->mutex);
+    _event_handlers->list.emplace_front(std::move(handler));
+    return {_event_handlers, _event_handlers->list.cbegin()};
 }
 
 void RawDevice::_readReports() {
@@ -185,8 +181,8 @@ void RawDevice::_readReports() {
 }
 
 void RawDevice::_handleEvent(const std::vector<uint8_t>& report) {
-    std::shared_lock<std::shared_mutex> lock(_event_handler_mutex);
-    for (auto& handler: _event_handlers)
+    std::shared_lock<std::shared_mutex> lock(_event_handlers->mutex);
+    for (auto& handler : _event_handlers->list)
         if (handler.condition(report))
             handler.callback(report);
 }

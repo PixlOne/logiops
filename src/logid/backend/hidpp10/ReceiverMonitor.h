@@ -32,8 +32,6 @@ namespace logid::backend::hidpp10 {
                         const std::shared_ptr<raw::DeviceMonitor>& monitor,
                         double timeout);
 
-        virtual ~ReceiverMonitor();
-
         void enumerate();
 
     protected:
@@ -68,11 +66,11 @@ namespace logid::backend::hidpp10 {
         DeviceDiscoveryEvent _discovery_event;
         PairState _pair_state = NotPairing;
 
-        std::optional<raw::RawDevice::EvHandlerId> _connect_ev_handler;
+        EventHandlerLock<raw::RawDevice> _connect_ev_handler;
 
-        std::optional<hidpp::Device::EvHandlerId> _discover_ev_handler;
-        std::optional<hidpp::Device::EvHandlerId> _passkey_ev_handler;
-        std::optional<hidpp::Device::EvHandlerId> _pair_status_handler;
+        EventHandlerLock<hidpp::Device> _discover_ev_handler;
+        EventHandlerLock<hidpp::Device> _passkey_ev_handler;
+        EventHandlerLock<hidpp::Device> _pair_status_handler;
     };
 
 }

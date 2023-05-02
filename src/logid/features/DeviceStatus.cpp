@@ -38,17 +38,12 @@ DeviceStatus::DeviceStatus(logid::Device* dev) : DeviceFeature(dev) {
     }
 }
 
-DeviceStatus::~DeviceStatus() noexcept {
-    if (_ev_handler.has_value())
-        _device->hidpp20().removeEventHandler(_ev_handler.value());
-}
-
 void DeviceStatus::configure() {
     // Do nothing
 }
 
 void DeviceStatus::listen() {
-    if (!_ev_handler.has_value()) {
+    if (_ev_handler.empty()) {
         _ev_handler = _device->hidpp20().addEventHandler(
                 {
                         [index = _wireless_device_status->featureIndex()](

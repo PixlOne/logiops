@@ -19,6 +19,8 @@
 #ifndef LOGID_BACKEND_RAWDEVICE_H
 #define LOGID_BACKEND_RAWDEVICE_H
 
+#include <backend/raw/EventHandler.h>
+#include <backend/EventHandlerList.h>
 #include <string>
 #include <vector>
 #include <shared_mutex>
@@ -26,7 +28,6 @@
 #include <future>
 #include <set>
 #include <list>
-#include <backend/raw/EventHandler.h>
 
 namespace logid::backend::raw {
     class DeviceMonitor;
@@ -36,15 +37,14 @@ namespace logid::backend::raw {
     class RawDevice {
     public:
         static constexpr int max_data_length = 32;
-        typedef std::list<RawEventHandler>::const_iterator EvHandlerId;
+        typedef RawEventHandler EventHandler;
 
         struct dev_info {
             int16_t vid;
             int16_t pid;
         };
 
-        RawDevice(std::string path,
-                  const std::shared_ptr<DeviceMonitor>& monitor);
+        RawDevice(std::string path, const std::shared_ptr<DeviceMonitor>& monitor);
 
         ~RawDevice() noexcept;
 
@@ -65,9 +65,7 @@ namespace logid::backend::raw {
 
         void sendReport(const std::vector<uint8_t>& report);
 
-        EvHandlerId addEventHandler(RawEventHandler handler);
-
-        void removeEventHandler(EvHandlerId id);
+        [[nodiscard]] EventHandlerLock<RawDevice> addEventHandler(RawEventHandler handler);
 
     private:
         void _readReports();
@@ -82,8 +80,7 @@ namespace logid::backend::raw {
 
         std::shared_ptr<IOMonitor> _io_monitor;
 
-        std::list<RawEventHandler> _event_handlers;
-        std::shared_mutex _event_handler_mutex;
+        std::shared_ptr<EventHandlerList<RawDevice>> _event_handlers;
 
         void _handleEvent(const std::vector<uint8_t>& report);
     };

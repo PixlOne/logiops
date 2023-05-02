@@ -108,6 +108,8 @@ const std::tuple<uint8_t, uint8_t>& Device::version() const {
 }
 
 void Device::_init() {
+    _event_handlers = std::make_shared<EventHandlerList<Device>>();
+
     supported_reports = getSupportedReports(_raw_device->reportDescriptor());
     if (!supported_reports)
         throw InvalidDevice(InvalidDevice::NoHIDPPReport);
@@ -135,12 +137,7 @@ void Device::_init() {
             }
         } catch (hidpp10::Error& e) {
             // Ignore
-        } catch (std::exception& e) {
-            _raw_device->removeEventHandler(_raw_handler);
-            throw;
         }
-
-        _raw_device->removeEventHandler(_raw_handler);
     }
 
     _raw_handler = _raw_device->addEventHandler(
@@ -156,69 +153,55 @@ void Device::_init() {
              }});
 
     try {
-        try {
-            hidpp20::Root root(this);
-            _version = root.getVersion();
-        } catch (hidpp10::Error& e) {
-            // Valid HID++ 1.0 devices should send an InvalidSubID error
-            if (e.code() != hidpp10::Error::InvalidSubID)
-                throw;
+        hidpp20::Root root(this);
+        _version = root.getVersion();
+    } catch (hidpp10::Error& e) {
+        // Valid HID++ 1.0 devices should send an InvalidSubID error
+        if (e.code() != hidpp10::Error::InvalidSubID)
+            throw;
 
-            // HID++ 2.0 is not supported, assume HID++ 1.0
-            _version = std::make_tuple(1, 0);
-        }
+        // HID++ 2.0 is not supported, assume HID++ 1.0
+        _version = std::make_tuple(1, 0);
+    }
 
-        if (!_receiver) {
-            _pid = _raw_device->productId();
-            if (std::get<0>(_version) >= 2) {
-                try {
-                    hidpp20::DeviceName deviceName(this);
-                    _name = deviceName.getName();
-                } catch (hidpp20::UnsupportedFeature& e) {
-                    _name = _raw_device->name();
-                }
-            } else {
+    if (!_receiver) {
+        _pid = _raw_device->productId();
+        if (std::get<0>(_version) >= 2) {
+            try {
+                hidpp20::DeviceName deviceName(this);
+                _name = deviceName.getName();
+            } catch (hidpp20::UnsupportedFeature& e) {
                 _name = _raw_device->name();
             }
         } else {
-            if (std::get<0>(_version) >= 2) {
-                try {
-                    hidpp20::DeviceName deviceName(this);
-                    _name = deviceName.getName();
-                } catch (hidpp20::UnsupportedFeature& e) {
-                    _name = _receiver->getDeviceName(_index);
-                }
-            } else {
+            _name = _raw_device->name();
+        }
+    } else {
+        if (std::get<0>(_version) >= 2) {
+            try {
+                hidpp20::DeviceName deviceName(this);
+                _name = deviceName.getName();
+            } catch (hidpp20::UnsupportedFeature& e) {
                 _name = _receiver->getDeviceName(_index);
             }
+        } else {
+            _name = _receiver->getDeviceName(_index);
         }
-    } catch (std::exception& e) {
-        _raw_device->removeEventHandler(_raw_handler);
-        throw;
     }
 }
 
-Device::~Device() {
-    _raw_device->removeEventHandler(_raw_handler);
-}
-
-Device::EvHandlerId Device::addEventHandler(EventHandler handler) {
-    std::unique_lock lock(_event_handler_mutex);
-    _event_handlers.emplace_front(std::move(handler));
-    return _event_handlers.cbegin();
-}
-
-void Device::removeEventHandler(EvHandlerId id) {
-    std::unique_lock lock(_event_handler_mutex);
-    _event_handlers.erase(id);
+EventHandlerLock<Device> Device::addEventHandler(EventHandler handler) {
+    std::unique_lock lock(_event_handlers->mutex);
+    _event_handlers->list.emplace_front(std::move(handler));
+    return {_event_handlers, _event_handlers->list.cbegin()};
 }
 
 void Device::handleEvent(Report& report) {
     if (responseReport(report))
         return;
 
-    std::shared_lock lock(_event_handler_mutex);
-    for (auto& handler: _event_handlers)
+    std::shared_lock lock(_event_handlers->mutex);
+    for (auto& handler: _event_handlers->list)
         if (handler.condition(report))
             handler.callback(report);
 }

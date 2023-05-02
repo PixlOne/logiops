@@ -74,11 +74,6 @@ HiresScroll::HiresScroll(Device* dev) :
     _ipc_interface = dev->ipcNode()->make_interface<IPC>(this);
 }
 
-HiresScroll::~HiresScroll() noexcept {
-    if (_ev_handler.has_value())
-        _device->hidpp20().removeEventHandler(_ev_handler.value());
-}
-
 void HiresScroll::configure() {
     std::shared_lock lock(_config_mutex);
     _configure();
@@ -93,7 +88,7 @@ void HiresScroll::_configure() {
 
 void HiresScroll::listen() {
     std::shared_lock lock(_config_mutex);
-    if (!_ev_handler.has_value()) {
+    if (_ev_handler.empty()) {
         _ev_handler = _device->hidpp20().addEventHandler(
                 {
                         [index = _hires_scroll->featureIndex()](

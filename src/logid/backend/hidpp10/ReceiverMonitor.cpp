@@ -32,22 +32,8 @@ ReceiverMonitor::ReceiverMonitor(const std::string& path,
     _receiver->setNotifications(notification_flags);
 }
 
-ReceiverMonitor::~ReceiverMonitor() {
-    if (_pair_status_handler.has_value())
-        _receiver->removeEventHandler(_pair_status_handler.value());
-
-    if (_passkey_ev_handler.has_value())
-        _receiver->removeEventHandler(_passkey_ev_handler.value());
-
-    if (_discover_ev_handler.has_value())
-        _receiver->removeEventHandler(_discover_ev_handler.value());
-
-    if (_connect_ev_handler.has_value())
-        _receiver->rawDevice()->removeEventHandler(_connect_ev_handler.value());
-}
-
 void ReceiverMonitor::ready() {
-    if (!_connect_ev_handler.has_value()) {
+    if (_connect_ev_handler.empty()) {
         _connect_ev_handler = _receiver->rawDevice()->addEventHandler(
                 {[](const std::vector<uint8_t>& report) -> bool {
                     if (report[Offset::Type] == Report::Type::Short ||
@@ -86,7 +72,7 @@ void ReceiverMonitor::ready() {
                 });
     }
 
-    if (!_discover_ev_handler.has_value()) {
+    if (_discover_ev_handler.empty()) {
         _discover_ev_handler = _receiver->addEventHandler(
                 {[](const hidpp::Report& report) -> bool {
                     return (report.subId() == Receiver::DeviceDiscovered) &&
@@ -108,7 +94,7 @@ void ReceiverMonitor::ready() {
                 });
     }
 
-    if (!_passkey_ev_handler.has_value()) {
+    if (_passkey_ev_handler.empty()) {
         _passkey_ev_handler = _receiver->addEventHandler(
                 {[](const hidpp::Report& report) -> bool {
                     return report.subId() == Receiver::PasskeyRequest &&
@@ -126,7 +112,7 @@ void ReceiverMonitor::ready() {
                 });
     }
 
-    if (!_pair_status_handler.has_value()) {
+    if (_pair_status_handler.empty()) {
         _pair_status_handler = _receiver->addEventHandler(
                 {[](const hidpp::Report& report) -> bool {
                     return report.subId() == Receiver::DiscoveryStatus ||
@@ -166,7 +152,7 @@ void ReceiverMonitor::enumerate() {
 }
 
 void ReceiverMonitor::waitForDevice(hidpp::DeviceIndex index) {
-    auto handler_id = std::make_shared<raw::RawDevice::EvHandlerId>();
+    auto handler_id = std::make_shared<EventHandlerLock<raw::RawDevice>>();
 
     *handler_id = _receiver->rawDevice()->addEventHandler(
             {[index](const std::vector<uint8_t>& report) -> bool {
@@ -180,9 +166,8 @@ void ReceiverMonitor::waitForDevice(hidpp::DeviceIndex index) {
                  event.fromTimeoutCheck = true;
 
                  spawn_task([this, event, handler_id]() {
-                     assert(handler_id);
+                     *handler_id = {};
                      try {
-                         _receiver->rawDevice()->removeEventHandler(*handler_id);
                          addDevice(event);
                      } catch (std::exception& e) {
                          logPrintf(ERROR, "Failed to add device %d to receiver on %s: %s",

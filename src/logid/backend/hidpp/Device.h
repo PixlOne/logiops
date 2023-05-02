@@ -28,6 +28,7 @@
 #include <backend/raw/RawDevice.h>
 #include <backend/hidpp/Report.h>
 #include <backend/hidpp/defs.h>
+#include <backend/EventHandlerList.h>
 
 namespace logid::backend::hidpp10 {
     // Need to define here for a constructor
@@ -36,14 +37,13 @@ namespace logid::backend::hidpp10 {
 
 namespace logid::backend::hidpp {
     struct DeviceConnectionEvent;
-    struct EventHandler {
-        std::function<bool(Report&)> condition;
-        std::function<void(Report&)> callback;
-    };
 
     class Device {
     public:
-        typedef std::list<EventHandler>::const_iterator EvHandlerId;
+        struct EventHandler {
+            std::function<bool(Report&)> condition;
+            std::function<void(Report&)> callback;
+        };
 
         class InvalidDevice : std::exception {
         public:
@@ -76,8 +76,6 @@ namespace logid::backend::hidpp {
         Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
                DeviceIndex index, double timeout);
 
-        virtual ~Device();
-
         [[nodiscard]] const std::string& devicePath() const;
 
         [[nodiscard]] DeviceIndex deviceIndex() const;
@@ -88,9 +86,7 @@ namespace logid::backend::hidpp {
 
         [[nodiscard]] uint16_t pid() const;
 
-        EvHandlerId addEventHandler(EventHandler handler);
-
-        void removeEventHandler(EvHandlerId id);
+        EventHandlerLock<Device> addEventHandler(EventHandler handler);
 
         virtual Report sendReport(const Report& report);
 
@@ -117,7 +113,7 @@ namespace logid::backend::hidpp {
         void _init();
 
         std::shared_ptr<raw::RawDevice> _raw_device;
-        raw::RawDevice::EvHandlerId _raw_handler;
+        EventHandlerLock<raw::RawDevice> _raw_handler;
         std::shared_ptr<hidpp10::Receiver> _receiver;
         std::string _path;
         DeviceIndex _index;
@@ -133,9 +129,10 @@ namespace logid::backend::hidpp {
         std::optional<Response> _response;
         std::optional<uint8_t> _sent_sub_id{};
 
-        std::shared_mutex _event_handler_mutex;
-        std::list<EventHandler> _event_handlers;
+        std::shared_ptr<EventHandlerList<Device>> _event_handlers;
     };
+
+    typedef Device::EventHandler EventHandler;
 }
 
 #endif //LOGID_BACKEND_HIDPP_DEVICE_H

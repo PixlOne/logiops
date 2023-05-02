@@ -28,8 +28,6 @@ namespace logid::features {
     public:
         explicit ThumbWheel(Device* dev);
 
-        ~ThumbWheel() noexcept override;
-
         void configure() final;
 
         void listen() final;
@@ -88,7 +86,7 @@ namespace logid::features {
         mutable std::shared_mutex _config_mutex;
         std::optional<config::ThumbWheel>& _config;
 
-        std::optional<backend::hidpp::Device::EvHandlerId> _ev_handler;
+        EventHandlerLock<backend::hidpp::Device> _ev_handler;
     };
 }
 
