@@ -40,8 +40,7 @@ namespace logid::backend::hidpp20 {
         std::vector<uint8_t> callFunction(uint8_t function_id,
                                           std::vector<uint8_t>& params);
 
-    private:
-        hidpp::Device* _device;
+        hidpp::Device* const _device;
         uint8_t _index;
     };
 }

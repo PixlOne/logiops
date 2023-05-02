@@ -17,6 +17,7 @@
  */
 #include <backend/hidpp20/features/ReprogControls.h>
 #include <backend/hidpp20/Error.h>
+#include <backend/hidpp20/Device.h>
 #include <cassert>
 
 using namespace logid::backend::hidpp20;
@@ -106,7 +107,7 @@ ReprogControls::ControlInfo ReprogControls::getControlIdInfo(uint16_t cid) {
 
     auto it = _cids.find(cid);
     if (it == _cids.end())
-        throw Error(Error::InvalidArgument);
+        throw Error(Error::InvalidArgument, _device->deviceIndex());
     else
         return it->second;
 }

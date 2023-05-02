@@ -33,7 +33,8 @@ struct udev_monitor;
 namespace logid::backend::raw {
     class IOMonitor;
 
-    static constexpr int ready_wait = 2000;
+    static constexpr int max_tries = 5;
+    static constexpr int ready_backoff = 500;
 
     class DeviceMonitor {
     public:

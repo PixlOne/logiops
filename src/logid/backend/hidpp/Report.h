@@ -111,16 +111,18 @@ namespace logid::backend::hidpp {
         void setParams(const std::vector<uint8_t>& _params);
 
         struct Hidpp10Error {
+            hidpp::DeviceIndex device_index;
             uint8_t sub_id, address, error_code;
         };
 
-        bool isError10(Hidpp10Error* error) const;
+        bool isError10(Hidpp10Error& error) const;
 
         struct Hidpp20Error {
+            hidpp::DeviceIndex device_index;
             uint8_t feature_index, function, software_id, error_code;
         };
 
-        bool isError20(Hidpp20Error* error) const;
+        bool isError20(Hidpp20Error& error) const;
 
         [[nodiscard]] const std::vector<uint8_t>& rawReport() const;
 

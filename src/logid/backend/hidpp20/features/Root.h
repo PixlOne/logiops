@@ -39,6 +39,8 @@ namespace logid::backend::hidpp20 {
 
         feature_info getFeature(uint16_t feature_id);
 
+        uint8_t ping(uint8_t byte);
+
         std::tuple<uint8_t, uint8_t> getVersion();
 
         enum FeatureFlag : uint8_t {

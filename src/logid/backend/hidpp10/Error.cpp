@@ -19,9 +19,10 @@
 #include <backend/hidpp10/Error.h>
 #include <cassert>
 
+using namespace logid::backend;
 using namespace logid::backend::hidpp10;
 
-Error::Error(uint8_t code) : _code(code) {
+Error::Error(uint8_t code, hidpp::DeviceIndex index) : _code(code), _index(index) {
     assert(code != Success);
 }
 
@@ -60,4 +61,8 @@ const char* Error::what() const noexcept {
 
 uint8_t Error::code() const noexcept {
     return _code;
+}
+
+hidpp::DeviceIndex Error::deviceIndex() const noexcept {
+    return _index;
 }

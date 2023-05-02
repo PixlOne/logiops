@@ -265,31 +265,29 @@ void Report::setParams(const std::vector<uint8_t>& _params) {
         _data[Offset::Parameters + i] = _params[i];
 }
 
-bool Report::isError10(Report::Hidpp10Error* error) const {
-    assert(error != nullptr);
-
+bool Report::isError10(Report::Hidpp10Error& error) const {
     if (_data[Offset::Type] != Type::Short ||
         _data[Offset::SubID] != hidpp10::ErrorID)
         return false;
 
-    error->sub_id = _data[3];
-    error->address = _data[4];
-    error->error_code = _data[5];
+    error.device_index = deviceIndex();
+    error.sub_id = _data[3];
+    error.address = _data[4];
+    error.error_code = _data[5];
 
     return true;
 }
 
-bool Report::isError20(Report::Hidpp20Error* error) const {
-    assert(error != nullptr);
-
+bool Report::isError20(Report::Hidpp20Error& error) const {
     if (_data[Offset::Type] != Type::Long ||
         _data[Offset::Feature] != hidpp20::ErrorID)
         return false;
 
-    error->feature_index = _data[3];
-    error->function = (_data[4] >> 4) & 0x0f;
-    error->software_id = _data[4] & 0x0f;
-    error->error_code = _data[5];
+    error.device_index = deviceIndex();
+    error.feature_index = _data[3];
+    error.function = (_data[4] >> 4) & 0x0f;
+    error.software_id = _data[4] & 0x0f;
+    error.error_code = _data[5];
 
     return true;
 }

@@ -18,6 +18,12 @@
 
 #include <backend/Error.h>
 
-const char* logid::backend::TimeoutError::what() const noexcept {
+using namespace logid::backend;
+
+const char* DeviceNotReady::what() const noexcept {
+    return "device not ready";
+}
+
+const char* TimeoutError::what() const noexcept {
     return "Device timed out";
 }

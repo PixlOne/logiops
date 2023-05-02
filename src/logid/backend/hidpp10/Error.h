@@ -19,6 +19,7 @@
 #ifndef LOGID_BACKEND_HIDPP10_ERROR_H
 #define LOGID_BACKEND_HIDPP10_ERROR_H
 
+#include <backend/hidpp/defs.h>
 #include <cstdint>
 #include <exception>
 
@@ -43,14 +44,17 @@ namespace logid::backend::hidpp10 {
             WrongPINCode = 0x0C
         };
 
-        explicit Error(uint8_t code);
+        Error(uint8_t code, hidpp::DeviceIndex index);
 
         [[nodiscard]] const char* what() const noexcept override;
 
         [[nodiscard]] uint8_t code() const noexcept;
 
+        [[nodiscard]] hidpp::DeviceIndex deviceIndex() const noexcept;
+
     private:
         uint8_t _code;
+        hidpp::DeviceIndex _index;
     };
 }
 

@@ -19,6 +19,7 @@
 #ifndef LOGID_BACKEND_HIDPP20_ERROR_H
 #define LOGID_BACKEND_HIDPP20_ERROR_H
 
+#include <backend/hidpp/defs.h>
 #include <stdexcept>
 #include <cstdint>
 
@@ -41,14 +42,17 @@ namespace logid::backend::hidpp20 {
             UnknownDevice = 10
         };
 
-        explicit Error(uint8_t code);
+        Error(uint8_t code, hidpp::DeviceIndex index);
 
         [[nodiscard]] const char* what() const noexcept override;
 
         [[nodiscard]] uint8_t code() const noexcept;
 
+        [[nodiscard]] hidpp::DeviceIndex deviceIndex() const noexcept;
+
     private:
         uint8_t _code;
+        hidpp::DeviceIndex _index;
     };
 }
 

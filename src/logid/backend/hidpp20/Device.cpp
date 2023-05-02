@@ -118,10 +118,12 @@ hidpp::Report Device::sendReport(const hidpp::Report& report) {
     auto response = response_slot.response.value();
     response_slot.reset();
 
-    if (std::holds_alternative<hidpp::Report>(response))
+    if (std::holds_alternative<hidpp::Report>(response)) {
         return std::get<hidpp::Report>(response);
-    else // if(std::holds_alternative<Error::ErrorCode>(response))
-        throw Error(std::get<Error::ErrorCode>(response));
+    } else { // if(std::holds_alternative<Error::ErrorCode>(response))
+        auto error = std::get<hidpp::Report::Hidpp20Error>(response);
+        throw Error(error.error_code, error.device_index);
+    }
 }
 
 void Device::sendReportNoACK(const hidpp::Report& report) {
@@ -137,7 +139,7 @@ bool Device::responseReport(const hidpp::Report& report) {
 
     bool is_error = false;
     hidpp::Report::Hidpp20Error hidpp20_error{};
-    if (report.isError20(&hidpp20_error)) {
+    if (report.isError20(hidpp20_error)) {
         is_error = true;
         sw_id = hidpp20_error.software_id;
         feature = hidpp20_error.feature_index;
@@ -154,7 +156,7 @@ bool Device::responseReport(const hidpp::Report& report) {
     }
 
     if (is_error) {
-        response_slot.response = static_cast<Error::ErrorCode>(hidpp20_error.error_code);
+        response_slot.response = hidpp20_error;
     } else {
         response_slot.response = report;
     }

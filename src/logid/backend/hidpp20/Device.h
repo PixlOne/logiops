@@ -56,7 +56,7 @@ namespace logid::backend::hidpp20 {
         bool responseReport(const hidpp::Report& report) final;
 
     private:
-        typedef std::variant<hidpp::Report, Error::ErrorCode> Response;
+        typedef std::variant<hidpp::Report, hidpp::Report::Hidpp20Error> Response;
         struct ResponseSlot {
             std::optional<Response> response;
             std::optional<uint8_t> feature;

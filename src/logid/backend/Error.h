@@ -22,6 +22,11 @@
 #include <stdexcept>
 
 namespace logid::backend {
+    class DeviceNotReady : std::exception {
+    public:
+        [[nodiscard]] const char* what() const noexcept override;
+    };
+
     class TimeoutError : public std::exception {
     public:
         TimeoutError() = default;

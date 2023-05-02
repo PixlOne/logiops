@@ -55,7 +55,7 @@ Device::Device(const std::string& path, DeviceIndex index,
                 duration<double, std::milli>(timeout))),
         _raw_device(std::make_shared<raw::RawDevice>(path, monitor)),
         _receiver(nullptr), _path(path), _index(index) {
-    _init();
+    _setupReportsAndInit();
 }
 
 Device::Device(std::shared_ptr<raw::RawDevice> raw_device, DeviceIndex index,
@@ -64,7 +64,7 @@ Device::Device(std::shared_ptr<raw::RawDevice> raw_device, DeviceIndex index,
                 duration<double, std::milli>(timeout))),
         _raw_device(std::move(raw_device)), _receiver(nullptr),
         _path(_raw_device->rawPath()), _index(index) {
-    _init();
+    _setupReportsAndInit();
 }
 
 Device::Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
@@ -81,7 +81,7 @@ Device::Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
         _pid = event.pid;
     else
         _pid = receiver->getPairingInfo(_index).pid;
-    _init();
+    _setupReportsAndInit();
 }
 
 Device::Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
@@ -92,7 +92,7 @@ Device::Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
         _receiver(receiver), _path(receiver->rawDevice()->rawPath()),
         _index(index) {
     _pid = receiver->getPairingInfo(_index).pid;
-    _init();
+    _setupReportsAndInit();
 }
 
 const std::string& Device::devicePath() const {
@@ -107,7 +107,8 @@ const std::tuple<uint8_t, uint8_t>& Device::version() const {
     return _version;
 }
 
-void Device::_init() {
+
+void Device::_setupReportsAndInit() {
     _event_handlers = std::make_shared<EventHandlerList<Device>>();
 
     supported_reports = getSupportedReports(_raw_device->reportDescriptor());
@@ -132,11 +133,17 @@ void Device::_init() {
             auto rsp = sendReport({ReportType::Short, _index,
                                    hidpp20::FeatureID::ROOT, hidpp20::Root::Ping,
                                    hidpp::softwareID});
-            if (rsp.deviceIndex() != _index) {
+            if (rsp.deviceIndex() != _index)
                 throw InvalidDevice(InvalidDevice::VirtualNode);
-            }
         } catch (hidpp10::Error& e) {
-            // Ignore
+            if (e.deviceIndex() != _index)
+                throw InvalidDevice(InvalidDevice::VirtualNode);
+        } catch (hidpp20::Error& e) {
+            /* This shouldn't happen, the device must not be ready */
+            if (e.deviceIndex() != _index)
+                throw InvalidDevice(InvalidDevice::VirtualNode);
+            else
+                throw DeviceNotReady();
         }
     }
 
@@ -152,6 +159,10 @@ void Device::_init() {
                  this->handleEvent(_report);
              }});
 
+    _init();
+}
+
+void Device::_init() {
     try {
         hidpp20::Root root(this);
         _version = root.getVersion();
@@ -162,6 +173,20 @@ void Device::_init() {
 
         // HID++ 2.0 is not supported, assume HID++ 1.0
         _version = std::make_tuple(1, 0);
+    } catch (hidpp20::Error& e) {
+        /* Should never happen, device not ready? */
+        throw DeviceNotReady();
+    }
+
+    /* Do a stability test before going further */
+    if (std::get<0>(_version) >= 2) {
+        if (!isStable20()) {
+            throw DeviceNotReady();
+        }
+    } else {
+        if (!isStable10()) {
+            throw DeviceNotReady();
+        }
     }
 
     if (!_receiver) {
@@ -230,9 +255,11 @@ Report Device::sendReport(const Report& report) {
     if (std::holds_alternative<Report>(response)) {
         return std::get<Report>(response);
     } else if (std::holds_alternative<Report::Hidpp10Error>(response)) {
-        throw hidpp10::Error(std::get<Report::Hidpp10Error>(response).error_code);
+        auto error = std::get<Report::Hidpp10Error>(response);
+        throw hidpp10::Error(error.error_code, error.device_index);
     } else if (std::holds_alternative<Report::Hidpp20Error>(response)) {
-        throw hidpp20::Error(std::get<Report::Hidpp20Error>(response).error_code);
+        auto error = std::get<Report::Hidpp20Error>(response);
+        throw hidpp20::Error(error.error_code, error.device_index);
     }
 
     // Should not be reached
@@ -246,10 +273,10 @@ bool Device::responseReport(const Report& report) {
 
     Report::Hidpp10Error hidpp10_error{};
     Report::Hidpp20Error hidpp20_error{};
-    if (report.isError10(&hidpp10_error)) {
+    if (report.isError10(hidpp10_error)) {
         sub_id = hidpp10_error.sub_id;
         response = hidpp10_error;
-    } else if (report.isError20(&hidpp20_error)) {
+    } else if (report.isError20(hidpp20_error)) {
         sub_id = hidpp20_error.feature_index;
         response = hidpp20_error;
     } else {
@@ -278,6 +305,27 @@ void Device::_sendReport(Report report) {
 void Device::sendReportNoACK(const Report& report) {
     std::lock_guard lock(_send_mutex);
     _sendReport(report);
+}
+
+bool Device::isStable10() {
+    return true;
+}
+
+bool Device::isStable20() {
+    static constexpr std::string ping_seq = "hello";
+
+    hidpp20::Root root(this);
+
+    try {
+        for (auto c: ping_seq) {
+            if (root.ping(c) != c)
+                return false;
+        }
+    } catch (std::exception& e) {
+        return false;
+    }
+
+    return true;
 }
 
 void Device::reportFixup(Report& report) const {

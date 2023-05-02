@@ -61,6 +61,15 @@ feature_info Root::getFeature(uint16_t feature_id) {
     }
 }
 
+uint8_t Root::ping(uint8_t byte) {
+    std::vector<uint8_t> params(3);
+    params[2] = byte;
+
+    auto response = this->callFunction(Root::Function::Ping, params);
+
+    return response[2];
+}
+
 std::tuple<uint8_t, uint8_t> Root::getVersion() {
     std::vector<uint8_t> params(0);
     auto response = this->callFunction(Root::Function::Ping, params);

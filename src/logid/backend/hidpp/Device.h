@@ -19,16 +19,16 @@
 #ifndef LOGID_BACKEND_HIDPP_DEVICE_H
 #define LOGID_BACKEND_HIDPP_DEVICE_H
 
+#include <backend/raw/RawDevice.h>
+#include <backend/hidpp/Report.h>
+#include <backend/hidpp/defs.h>
+#include <backend/EventHandlerList.h>
 #include <optional>
 #include <variant>
 #include <string>
 #include <memory>
 #include <functional>
 #include <map>
-#include <backend/raw/RawDevice.h>
-#include <backend/hidpp/Report.h>
-#include <backend/hidpp/defs.h>
-#include <backend/EventHandlerList.h>
 
 namespace logid::backend::hidpp10 {
     // Need to define here for a constructor
@@ -100,6 +100,10 @@ namespace logid::backend::hidpp {
         // Returns whether the report is a response
         virtual bool responseReport(const Report& report);
 
+        bool isStable20();
+
+        bool isStable10();
+
         void _sendReport(Report report);
 
         void reportFixup(Report& report) const;
@@ -110,6 +114,8 @@ namespace logid::backend::hidpp {
         std::mutex _response_mutex;
         std::condition_variable _response_cv;
     private:
+        void _setupReportsAndInit();
+
         void _init();
 
         std::shared_ptr<raw::RawDevice> _raw_device;

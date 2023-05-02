@@ -18,9 +18,7 @@
 
 #include <DeviceManager.h>
 #include <backend/Error.h>
-#include <backend/hidpp10/Error.h>
 #include <util/log.h>
-#include <ipcgull/function.h>
 #include <thread>
 #include <sstream>
 #include <utility>
@@ -100,24 +98,29 @@ void DeviceManager::addDevice(std::string path) {
         hidpp::Device device(path, hidpp::DefaultDevice, _self.lock(),
                              config()->io_timeout.value_or(defaults::io_timeout));
         isReceiver = device.version() == std::make_tuple(1, 0);
+    } catch (hidpp20::Error& e) {
+        if (e.code() != hidpp20::Error::UnknownDevice)
+            throw DeviceNotReady();
+        defaultExists = false;
     } catch (hidpp10::Error& e) {
         if (e.code() != hidpp10::Error::UnknownDevice)
-            throw;
+            throw DeviceNotReady();
+        defaultExists = false;
     } catch (hidpp::Device::InvalidDevice& e) {
         if (e.code() == hidpp::Device::InvalidDevice::VirtualNode) {
-            logPrintf(DEBUG, "Ignoring virtual node on %s",
-                      path.c_str());
-            return;
+            logPrintf(DEBUG, "Ignoring virtual node on %s", path.c_str());
+        } else if (e.code() == hidpp::Device::InvalidDevice::Asleep) {
+            /* May be a valid device, wait */
+            throw DeviceNotReady();
         }
 
-        defaultExists = false;
+        return;
     } catch (std::system_error& e) {
-        logPrintf(WARN, "I/O error on %s: %s, skipping device.",
-                  path.c_str(), e.what());
+        logPrintf(WARN, "I/O error on %s: %s, skipping device.", path.c_str(), e.what());
         return;
     } catch (TimeoutError& e) {
-        logPrintf(WARN, "Device %s timed out.", path.c_str());
-        defaultExists = false;
+        /* Ready and valid non-default devices should throw an UnknownDevice error */
+        throw DeviceNotReady();
     }
 
     if (isReceiver) {
@@ -130,28 +133,30 @@ void DeviceManager::addDevice(std::string path) {
         /* TODO: Can non-receivers only contain 1 device?
         * If the device exists, it is guaranteed to be an HID++ 2.0 device */
         if (defaultExists) {
-            auto device = Device::make(path, hidpp::DefaultDevice,
-                                       _self.lock());
+            auto device = Device::make(path, hidpp::DefaultDevice, _self.lock());
             std::lock_guard<std::mutex> lock(_map_lock);
             _devices.emplace(path, device);
             _ipc_devices->deviceAdded(device);
         } else {
             try {
-                auto device = Device::make(path,
-                                           hidpp::CordedDevice, _self.lock());
+                auto device = Device::make(path, hidpp::CordedDevice, _self.lock());
                 std::lock_guard<std::mutex> lock(_map_lock);
                 _devices.emplace(path, device);
                 _ipc_devices->deviceAdded(device);
             } catch (hidpp10::Error& e) {
                 if (e.code() != hidpp10::Error::UnknownDevice)
-                    throw;
-                else
-                    logPrintf(WARN, "HID++ 1.0 error while trying to initialize %s: %s",
-                              path.c_str(), e.what());
-            } catch (hidpp::Device::InvalidDevice& e) { // Ignore
+                    throw DeviceNotReady();
+            } catch (hidpp20::Error& e) {
+                if (e.code() != hidpp20::Error::UnknownDevice)
+                    throw DeviceNotReady();
+            } catch (hidpp::Device::InvalidDevice& e) {
+                if (e.code() == hidpp::Device::InvalidDevice::Asleep)
+                    throw DeviceNotReady();
             } catch (std::system_error& e) {
                 // This error should have been thrown previously
                 logPrintf(WARN, "I/O error on %s: %s", path.c_str(), e.what());
+            } catch (TimeoutError& e) {
+                throw DeviceNotReady();
             }
         }
     }

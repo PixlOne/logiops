@@ -16,6 +16,7 @@
  *
  */
 #include <backend/hidpp20/features/ChangeHost.h>
+#include <backend/hidpp20/Device.h>
 #include <backend/hidpp20/Error.h>
 
 using namespace logid::backend::hidpp20;
@@ -48,7 +49,7 @@ void ChangeHost::setHost(uint8_t host) {
         getHostInfo();
 
     if (host >= _host_count)
-        throw hidpp20::Error(hidpp20::Error::InvalidArgument);
+        throw Error(hidpp20::Error::InvalidArgument, _device->deviceIndex());
 
     std::vector<uint8_t> params = {host};
 

@@ -58,9 +58,9 @@ hidpp::Report Device::sendReport(const hidpp::Report& report) {
 
     _sendReport(report);
     bool valid = _response_cv.wait_for(lock, io_timeout,
-            [&response_slot]() {
-                return response_slot.response.has_value();
-            });
+                                       [&response_slot]() {
+                                           return response_slot.response.has_value();
+                                       });
 
     if (!valid) {
         response_slot.reset();
@@ -69,10 +69,13 @@ hidpp::Report Device::sendReport(const hidpp::Report& report) {
 
     auto response = response_slot.response.value();
     response_slot.reset();
-    if (std::holds_alternative<hidpp::Report>(response))
+
+    if (std::holds_alternative<hidpp::Report>(response)) {
         return std::get<hidpp::Report>(response);
-    else // if(std::holds_alternative<Error::ErrorCode>(response))
-        throw Error(std::get<Error::ErrorCode>(response));
+    } else { // if(std::holds_alternative<hidpp::Report::Hidpp10Error>(response))
+        auto error = std::get<hidpp::Report::Hidpp10Error>(response);
+        throw Error(error.error_code, error.device_index);
+    }
 }
 
 bool Device::responseReport(const hidpp::Report& report) {
@@ -81,7 +84,7 @@ bool Device::responseReport(const hidpp::Report& report) {
 
     bool is_error = false;
     hidpp::Report::Hidpp10Error hidpp10_error{};
-    if (report.isError10(&hidpp10_error)) {
+    if (report.isError10(hidpp10_error)) {
         sub_id = hidpp10_error.sub_id;
         is_error = true;
     } else {
@@ -94,7 +97,7 @@ bool Device::responseReport(const hidpp::Report& report) {
         return false;
 
     if (is_error) {
-        response_slot.response = static_cast<Error::ErrorCode>(hidpp10_error.error_code);
+        response_slot.response = hidpp10_error;
     } else {
         response_slot.response = report;
     }
