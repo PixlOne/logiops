@@ -25,6 +25,7 @@
 #include <actions/CycleDPI.h>
 #include <actions/ChangeDPI.h>
 #include <actions/ChangeHostAction.h>
+#include <actions/ChangeProfile.h>
 #include <ipc_defs.h>
 
 using namespace logid;
@@ -71,6 +72,8 @@ namespace logid::actions {
             config = config::ToggleHiresScroll();
         } else if (name == ToggleSmartShift::interface_name) {
             config = config::ToggleSmartShift();
+        } else if (name == ChangeProfile::interface_name) {
+            config = config::ChangeProfile();
         } else if (name == "Default") {
             config.reset();
             return nullptr;

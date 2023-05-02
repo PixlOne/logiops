@@ -22,7 +22,6 @@
 #include <util/log.h>
 
 using namespace logid::actions;
-using namespace libconfig;
 
 const char* CycleDPI::interface_name = "CycleDPI";
 

@@ -25,6 +25,8 @@ namespace logid::actions {
 
     class ChangeHostAction;
 
+    class ChangeProfile;
+
     class CycleDPI;
 
     class GestureAction;
@@ -115,6 +117,14 @@ namespace logid::config {
                 {"host"}, &ChangeHost::host) {}
     };
 
+    struct ChangeProfile : public signed_group<std::string> {
+        typedef actions::ChangeProfile action;
+        std::optional<std::string> profile;
+
+        ChangeProfile() : signed_group<std::string>("type", "ChangeProfile",
+                                                    {"profile"}, &ChangeProfile::profile) {}
+    };
+
     typedef std::variant<
             NoAction,
             KeypressAction,
@@ -122,7 +132,8 @@ namespace logid::config {
             ToggleHiresScroll,
             CycleDPI,
             ChangeDPI,
-            ChangeHost
+            ChangeHost,
+            ChangeProfile
     > BasicAction;
 
     struct AxisGesture : public signed_group<std::string> {
@@ -219,6 +230,7 @@ namespace logid::config {
             CycleDPI,
             ChangeDPI,
             ChangeHost,
+            ChangeProfile,
             GestureAction
     > Action;
 
