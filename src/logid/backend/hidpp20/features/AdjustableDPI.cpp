@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,35 +15,32 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#include "AdjustableDPI.h"
+#include <backend/hidpp20/features/AdjustableDPI.h>
 
 using namespace logid::backend::hidpp20;
 
-AdjustableDPI::AdjustableDPI(Device* dev) : Feature(dev, ID)
-{
+AdjustableDPI::AdjustableDPI(Device* dev) : Feature(dev, ID) {
 }
 
-uint8_t AdjustableDPI::getSensorCount()
-{
+uint8_t AdjustableDPI::getSensorCount() {
     std::vector<uint8_t> params(0);
     auto response = callFunction(GetSensorCount, params);
     return response[0];
 }
 
-AdjustableDPI::SensorDPIList AdjustableDPI::getSensorDPIList(uint8_t sensor)
-{
+AdjustableDPI::SensorDPIList AdjustableDPI::getSensorDPIList(uint8_t sensor) {
     SensorDPIList dpi_list{};
     std::vector<uint8_t> params(1);
     params[0] = sensor;
     auto response = callFunction(GetSensorDPIList, params);
 
     dpi_list.dpiStep = false;
-    for(std::size_t i = 1; i < response.size(); i+=2) {
+    for (std::size_t i = 1; i < response.size(); i += 2) {
         uint16_t dpi = response[i + 1];
         dpi |= (response[i] << 8);
-        if(!dpi)
+        if (!dpi)
             break;
-        if(dpi >= 0xe000) {
+        if (dpi >= 0xe000) {
             dpi_list.isRange = true;
             dpi_list.dpiStep = dpi - 0xe000;
         } else {
@@ -54,8 +51,7 @@ AdjustableDPI::SensorDPIList AdjustableDPI::getSensorDPIList(uint8_t sensor)
     return dpi_list;
 }
 
-uint16_t AdjustableDPI::getDefaultSensorDPI(uint8_t sensor)
-{
+uint16_t AdjustableDPI::getDefaultSensorDPI(uint8_t sensor) {
     std::vector<uint8_t> params(1);
     params[0] = sensor;
     auto response = callFunction(GetSensorDPI, params);
@@ -66,8 +62,7 @@ uint16_t AdjustableDPI::getDefaultSensorDPI(uint8_t sensor)
     return default_dpi;
 }
 
-uint16_t AdjustableDPI::getSensorDPI(uint8_t sensor)
-{
+uint16_t AdjustableDPI::getSensorDPI(uint8_t sensor) {
     std::vector<uint8_t> params(1);
     params[0] = sensor;
     auto response = callFunction(GetSensorDPI, params);
@@ -78,8 +73,7 @@ uint16_t AdjustableDPI::getSensorDPI(uint8_t sensor)
     return dpi;
 }
 
-void AdjustableDPI::setSensorDPI(uint8_t sensor, uint16_t dpi)
-{
+void AdjustableDPI::setSensorDPI(uint8_t sensor, uint16_t dpi) {
     std::vector<uint8_t> params(3);
     params[0] = sensor;
     params[1] = (dpi >> 8);

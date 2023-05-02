@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,17 +16,11 @@
  *
  */
 
-#ifndef LOGID_LOGID_H
-#define LOGID_LOGID_H
+#include <config/types.h>
+#include <util/log.h>
 
-#include <mutex>
+using namespace logid;
 
-namespace logid
-{
-    // void reload();
-
-    extern bool kill_logid;
-    extern std::mutex device_manager_reload;
+void config::logError(const libconfig::Setting& setting, std::exception& e) {
+    logPrintf(WARN, "Error at line %d: %s", setting.getSourceLine(), e.what());
 }
-
-#endif //LOGID_LOGID_H

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,26 +18,31 @@
 #ifndef LOGID_ACTION_NULLGESTURE_H
 #define LOGID_ACTION_NULLGESTURE_H
 
-#include "Gesture.h"
+#include <actions/gesture/Gesture.h>
 
-namespace logid {
-namespace actions
-{
-    class NullGesture : public Gesture
-    {
+namespace logid::actions {
+    class NullGesture : public Gesture {
     public:
-        NullGesture(Device* device, libconfig::Setting& setting);
+        static const char* interface_name;
 
-        virtual void press(bool init_threshold=false);
-        virtual void release(bool primary=false);
-        virtual void move(int16_t axis);
+        NullGesture(Device* device,
+                    config::NoGesture& config,
+                    const std::shared_ptr<ipcgull::node>& parent);
 
-        virtual bool wheelCompatibility() const;
-        virtual bool metThreshold() const;
+        void press(bool init_threshold) final;
+
+        void release(bool primary) final;
+
+        void move(int16_t axis) final;
+
+        [[nodiscard]] bool wheelCompatibility() const final;
+
+        [[nodiscard]] bool metThreshold() const final;
+
     protected:
-        int16_t _axis;
-        Gesture::Config _config;
+        int32_t _axis{};
+        config::NoGesture& _config;
     };
-}}
+}
 
 #endif //LOGID_ACTION_NULLGESTURE_H

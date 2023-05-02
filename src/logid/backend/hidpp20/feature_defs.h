@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,9 +21,7 @@
 
 #include <cstdint>
 
-namespace logid {
-namespace backend {
-namespace hidpp20 {
+namespace logid::backend::hidpp20 {
     struct feature_info {
         uint16_t feature_id;
         bool obsolete;
@@ -31,10 +29,8 @@ namespace hidpp20 {
         bool hidden;
     };
 
-    namespace FeatureID
-    {
-        enum FeatureID : uint16_t
-        {
+    namespace FeatureID {
+        enum FeatureID : uint16_t {
             ROOT = 0x0000,
             FEATURE_SET = 0x0001,
             FEATURE_INFO = 0x0002,
@@ -127,6 +123,6 @@ namespace hidpp20 {
         };
     }
 
-}}}
+}
 
 #endif //LOGID_BACKEND_HIDPP20_FEATUREDEFS

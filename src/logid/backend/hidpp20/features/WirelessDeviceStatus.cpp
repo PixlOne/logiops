@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,18 +15,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+#include <backend/hidpp20/features/WirelessDeviceStatus.h>
 #include <cassert>
-#include "WirelessDeviceStatus.h"
 
 using namespace logid::backend::hidpp20;
 
-WirelessDeviceStatus::WirelessDeviceStatus(Device* dev) : Feature(dev, ID)
-{
+WirelessDeviceStatus::WirelessDeviceStatus(Device* dev) : Feature(dev, ID) {
 }
 
 WirelessDeviceStatus::Status WirelessDeviceStatus::statusBroadcastEvent(
-        const hidpp::Report &report)
-{
+        const hidpp::Report& report) {
     assert(report.function() == StatusBroadcast);
     Status status = {};
     auto params = report.paramBegin();

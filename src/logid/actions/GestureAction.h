@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,49 +19,48 @@
 #define LOGID_ACTION_GESTUREACTION_H
 
 #include <map>
-#include <libconfig.h++>
-#include "Action.h"
-#include "gesture/Gesture.h"
+#include <actions/Action.h>
+#include <actions/gesture/Gesture.h>
 
-namespace logid {
-namespace actions {
-    class GestureAction : public Action
-    {
+namespace logid::actions {
+    class GestureAction : public Action {
     public:
-        enum Direction
-        {
+        static const char* interface_name;
+
+        enum Direction {
             None,
             Up,
             Down,
             Left,
             Right
         };
+
         static Direction toDirection(std::string direction);
-        static Direction toDirection(int16_t x, int16_t y);
 
-        GestureAction(Device* dev, libconfig::Setting& config);
+        static std::string fromDirection(Direction direction);
 
-        virtual void press();
-        virtual void release();
-        virtual void move(int16_t x, int16_t y);
+        static Direction toDirection(int32_t x, int32_t y);
 
-        virtual uint8_t reprogFlags() const;
+        GestureAction(Device* dev, config::GestureAction& config,
+                      const std::shared_ptr<ipcgull::node>& parent);
 
-        class Config : public Action::Config
-        {
-        public:
-            Config(Device* device, libconfig::Setting& root);
-            std::map<Direction, std::shared_ptr<Gesture>>& gestures();
-            std::shared_ptr<Action> noneAction();
-        protected:
-            std::map<Direction, std::shared_ptr<Gesture>> _gestures;
-            std::shared_ptr<Action> _none_action;
-        };
+        void press() final;
+
+        void release() final;
+
+        void move(int16_t x, int16_t y) final;
+
+        uint8_t reprogFlags() const final;
+
+        void setGesture(const std::string& direction,
+                        const std::string& type);
 
     protected:
-        int16_t _x, _y;
-        Config _config;
+        int32_t _x{}, _y{};
+        std::shared_ptr<ipcgull::node> _node;
+        std::map<Direction, std::shared_ptr<Gesture>> _gestures;
+        config::GestureAction& _config;
     };
-}}
+}
 
 #endif //LOGID_ACTION_GESTUREACTION_H

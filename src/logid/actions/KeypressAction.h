@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,32 +19,33 @@
 #define LOGID_ACTION_KEYPRESS_H
 
 #include <vector>
-#include <libconfig.h++>
-#include "Action.h"
+#include <actions/Action.h>
 
-namespace logid {
-namespace actions {
-    class KeypressAction : public Action
-    {
+namespace logid::actions {
+    class KeypressAction : public Action {
     public:
-        KeypressAction(Device* dev, libconfig::Setting& config);
+        static const char* interface_name;
 
-        virtual void press();
-        virtual void release();
+        KeypressAction(Device* dev,
+                       config::KeypressAction& config,
+                       const std::shared_ptr<ipcgull::node>& parent);
 
-        virtual uint8_t reprogFlags() const;
+        void press() final;
 
-        class Config : public Action::Config
-        {
-        public:
-            explicit Config(Device* device, libconfig::Setting& root);
-            std::vector<uint>& keys();
-        protected:
-            std::vector<uint> _keys;
-        };
+        void release() final;
+
+        [[nodiscard]] std::vector<std::string> getKeys() const;
+
+        void setKeys(const std::vector<std::string>& keys);
+
+        [[nodiscard]] uint8_t reprogFlags() const final;
+
     protected:
-        Config _config;
+        config::KeypressAction& _config;
+        std::list<uint> _keys;
+
+        void _setConfig();
     };
-}}
+}
 
 #endif //LOGID_ACTION_KEYPRESS_H

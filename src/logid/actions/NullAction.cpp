@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,27 +15,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#include "NullAction.h"
-#include "../Device.h"
-#include "../backend/hidpp20/features/ReprogControls.h"
+#include <actions/NullAction.h>
+#include <backend/hidpp20/features/ReprogControls.h>
 
 using namespace logid::actions;
 
-NullAction::NullAction(Device* device) : Action(device)
-{
+const char* NullAction::interface_name = "None";
+
+NullAction::NullAction(
+        Device* device,
+        [[maybe_unused]] const std::shared_ptr<ipcgull::node>& parent) :
+        Action(device, interface_name) {
 }
 
-void NullAction::press()
-{
+void NullAction::press() {
     _pressed = true;
 }
 
-void NullAction::release()
-{
+void NullAction::release() {
     _pressed = false;
 }
 
-uint8_t NullAction::reprogFlags() const
-{
+uint8_t NullAction::reprogFlags() const {
     return backend::hidpp20::ReprogControls::TemporaryDiverted;
 }

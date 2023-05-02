@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,24 +16,22 @@
  *
  */
 
+#include <util/log.h>
 #include <cstdio>
-#include <string>
 #include <cstdarg>
 #include <algorithm>
 #include <stdexcept>
-#include "log.h"
 
 using namespace logid;
 
-void logid::logPrintf(LogLevel level, const char* format, ...)
-{
-    if(global_loglevel > level) return;
+void logid::logPrintf(LogLevel level, const char* format, ...) {
+    if (global_loglevel > level) return;
 
     va_list vargs;
     va_start(vargs, format);
 
     FILE* stream = stdout;
-    if(level == ERROR || level == WARN)
+    if (level == ERROR || level == WARN)
         stream = stderr;
 
     fprintf(stream, "[%s] ", levelPrefix(level));
@@ -41,39 +39,37 @@ void logid::logPrintf(LogLevel level, const char* format, ...)
     fprintf(stream, "\n");
 }
 
-const char* logid::levelPrefix(LogLevel level)
-{
-    switch(level) {
-    case RAWREPORT:
-        return "RAWREPORT";
-    case DEBUG:
-        return "DEBUG";
-    case INFO:
-        return "INFO";
-    case WARN:
-        return "WARN";
-    case ERROR:
-        return "ERROR";
-    default:
-        return "UNKNOWN";
+const char* logid::levelPrefix(LogLevel level) {
+    switch (level) {
+        case RAWREPORT:
+            return "RAWREPORT";
+        case DEBUG:
+            return "DEBUG";
+        case INFO:
+            return "INFO";
+        case WARN:
+            return "WARN";
+        case ERROR:
+            return "ERROR";
+        default:
+            return "UNKNOWN";
     }
 }
 
 
-LogLevel logid::toLogLevel(std::string s)
-{
+LogLevel logid::toLogLevel(std::string s) {
     std::string original_str = s;
     std::transform(s.begin(), s.end(), s.begin(), ::tolower);
 
-    if(s == "rawreport")
+    if (s == "rawreport")
         return RAWREPORT;
-    if(s == "debug")
+    if (s == "debug")
         return DEBUG;
-    if(s == "info")
+    if (s == "info")
         return INFO;
-    if(s == "warn" || s == "warning")
+    if (s == "warn" || s == "warning")
         return WARN;
-    if(s == "error")
+    if (s == "error")
         return ERROR;
 
     throw std::invalid_argument(original_str + " is an invalid log level.");

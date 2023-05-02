@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,44 +19,75 @@
 #ifndef LOGID_FEATURES_DEVICEFEATURE_H
 #define LOGID_FEATURES_DEVICEFEATURE_H
 
+#include <memory>
 #include <string>
 
 namespace logid {
     class Device;
-namespace features
-{
-    class UnsupportedFeature : public std::exception
-    {
+}
+
+namespace logid::config {
+    struct Profile;
+}
+
+namespace logid::features {
+    class UnsupportedFeature : public std::exception {
     public:
         UnsupportedFeature() = default;
-        virtual const char* what() const noexcept
-        {
+
+        [[nodiscard]] const char* what() const noexcept override {
             return "Unsupported feature";
         }
     };
 
-    class DeviceFeature
-    {
-    public:
-        explicit DeviceFeature(Device* dev) : _device (dev)
-        {
-        }
-        virtual void configure() = 0;
-        virtual void listen() = 0;
-        virtual ~DeviceFeature() = default;
-        class Config
-        {
-        public:
-            explicit Config(Device* dev) : _device (dev)
-            {
-            }
-        protected:
-            Device* _device;
-        };
+    namespace {
+        template<typename T>
+        class FeatureWrapper : public T {
+            friend class DeviceFeature;
 
+        public:
+            template<typename... Args>
+            explicit FeatureWrapper(Args... args) : T(std::forward<Args>(args)...) {}
+
+            template<typename... Args>
+            static std::shared_ptr<T> make(Args... args) {
+                return std::make_shared<FeatureWrapper>(std::forward<Args>(args)...);
+            }
+        };
+    }
+
+    class DeviceFeature {
+        std::weak_ptr<DeviceFeature> _self;
+    public:
+        virtual void configure() = 0;
+
+        virtual void listen() = 0;
+
+        virtual void setProfile(config::Profile& profile) = 0;
+
+        virtual ~DeviceFeature() = default;
+
+        DeviceFeature(const DeviceFeature&) = delete;
+        DeviceFeature(DeviceFeature&&) = delete;
     protected:
+        explicit DeviceFeature(Device* dev) : _device(dev) {}
+
         Device* _device;
+
+        template<typename T>
+        [[nodiscard]] std::weak_ptr<T> self() const {
+            return std::dynamic_pointer_cast<T>(_self.lock());
+        }
+
+    public:
+        template<typename T, typename... Args>
+        static std::shared_ptr<T> make(Args... args) {
+            auto feature = FeatureWrapper<T>::make(std::forward<Args>(args)...);
+            feature->_self = feature;
+
+            return feature;
+        }
     };
-}}
+}
 
 #endif //LOGID_FEATURES_DEVICEFEATURE_H
