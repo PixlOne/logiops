@@ -16,10 +16,14 @@
  *
  */
 
-#include <config/types.h>
+#include <config/schema.h>
 #include <util/log.h>
 
 using namespace logid;
+
+const char config::keys::name[] = "name";
+const char config::keys::cid[] = "cid";
+const char config::keys::direction[] = "direction";
 
 void config::logError(const libconfig::Setting& setting, std::exception& e) {
     logPrintf(WARN, "Error at line %d: %s", setting.getSourceLine(), e.what());
