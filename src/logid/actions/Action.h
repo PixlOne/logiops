@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,67 +19,81 @@
 #define LOGID_ACTION_H
 
 #include <atomic>
-#include <libconfig.h++>
 #include <memory>
+#include <utility>
+#include <shared_mutex>
+#include <ipcgull/node.h>
+#include <ipcgull/interface.h>
+#include <config/schema.h>
 
 namespace logid {
     class Device;
-namespace actions {
-    class InvalidAction : public std::exception
-    {
+}
+
+namespace logid::actions {
+    class InvalidAction : public std::exception {
     public:
-        InvalidAction()
-        {
-        }
-        explicit InvalidAction(std::string& action) : _action (action)
-        {
-        }
-        const char* what() const noexcept override
-        {
+        InvalidAction() = default;
+
+        InvalidAction(std::string action) : _action(std::move(action)) {}
+
+        [[nodiscard]] const char* what() const noexcept override {
             return _action.c_str();
         }
+
     private:
         std::string _action;
     };
 
-    class Action
-    {
+    class Action : public ipcgull::interface {
     public:
-        static std::shared_ptr<Action> makeAction(Device* device,
-                libconfig::Setting& setting);
+        static std::shared_ptr<Action> makeAction(
+                Device* device, const std::string& name,
+                std::optional<config::BasicAction>& config,
+                const std::shared_ptr<ipcgull::node>& parent);
+
+        static std::shared_ptr<Action> makeAction(
+                Device* device, const std::string& name,
+                std::optional<config::Action>& config,
+                const std::shared_ptr<ipcgull::node>& parent);
+
+        static std::shared_ptr<Action> makeAction(
+                Device* device, config::BasicAction& action,
+                const std::shared_ptr<ipcgull::node>& parent);
+
+        static std::shared_ptr<Action> makeAction(
+                Device* device, config::Action& action,
+                const std::shared_ptr<ipcgull::node>& parent);
 
         virtual void press() = 0;
-        virtual void release() = 0;
-        virtual void move(int16_t x, int16_t y)
-        {
-            // Suppress unused warning
-            (void)x; (void)y;
-        }
 
-        virtual bool pressed()
-        {
+        virtual void release() = 0;
+
+        virtual void move([[maybe_unused]] int16_t x, [[maybe_unused]] int16_t y) { }
+
+        virtual bool pressed() {
             return _pressed;
         }
 
-        virtual uint8_t reprogFlags() const = 0;
+        [[nodiscard]] virtual uint8_t reprogFlags() const = 0;
 
         virtual ~Action() = default;
 
-        class Config
-        {
-        protected:
-            explicit Config(Device* device) : _device (device)
-            {
-            }
-            Device* _device;
-        };
     protected:
-        explicit Action(Device* device) : _device (device), _pressed (false)
-        {
-        }
+        Action(Device* device, const std::string& name, tables t = {});
+
         Device* _device;
         std::atomic<bool> _pressed;
+        mutable std::shared_mutex _config_mutex;
+
+        template <typename T>
+        [[nodiscard]] std::weak_ptr<T> self() const {
+            return std::dynamic_pointer_cast<T>(_self.lock());
+        }
+
+    private:
+        std::weak_ptr<Action> _self;
     };
-}}
+}
 
 #endif //LOGID_ACTION_H

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,31 +18,32 @@
 #ifndef LOGID_BACKEND_HIDPP20_FEATURE_FEATURESET_H
 #define LOGID_BACKEND_HIDPP20_FEATURE_FEATURESET_H
 
-#include "../Feature.h"
-#include "../feature_defs.h"
+#include <backend/hidpp20/Feature.h>
+#include <backend/hidpp20/feature_defs.h>
+#include <map>
 
-namespace logid {
-namespace backend {
-namespace hidpp20
-{
-    class FeatureSet : public Feature
-    {
+namespace logid::backend::hidpp20 {
+    class FeatureSet : public Feature {
     public:
         static const uint16_t ID = FeatureID::FEATURE_SET;
-        virtual uint16_t getID() { return ID; }
 
-        enum Function : uint8_t
-        {
+        [[nodiscard]] uint16_t getID() final { return ID; }
+
+        enum Function : uint8_t {
             GetFeatureCount = 0,
             GetFeature = 1
         };
 
+        [[maybe_unused]] [[maybe_unused]]
         explicit FeatureSet(Device* device);
 
-        uint8_t getFeatureCount();
-        uint16_t getFeature(uint8_t feature_index);
-        std::map<uint8_t, uint16_t> getFeatures();
+        [[nodiscard]] uint8_t getFeatureCount();
+
+        [[nodiscard]] uint16_t getFeature(uint8_t feature_index);
+
+        [[maybe_unused]]
+        [[nodiscard]] std::map<uint8_t, uint16_t> getFeatures();
     };
-}}}
+}
 
 #endif //LOGID_BACKEND_HIDPP20_FEATURE_FEATURESET_H

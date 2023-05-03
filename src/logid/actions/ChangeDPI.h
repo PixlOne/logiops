@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,37 +18,33 @@
 #ifndef LOGID_ACTION_CHANGEDPI_H
 #define LOGID_ACTION_CHANGEDPI_H
 
-#include <libconfig.h++>
-#include "Action.h"
-#include "../features/DPI.h"
+#include <actions/Action.h>
+#include <features/DPI.h>
 
-namespace logid {
-    namespace actions {
-        class ChangeDPI : public Action
-        {
-        public:
-            explicit ChangeDPI(Device* device, libconfig::Setting& setting);
+namespace logid::actions {
+    class ChangeDPI : public Action {
+    public:
+        static const char* interface_name;
 
-            virtual void press();
-            virtual void release();
+        ChangeDPI(Device* device, config::ChangeDPI& setting,
+                  const std::shared_ptr<ipcgull::node>& parent);
 
-            virtual uint8_t reprogFlags() const;
+        void press() final;
 
-            class Config : public Action::Config
-            {
-            public:
-                Config(Device* device, libconfig::Setting& setting);
-                uint16_t interval() const;
-                uint8_t sensor() const;
-            private:
-                uint16_t _interval;
-                uint8_t _sensor;
-            };
+        void release() final;
 
-        protected:
-            Config _config;
-            std::shared_ptr<features::DPI> _dpi;
-        };
-    }}
+        [[nodiscard]] std::tuple<int16_t, uint16_t> getConfig() const;
+
+        void setChange(int16_t change);
+
+        void setSensor(uint8_t sensor, bool reset);
+
+        [[nodiscard]] uint8_t reprogFlags() const final;
+
+    protected:
+        config::ChangeDPI& _config;
+        std::shared_ptr<features::DPI> _dpi;
+    };
+}
 
 #endif //LOGID_ACTION_CHANGEDPI_H

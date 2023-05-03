@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,35 +18,31 @@
 #ifndef LOGID_BACKEND_HIDPP20_FEATURE_WIRELESSDEVICESTATUS_H
 #define LOGID_BACKEND_HIDPP20_FEATURE_WIRELESSDEVICESTATUS_H
 
-#include "../Feature.h"
-#include "../feature_defs.h"
+#include <backend/hidpp20/Feature.h>
+#include <backend/hidpp20/feature_defs.h>
+#include <backend/hidpp/Report.h>
 
-namespace logid {
-namespace backend {
-namespace hidpp20
-{
-    class WirelessDeviceStatus : public Feature
-    {
+namespace logid::backend::hidpp20 {
+    class WirelessDeviceStatus : public Feature {
     public:
         static constexpr uint16_t ID = FeatureID::WIRELESS_DEVICE_STATUS;
-        virtual uint16_t getID() { return ID; }
 
-        WirelessDeviceStatus(Device* dev);
+        [[nodiscard]] uint16_t getID() final { return ID; }
 
-        enum Event : uint8_t
-        {
+        explicit WirelessDeviceStatus(Device* dev);
+
+        enum Event : uint8_t {
             StatusBroadcast = 0
         };
 
-        struct Status
-        {
+        struct Status {
             bool reconnection;
             bool reconfNeeded;
             bool powerSwitch;
         };
 
-        static Status statusBroadcastEvent(const hidpp::Report &report);
+        static Status statusBroadcastEvent(const hidpp::Report& report);
     };
-}}}
+}
 
 #endif //LOGID_BACKEND_HIDPP20_FEATURE_WIRELESSDEVICESTATUS_H

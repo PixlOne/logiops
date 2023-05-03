@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,15 +23,16 @@
 #include <cstdint>
 #include <vector>
 
-namespace logid {
-namespace backend {
-namespace raw
-{
-    struct RawEventHandler
-    {
-        std::function<bool(std::vector<uint8_t>& )> condition;
-        std::function<void(std::vector<uint8_t>& )> callback;
+namespace logid::backend::raw {
+    struct RawEventHandler {
+        std::function<bool(const std::vector<uint8_t>&)> condition;
+        std::function<void(const std::vector<uint8_t>&)> callback;
+
+        RawEventHandler(std::function<bool(const std::vector<uint8_t>&)> cond,
+                        std::function<void(const std::vector<uint8_t>&)> call) :
+                condition(std::move(cond)), callback(std::move(call)) {
+        }
     };
-}}}
+}
 
 #endif //LOGID_BACKEND_RAW_DEFS_H

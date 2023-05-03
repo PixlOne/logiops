@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,18 +18,15 @@
 #ifndef LOGID_BACKEND_HIDPP20_FEATURE_ADJUSTABLEDPI_H
 #define LOGID_BACKEND_HIDPP20_FEATURE_ADJUSTABLEDPI_H
 
-#include "../feature_defs.h"
-#include "../Feature.h"
+#include <backend/hidpp20/Feature.h>
+#include <backend/hidpp20/feature_defs.h>
 
-namespace logid {
-namespace backend {
-namespace hidpp20
-{
-    class AdjustableDPI : public Feature
-    {
+namespace logid::backend::hidpp20 {
+    class AdjustableDPI : public Feature {
     public:
         static const uint16_t ID = FeatureID::ADJUSTABLE_DPI;
-        virtual uint16_t getID() { return ID; }
+
+        [[nodiscard]] uint16_t getID() final { return ID; }
 
         enum Function {
             GetSensorCount = 0,
@@ -38,23 +35,24 @@ namespace hidpp20
             SetSensorDPI = 3
         };
 
-        AdjustableDPI(Device* dev);
+        explicit AdjustableDPI(Device* dev);
 
         uint8_t getSensorCount();
 
-        struct SensorDPIList
-        {
+        struct SensorDPIList {
             std::vector<uint16_t> dpis;
             bool isRange;
             uint16_t dpiStep;
         };
+
         SensorDPIList getSensorDPIList(uint8_t sensor);
 
         uint16_t getDefaultSensorDPI(uint8_t sensor);
+
         uint16_t getSensorDPI(uint8_t sensor);
 
         void setSensorDPI(uint8_t sensor, uint16_t dpi);
     };
-}}}
+}
 
 #endif //LOGID_BACKEND_HIDPP20_FEATURE_ADJUSTABLEDPI_H

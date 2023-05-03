@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,277 +16,335 @@
  *
  */
 
-#include "ThumbWheel.h"
-#include "../Device.h"
-#include "../actions/gesture/AxisGesture.h"
+#include <features/ThumbWheel.h>
+#include <actions/gesture/AxisGesture.h>
+#include <Device.h>
+#include <util/log.h>
+#include <ipc_defs.h>
 
 using namespace logid::features;
 using namespace logid::backend;
 using namespace logid;
 
-#define FLAG_STR(b) (_wheel_info.capabilities & _thumb_wheel->b ? "YES" : \
-    "NO")
+#define FLAG_STR(b) (_wheel_info.capabilities & _thumb_wheel->b ? "YES" : "NO")
 
-#define SCROLL_EVENTHANDLER_NAME "THUMB_WHEEL"
+namespace {
+    std::shared_ptr<actions::Action> _genAction(
+            Device* dev, std::optional<config::BasicAction>& conf,
+            const std::shared_ptr<ipcgull::node>& parent) {
+        if (conf.has_value()) {
+            try {
+                return actions::Action::makeAction(dev, conf.value(), parent);
+            } catch (actions::InvalidAction& e) {
+                logPrintf(WARN, "Mapping thumb wheel to invalid action");
+            }
+        }
 
-ThumbWheel::ThumbWheel(Device *dev) : DeviceFeature(dev), _wheel_info(),
-    _config(dev)
-{
+        return nullptr;
+    }
+
+    std::shared_ptr<actions::Gesture> _genGesture(
+            Device* dev, std::optional<config::Gesture>& conf,
+            const std::shared_ptr<ipcgull::node>& parent, const std::string& direction) {
+        if (conf.has_value()) {
+            try {
+                auto result = actions::Gesture::makeGesture(dev, conf.value(),
+                                                            parent->make_child(direction));
+                if (!result->wheelCompatibility()) {
+                    logPrintf(WARN, "Mapping thumb wheel to incompatible gesture");
+                    return nullptr;
+                } else {
+                    return result;
+                }
+            } catch (actions::InvalidAction& e) {
+                logPrintf(WARN, "Mapping thumb wheel to invalid gesture");
+            }
+        }
+
+        return nullptr;
+    }
+}
+
+ThumbWheel::ThumbWheel(Device* dev) : DeviceFeature(dev), _wheel_info(),
+                                      _node(dev->ipcNode()->make_child("thumbwheel")),
+                                      _left_node(_node->make_child("left")),
+                                      _right_node(_node->make_child("right")),
+                                      _proxy_node(_node->make_child("proxy")),
+                                      _tap_node(_node->make_child("tap")),
+                                      _touch_node(_node->make_child("touch")),
+                                      _config(dev->activeProfile().thumbwheel) {
+
     try {
         _thumb_wheel = std::make_shared<hidpp20::ThumbWheel>(&dev->hidpp20());
-    } catch(hidpp20::UnsupportedFeature& e) {
+    } catch (hidpp20::UnsupportedFeature& e) {
         throw UnsupportedFeature();
     }
 
+    _makeConfig();
+
     _wheel_info = _thumb_wheel->getInfo();
 
-    logPrintf(DEBUG,"Thumb wheel detected (0x2150), capabilities:");
+    logPrintf(DEBUG, "Thumb wheel detected (0x2150), capabilities:");
     logPrintf(DEBUG, "timestamp | touch | proximity | single tap");
     logPrintf(DEBUG, "%-9s | %-5s | %-9s | %-10s", FLAG_STR(Timestamp),
               FLAG_STR(Touch), FLAG_STR(Proxy), FLAG_STR(SingleTap));
     logPrintf(DEBUG, "Thumb wheel resolution: native (%d), diverted (%d)",
               _wheel_info.nativeRes, _wheel_info.divertedRes);
 
-    if(_config.leftAction()) {
-        try {
-            auto left_axis = std::dynamic_pointer_cast<actions::AxisGesture>(
-                    _config.leftAction());
-            // TODO: How do hires multipliers work on 0x2150 thumbwheels?
-            if(left_axis)
-                left_axis->setHiresMultiplier(_wheel_info.divertedRes);
-        } catch(std::bad_cast& e) { }
-
-        _config.leftAction()->press(true);
+    if (_left_gesture) {
+        _fixGesture(_left_gesture);
     }
 
-    if(_config.rightAction()) {
-        try {
-            auto right_axis = std::dynamic_pointer_cast<actions::AxisGesture>(
-                    _config.rightAction());
-            if(right_axis)
-                right_axis->setHiresMultiplier(_wheel_info.divertedRes);
-        } catch(std::bad_cast& e) { }
+    if (_right_gesture) {
+        _fixGesture(_right_gesture);
+    }
 
-        _config.rightAction()->press(true);
+    _ipc_interface = dev->ipcNode()->make_interface<IPC>(this);
+}
+
+void ThumbWheel::_makeConfig() {
+    if (_config.get().has_value()) {
+        auto& conf = _config.get().value();
+        _left_gesture = _genGesture(_device, conf.left, _left_node, "left");
+        _right_gesture = _genGesture(_device, conf.right, _right_node, "right");
+        _touch_action = _genAction(_device, conf.touch, _touch_node);
+        _tap_action = _genAction(_device, conf.tap, _tap_node);
+        _proxy_action = _genAction(_device, conf.proxy, _proxy_node);
     }
 }
 
-void ThumbWheel::configure()
-{
-    _thumb_wheel->setStatus(_config.divert(), _config.invert());
-}
-
-void ThumbWheel::listen()
-{
-    if(_device->hidpp20().eventHandlers().find(SCROLL_EVENTHANDLER_NAME) ==
-       _device->hidpp20().eventHandlers().end()) {
-        auto handler = std::make_shared<hidpp::EventHandler>();
-        handler->condition = [index=_thumb_wheel->featureIndex()]
-                (hidpp::Report& report)->bool {
-            return (report.feature() == index) && (report.function() ==
-                hidpp20::ThumbWheel::Event);
-        };
-
-        handler->callback = [this](hidpp::Report& report)->void {
-            this->_handleEvent(_thumb_wheel->thumbwheelEvent(report));
-        };
-
-        _device->hidpp20().addEventHandler(SCROLL_EVENTHANDLER_NAME, handler);
+void ThumbWheel::configure() {
+    std::shared_lock lock(_config_mutex);
+    auto& config = _config.get();
+    if (config.has_value()) {
+        const auto& value = config.value();
+        _thumb_wheel->setStatus(value.divert.value_or(false),
+                                value.invert.value_or(false));
     }
 }
 
-void ThumbWheel::_handleEvent(hidpp20::ThumbWheel::ThumbwheelEvent event)
-{
-    if(event.flags & hidpp20::ThumbWheel::SingleTap) {
-        auto action = _config.tapAction();
-        if(action) {
+void ThumbWheel::listen() {
+    if (_ev_handler.empty()) {
+        _ev_handler = _device->hidpp20().addEventHandler(
+                {[index = _thumb_wheel->featureIndex()]
+                         (const hidpp::Report& report) -> bool {
+                    return (report.feature() == index) &&
+                           (report.function() == hidpp20::ThumbWheel::Event);
+                },
+                 [self_weak = self<ThumbWheel>()](const hidpp::Report& report) -> void {
+                     if (auto self = self_weak.lock())
+                        self->_handleEvent(self->_thumb_wheel->thumbwheelEvent(report));
+                 }
+                });
+    }
+}
+
+void ThumbWheel::setProfile(config::Profile& profile) {
+    std::unique_lock lock(_config_mutex);
+    _config = profile.thumbwheel;
+    _left_gesture.reset();
+    _right_gesture.reset();
+    _touch_action.reset();
+    _tap_action.reset();
+    _proxy_action.reset();
+    _makeConfig();
+}
+
+void ThumbWheel::_handleEvent(hidpp20::ThumbWheel::ThumbwheelEvent event) {
+    std::shared_lock lock(_config_mutex);
+    if (event.flags & hidpp20::ThumbWheel::SingleTap) {
+        auto action = _tap_action;
+        if (action) {
             action->press();
             action->release();
         }
     }
 
-    if((bool)(event.flags & hidpp20::ThumbWheel::Proxy) != _last_proxy) {
+    if ((bool) (event.flags & hidpp20::ThumbWheel::Proxy) != _last_proxy) {
         _last_proxy = !_last_proxy;
-        auto action = _config.proxyAction();
-        if(action) {
-            if(_last_proxy)
-                action->press();
+        if (_proxy_action) {
+            if (_last_proxy)
+                _proxy_action->press();
             else
-                action->release();
+                _proxy_action->release();
         }
     }
 
-    if((bool)(event.flags & hidpp20::ThumbWheel::Touch) != _last_touch) {
+    if ((bool) (event.flags & hidpp20::ThumbWheel::Touch) != _last_touch) {
         _last_touch = !_last_touch;
-        auto action = _config.touchAction();
-        if(action) {
-            if(_last_touch)
-                action->press();
+        if (_touch_action) {
+            if (_last_touch)
+                _touch_action->press();
             else
-                action->release();
+                _touch_action->release();
         }
     }
 
-    if(event.rotationStatus != hidpp20::ThumbWheel::Inactive) {
+    if (event.rotationStatus != hidpp20::ThumbWheel::Inactive) {
         // Make right positive unless inverted
         event.rotation *= _wheel_info.defaultDirection;
 
-        if(event.rotationStatus == hidpp20::ThumbWheel::Start) {
-            if(_config.rightAction())
-               _config.rightAction()->press(true);
-            if(_config.leftAction())
-                _config.leftAction()->press(true);
-            _last_direction = 0;
+        if (event.rotationStatus == hidpp20::ThumbWheel::Start) {
+            if (_right_gesture)
+                _right_gesture->press(true);
+            if (_left_gesture)
+                _left_gesture->press(true);
         }
 
-        if(event.rotation) {
+        if (event.rotation) {
             int8_t direction = event.rotation > 0 ? 1 : -1;
             std::shared_ptr<actions::Gesture> scroll_action;
 
-            if(direction > 0)
-                scroll_action = _config.rightAction();
+            if (direction > 0)
+                scroll_action = _right_gesture;
             else
-                scroll_action = _config.leftAction();
+                scroll_action = _left_gesture;
 
-            if(scroll_action) {
+            if (scroll_action) {
                 scroll_action->press(true);
-                scroll_action->move(direction * event.rotation);
+                scroll_action->move((int16_t) (direction * event.rotation));
             }
-
-            _last_direction = direction;
         }
 
-        if(event.rotationStatus == hidpp20::ThumbWheel::Stop) {
-            if(_config.rightAction())
-                _config.rightAction()->release();
-            if(_config.leftAction())
-                _config.leftAction()->release();
+        if (event.rotationStatus == hidpp20::ThumbWheel::Stop) {
+            if (_right_gesture)
+                _right_gesture->release(false);
+            if (_left_gesture)
+                _left_gesture->release(false);
         }
     }
 }
 
-ThumbWheel::Config::Config(Device* dev) : DeviceFeature::Config(dev)
-{
+void ThumbWheel::_fixGesture(const std::shared_ptr<actions::Gesture>& gesture) const {
     try {
-        auto& config_root = dev->config().getSetting("thumbwheel");
-        if(!config_root.isGroup()) {
-            logPrintf(WARN, "Line %d: thumbwheel must be a group",
-                      config_root.getSourceLine());
-            return;
-        }
+        auto axis = std::dynamic_pointer_cast<actions::AxisGesture>(gesture);
+        // TODO: How do hires multipliers work on 0x2150 thumbwheels?
+        if (axis)
+            axis->setHiresMultiplier(_wheel_info.divertedRes);
+    } catch (std::bad_cast& e) {}
 
-        try {
-            auto& divert = config_root.lookup("divert");
-            if(divert.getType() == libconfig::Setting::TypeBoolean) {
-                _divert = divert;
-            } else {
-                logPrintf(WARN, "Line %d: divert must be a boolean",
-                          divert.getSourceLine());
-            }
-        } catch(libconfig::SettingNotFoundException& e) { }
+    if (gesture)
+        gesture->press(true);
+}
 
-        try {
-            auto& invert = config_root.lookup("invert");
-            if(invert.getType() == libconfig::Setting::TypeBoolean) {
-                _invert = invert;
-            } else {
-                logPrintf(WARN, "Line %d: invert must be a boolean, ignoring.",
-                          invert.getSourceLine());
-            }
-        } catch(libconfig::SettingNotFoundException& e) { }
+ThumbWheel::IPC::IPC(ThumbWheel* parent) : ipcgull::interface(
+        SERVICE_ROOT_NAME ".ThumbWheel", {
+                {"GetConfig", {this, &IPC::getConfig, {"divert", "invert"}}},
+                {"SetDivert", {this, &IPC::setDivert, {"divert"}}},
+                {"SetInvert", {this, &IPC::setInvert, {"invert"}}},
+                {"SetLeft",   {this, &IPC::setLeft,   {"type"}}},
+                {"SetRight",  {this, &IPC::setRight,  {"type"}}},
+                {"SetProxy",  {this, &IPC::setProxy,  {"type"}}},
+                {"SetTap",    {this, &IPC::setTap,    {"type"}}},
+                {"SetTouch",  {this, &IPC::setTouch,  {"type"}}},
+        }, {}, {}), _parent(*parent) {
+}
 
-        if(_divert) {
-            _left_action = _genGesture(dev, config_root, "left");
-            if(!_left_action)
-                logPrintf(WARN, "Line %d: divert is true but no left action "
-                                "was set", config_root.getSourceLine());
+config::ThumbWheel& ThumbWheel::IPC::_parentConfig() {
+    auto& config = _parent._config.get();
+    if (!config.has_value()) {
+        config.emplace();
+    }
 
-            _right_action = _genGesture(dev, config_root, "right");
-            if(!_right_action)
-                logPrintf(WARN, "Line %d: divert is true but no right action "
-                                "was set", config_root.getSourceLine());
-        }
+    return config.value();
+}
 
-        _proxy_action = _genAction(dev, config_root, "proxy");
-        _tap_action = _genAction(dev, config_root, "tap");
-        _touch_action = _genAction(dev, config_root, "touch");
-    } catch(libconfig::SettingNotFoundException& e) {
-        // ThumbWheel not configured, use default
+std::tuple<bool, bool> ThumbWheel::IPC::getConfig() const {
+    std::shared_lock lock(_parent._config_mutex);
+
+    auto& config = _parent._config.get();
+    if (!config.has_value()) {
+        return {false, false};
+    }
+
+    return {config.value().divert.value_or(false),
+            config.value().invert.value_or(false)};
+}
+
+void ThumbWheel::IPC::setDivert(bool divert) {
+    std::unique_lock lock(_parent._config_mutex);
+
+    auto& config = _parentConfig();
+    config.divert = divert;
+
+    _parent._thumb_wheel->setStatus(divert, config.invert.value_or(false));
+}
+
+void ThumbWheel::IPC::setInvert(bool invert) {
+    std::unique_lock lock(_parent._config_mutex);
+
+    auto& config = _parentConfig();
+    config.invert = invert;
+
+    _parent._thumb_wheel->setStatus(config.divert.value_or(false), invert);
+}
+
+void ThumbWheel::IPC::setLeft(const std::string& type) {
+    std::unique_lock lock(_parent._config_mutex);
+
+    auto& config = _parentConfig();
+
+    _parent._left_gesture.reset();
+    if (!config.left.has_value()) {
+        config.left = config::NoGesture();
+    }
+    _parent._left_gesture = actions::Gesture::makeGesture(
+            _parent._device, type, config.left.value(), _parent._left_node);
+    if (!_parent._left_gesture->wheelCompatibility()) {
+        _parent._left_gesture.reset();
+        config.left.reset();
+
+        throw std::invalid_argument("incompatible gesture");
+    } else {
+        _parent._fixGesture(_parent._left_gesture);
     }
 }
 
-std::shared_ptr<actions::Action> ThumbWheel::Config::_genAction(Device* dev,
-        libconfig::Setting& config_root, const std::string& name)
-{
-    try {
-        auto& a_group = config_root.lookup(name);
-        try {
-            return actions::Action::makeAction(dev, a_group);
-        } catch(actions::InvalidAction& e) {
-            logPrintf(WARN, "Line %d: Invalid action",
-                      a_group.getSourceLine());
-        }
-    } catch(libconfig::SettingNotFoundException& e) {
+void ThumbWheel::IPC::setRight(const std::string& type) {
+    std::unique_lock lock(_parent._config_mutex);
 
+    auto& config = _parentConfig();
+
+    if (!config.right.has_value()) {
+        config.right = config::NoGesture();
     }
-    return nullptr;
-}
+    _parent._right_gesture = actions::Gesture::makeGesture(
+            _parent._device, type, config.right.value(), _parent._right_node);
+    if (!_parent._right_gesture->wheelCompatibility()) {
+        _parent._right_gesture.reset();
+        config.right.reset();
 
-std::shared_ptr<actions::Gesture> ThumbWheel::Config::_genGesture(Device* dev,
-        libconfig::Setting& config_root, const std::string& name)
-{
-    try {
-        auto& g_group = config_root.lookup(name);
-        try {
-            auto g = actions::Gesture::makeGesture(dev, g_group);
-            if(g->wheelCompatibility()) {
-                return g;
-            } else {
-                logPrintf(WARN, "Line %d: This gesture cannot be used"
-                                " as a scroll action.",
-                                g_group.getSourceLine());
-            }
-        } catch(actions::InvalidGesture& e) {
-            logPrintf(WARN, "Line %d: Invalid scroll action",
-                      g_group.getSourceLine());
-        }
-    } catch(libconfig::SettingNotFoundException& e) {
-
+        throw std::invalid_argument("incompatible gesture");
+    } else {
+        _parent._fixGesture(_parent._right_gesture);
     }
-    return nullptr;
 }
 
-bool ThumbWheel::Config::divert() const
-{
-    return _divert;
+void ThumbWheel::IPC::setProxy(const std::string& type) {
+    std::unique_lock lock(_parent._config_mutex);
+
+    auto& config = _parentConfig();
+
+    _parent._proxy_action = actions::Action::makeAction(
+            _parent._device, type, config.proxy, _parent._proxy_node);
 }
 
-bool ThumbWheel::Config::invert() const
-{
-    return _invert;
+
+void ThumbWheel::IPC::setTap(const std::string& type) {
+    std::unique_lock lock(_parent._config_mutex);
+
+    auto& config = _parentConfig();
+
+    _parent._tap_action = actions::Action::makeAction(
+            _parent._device, type, config.tap, _parent._tap_node);
 }
 
-const std::shared_ptr<actions::Gesture>& ThumbWheel::Config::leftAction() const
-{
-    return _left_action;
-}
 
-const std::shared_ptr<actions::Gesture>& ThumbWheel::Config::rightAction() const
-{
-    return _right_action;
-}
+void ThumbWheel::IPC::setTouch(const std::string& type) {
+    std::unique_lock lock(_parent._config_mutex);
 
-const std::shared_ptr<actions::Action>& ThumbWheel::Config::proxyAction() const
-{
-    return _proxy_action;
-}
+    auto& config = _parentConfig();
 
-const std::shared_ptr<actions::Action>& ThumbWheel::Config::tapAction() const
-{
-    return _tap_action;
-}
-
-const std::shared_ptr<actions::Action>& ThumbWheel::Config::touchAction() const
-{
-    return _touch_action;
+    _parent._touch_action = actions::Action::makeAction(
+            _parent._device, type, config.touch, _parent._touch_node);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,105 +15,98 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+#include <actions/ChangeHostAction.h>
+#include <Device.h>
+#include <backend/hidpp20/features/ReprogControls.h>
 #include <algorithm>
-#include "ChangeHostAction.h"
-#include "../Device.h"
-#include "../backend/hidpp20/features/ReprogControls.h"
-#include "../util/task.h"
+#include <util/task.h>
+#include <util/log.h>
 
 using namespace logid::actions;
 using namespace logid::backend;
 
-ChangeHostAction::ChangeHostAction(Device *device, libconfig::Setting&
-config) : Action(device), _config (device, config)
-{
+const char* ChangeHostAction::interface_name = "ChangeHost";
+
+ChangeHostAction::ChangeHostAction(
+        Device* device, config::ChangeHost& config,
+        [[maybe_unused]] const std::shared_ptr<ipcgull::node>& parent)
+        : Action(device, interface_name, {
+        {
+                {"GetHost", {this, &ChangeHostAction::getHost, {"host"}}},
+                {"SetHost", {this, &ChangeHostAction::setHost, {"host"}}}
+        },
+        {},
+        {}
+}), _config(config) {
+    if (_config.host.has_value()) {
+        if (std::holds_alternative<std::string>(_config.host.value())) {
+            auto& host = std::get<std::string>(_config.host.value());
+            std::transform(host.begin(), host.end(),
+                           host.begin(), ::tolower);
+        }
+    }
     try {
         _change_host = std::make_shared<hidpp20::ChangeHost>(&device->hidpp20());
     } catch (hidpp20::UnsupportedFeature& e) {
         logPrintf(WARN, "%s:%d: ChangeHost feature not supported, "
                         "ChangeHostAction will not work.", device->hidpp20()
-                        .devicePath().c_str(), device->hidpp20().deviceIndex());
+                          .devicePath().c_str(), device->hidpp20().deviceIndex());
     }
 }
 
-void ChangeHostAction::press()
-{
+std::string ChangeHostAction::getHost() const {
+    std::shared_lock lock(_config_mutex);
+    if (_config.host.has_value()) {
+        if (std::holds_alternative<std::string>(_config.host.value()))
+            return std::get<std::string>(_config.host.value());
+        else
+            return std::to_string(std::get<int>(_config.host.value()));
+    } else {
+        return "";
+    }
+}
+
+void ChangeHostAction::setHost(std::string host) {
+    std::transform(host.begin(), host.end(),
+                   host.begin(), ::tolower);
+    std::unique_lock lock(_config_mutex);
+    if (host == "next" || host == "prev" || host == "previous") {
+        _config.host = std::move(host);
+    } else {
+        _config.host = std::stoi(host);
+    }
+}
+
+void ChangeHostAction::press() {
     // Do nothing, wait until release
 }
 
-void ChangeHostAction::release()
-{
-    if(_change_host) {
-        task::spawn([this] {
-            auto host_info = _change_host->getHostInfo();
-            auto next_host = _config.nextHost(host_info);
-            if(next_host != host_info.currentHost)
-                _change_host->setHost(next_host);
+void ChangeHostAction::release() {
+    std::shared_lock lock(_config_mutex);
+    if (_change_host && _config.host.has_value()) {
+        run_task([self_weak = self<ChangeHostAction>(), host = _config.host.value()] {
+            if (auto self = self_weak.lock()) {
+                auto host_info = self->_change_host->getHostInfo();
+                int next_host;
+                if (std::holds_alternative<std::string>(host)) {
+                    const auto& host_str = std::get<std::string>(host);
+                    if (host_str == "next")
+                        next_host = host_info.currentHost + 1;
+                    else if (host_str == "prev" || host_str == "previous")
+                        next_host = host_info.currentHost - 1;
+                    else
+                        next_host = host_info.currentHost;
+                } else {
+                    next_host = std::get<int>(host) - 1;
+                }
+                next_host %= host_info.hostCount;
+                if (next_host != host_info.currentHost)
+                    self->_change_host->setHost(next_host);
+            }
         });
     }
 }
 
-uint8_t ChangeHostAction::reprogFlags() const
-{
+uint8_t ChangeHostAction::reprogFlags() const {
     return hidpp20::ReprogControls::TemporaryDiverted;
-}
-
-ChangeHostAction::Config::Config(Device *device, libconfig::Setting& config)
-    : Action::Config(device)
-{
-    try {
-        auto& host = config.lookup("host");
-        if(host.getType() == libconfig::Setting::TypeInt) {
-            _offset = false;
-            _host = host;
-            _host--; // hosts are one-indexed in config
-
-            if(_host < 0) {
-                logPrintf(WARN, "Line %d: host must be positive.",
-                        host.getSourceLine());
-                _offset = true;
-                _host = 0;
-            }
-
-        } else if(host.getType() == libconfig::Setting::TypeString) {
-            _offset = true;
-            std::string hostmode = host;
-            std::transform(hostmode.begin(), hostmode.end(),
-                    hostmode.begin(), ::tolower);
-
-            if(hostmode == "next")
-                _host = 1;
-            else if(hostmode == "prev" || hostmode == "previous")
-                _host = -1;
-            else {
-                logPrintf(WARN, "Line %d: host must equal an integer, 'next',"
-                                "or 'prev'.", host.getSourceLine());
-                _host = 0;
-            }
-        } else {
-            logPrintf(WARN, "Line %d: host must equal an integer, 'next',"
-                            "or 'prev'.", host.getSourceLine());
-            _offset = true;
-            _host = 0;
-        }
-    } catch (libconfig::SettingNotFoundException& e) {
-        logPrintf(WARN, "Line %d: host is a required field, skipping.",
-                config.getSourceLine());
-        _offset = true;
-        _host = 0;
-    }
-}
-
-uint8_t ChangeHostAction::Config::nextHost(hidpp20::ChangeHost::HostInfo info)
-{
-    if(_offset) {
-        return (info.currentHost + _host) % info.hostCount;
-    } else {
-        if(_host >= info.hostCount || _host < 0) {
-            logPrintf(WARN, "No such host %d, defaulting to current.",
-                    _host+1);
-            return info.currentHost;
-        } else
-            return _host;
-    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,14 +21,18 @@
 
 #include <stdexcept>
 
-namespace logid {
-namespace backend {
-class TimeoutError: public std::exception
-{
-public:
-    TimeoutError() = default;
-    const char* what() const noexcept override;
-};
-}}
+namespace logid::backend {
+    class DeviceNotReady : public std::exception {
+    public:
+        [[nodiscard]] const char* what() const noexcept override;
+    };
+
+    class TimeoutError : public std::exception {
+    public:
+        TimeoutError() = default;
+
+        [[nodiscard]] const char* what() const noexcept override;
+    };
+}
 
 #endif //LOGID_BACKEND_ERROR_H

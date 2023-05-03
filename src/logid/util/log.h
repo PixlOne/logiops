@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,10 +20,10 @@
 
 #include <string>
 
-namespace logid
-{
-    enum LogLevel
-    {
+namespace logid {
+    /// TODO: Replace with a safer object-oriented logger
+
+    enum LogLevel {
         RAWREPORT,
         DEBUG,
         INFO,
@@ -33,8 +33,10 @@ namespace logid
 
     extern LogLevel global_loglevel;
 
-    void logPrintf(LogLevel level, const char *format, ...);
-    const char *levelPrefix(LogLevel level);
+    void logPrintf(LogLevel level, const char* format, ...);
+
+    const char* levelPrefix(LogLevel level);
+
     LogLevel toLogLevel(std::string s);
 }
 

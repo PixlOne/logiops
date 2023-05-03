@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,10 +20,8 @@
 
 #include <stdexcept>
 
-namespace logid {
-namespace ExceptionHandler
-{
+namespace logid::ExceptionHandler {
     void Default(std::exception& e);
-}}
+}
 
 #endif //LOGID_EXCEPTIONHANDLER_H
