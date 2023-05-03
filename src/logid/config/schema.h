@@ -51,6 +51,11 @@ namespace logid::actions {
 }
 
 namespace logid::config {
+    struct keys {
+        static const char name[];
+        static const char cid[];
+        static const char direction[];
+    };
 
     struct NoAction : public signed_group<std::string> {
         typedef actions::NullAction action;
@@ -213,7 +218,7 @@ namespace logid::config {
 
     struct GestureAction : public signed_group<std::string> {
         typedef actions::GestureAction action;
-        std::optional<map<std::string, Gesture, "direction",
+        std::optional<map<std::string, Gesture, string_literal_of<keys::direction>,
                 less_caseless<std::string>>> gestures;
 
         GestureAction() : signed_group<std::string>(
@@ -284,7 +289,7 @@ namespace logid::config {
                              &ThumbWheel::tap) {}
     };
 
-    typedef map<uint16_t, Button, "cid"> RemapButton;
+    typedef map<uint16_t, Button, string_literal_of<keys::cid>> RemapButton;
 
     struct Profile : public group {
         std::optional<DPI> dpi;
@@ -302,7 +307,7 @@ namespace logid::config {
 
     struct Device : public group {
         ipcgull::property<std::string> default_profile;
-        map<std::string, Profile, "name"> profiles;
+        map<std::string, Profile, string_literal_of<keys::name>> profiles;
 
         Device() : group({"default_profile", "profiles"},
                          &Device::default_profile,
@@ -313,7 +318,7 @@ namespace logid::config {
 
     struct Config : public group {
         std::optional<map<std::string,
-                std::variant<Device, Profile>, "name">> devices;
+                std::variant<Device, Profile>, string_literal_of<keys::name>>> devices;
         std::optional<std::set<uint16_t>> ignore;
         std::optional<double> io_timeout;
         std::optional<int> workers;

@@ -24,13 +24,11 @@
 #include <utility>
 
 namespace logid::config {
-    template<size_t N>
-    struct string_literal {
-        constexpr string_literal(const char (& str)[N]) {
-            std::copy_n(str, N, value);
-        }
+    struct string_literal { };
 
-        char value[N]{};
+    template<const char* str>
+    struct string_literal_of : public string_literal {
+        constexpr static const char* value = str;
     };
 
     template<class T>
@@ -46,10 +44,12 @@ namespace logid::config {
     };
 
     // Warning: map must be a variant of groups or a group
-    template<typename K, typename V, string_literal KeyName,
+    template<typename K, typename V, typename KeyName,
             typename Compare=typename std::map<K, V>::key_compare,
             typename Allocator=typename std::map<K, V>::allocator_type>
     class map : public std::map<K, V, Compare, Allocator> {
+        static_assert(std::is_base_of<string_literal, KeyName>::value,
+                "KeyName must be a string_literal");
     public:
         template<typename... Args>
         explicit map(Args... args) :

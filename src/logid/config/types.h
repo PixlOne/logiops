@@ -349,7 +349,7 @@ namespace logid::config {
             }
         };
 
-        template<typename K, typename V, string_literal KeyName,
+        template<typename K, typename V, typename KeyName,
                 typename Cmp, typename Alloc>
         struct config_io<map<K, V, KeyName, Cmp, Alloc>> {
             static inline map<K, V, KeyName, Cmp, Alloc> get(
@@ -359,7 +359,7 @@ namespace logid::config {
                 for (int i = 0; i < size; ++i) {
                     auto& s = setting[i];
                     try {
-                        t.emplace(config_io<K>::get(s.lookup(KeyName.value)),
+                        t.emplace(config_io<K>::get(s.lookup(KeyName::value)),
                                   config_io<V>::get(s));
                     } catch (libconfig::SettingException& e) {}
                 }
@@ -378,7 +378,7 @@ namespace logid::config {
                 for (auto& x: t) {
                     auto& s = setting.add(libconfig::Setting::TypeGroup);
                     config_io<V>::set(s, x.second);
-                    config_io<K>::set(s, KeyName.value, x.first);
+                    config_io<K>::set(s, KeyName::value, x.first);
                 }
             }
 
