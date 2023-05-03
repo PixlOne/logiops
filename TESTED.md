@@ -16,3 +16,4 @@ This is not by any means an exhaustive list. Many more devices are supported but
 |      T400      |     Yes     |        `Zone Touch Mouse T400`         |
 |    MX Keys     |     Yes     |      `MX Keys Wireless Keyboard`       |
 |      M500s     |     Yes     |     `Advanced Corded Mouse M500s`      |
+|      M650L     |     Yes     |       `Signature M650 L Mouse`         |
