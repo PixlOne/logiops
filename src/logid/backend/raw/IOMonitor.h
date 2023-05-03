@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 #include <functional>
 #include <map>
 #include <mutex>
+#include <thread>
 #include <condition_variable>
 
 namespace logid::backend::raw {

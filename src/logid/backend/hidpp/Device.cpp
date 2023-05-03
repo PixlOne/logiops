@@ -310,7 +310,7 @@ bool Device::isStable10() {
 }
 
 bool Device::isStable20() {
-    static constexpr std::string ping_seq = "hello";
+    static const std::string ping_seq = "hello";
 
     hidpp20::Root root(this);
 

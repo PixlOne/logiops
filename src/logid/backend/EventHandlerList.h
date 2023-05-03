@@ -31,7 +31,7 @@ class EventHandlerLock;
 template <class T>
 struct EventHandlerList {
     typedef std::list<typename T::EventHandler> list_t;
-    typedef list_t::const_iterator iterator_t;
+    typedef typename list_t::const_iterator iterator_t;
 
     std::list<typename T::EventHandler> list;
     mutable std::shared_mutex mutex;

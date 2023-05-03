@@ -40,7 +40,7 @@ namespace logid::backend::hidpp20 {
         struct HostInfo {
             uint8_t hostCount;
             uint8_t currentHost;
-            [[maybe_unused]] bool enhancedHostSwitch;
+            bool enhancedHostSwitch;
         };
 
         HostInfo getHostInfo();

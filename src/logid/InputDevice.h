@@ -21,6 +21,7 @@
 
 #include <memory>
 #include <string>
+#include <mutex>
 
 extern "C"
 {

@@ -157,7 +157,6 @@ namespace logid {
         ipcgull::property<std::string> _profile_name;
         std::map<std::string, config::Profile>::iterator _profile;
 
-        Receiver* _receiver;
         const std::weak_ptr<DeviceManager> _manager;
 
         void _makeResetMechanism();
