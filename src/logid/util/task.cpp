@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,66 +15,91 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#include "task.h"
-#include "workqueue.h"
+#include <util/task.h>
+#include <queue>
+#include <optional>
 
 using namespace logid;
+using namespace std::chrono;
 
-task::task(const std::function<void()>& function,
-     const std::function<void(std::exception&)>& exception_handler) :
-     _function (std::make_shared<std::function<void()>>(function)),
-     _exception_handler (std::make_shared<std::function<void(std::exception&)>>
-             (exception_handler)), _status (Waiting),
-     _task_pkg ([this](){
-         try {
-             (*_function)();
-         } catch(std::exception& e) {
-             (*_exception_handler)(e);
-         }
-     }), _future (_task_pkg.get_future())
-{
-}
+struct task_less {
+private:
+    std::greater<> greater;
+public:
+    bool operator()(const task& a, const task& b) const {
+        return greater(a.time, b.time);
+    }
+};
 
-void task::run()
-{
-    _status = Running;
-    _status_cv.notify_all();
-    _task_pkg();
-    _status = Completed;
-    _status_cv.notify_all();
-}
+static std::priority_queue<task, std::vector<task>, task_less> tasks {};
+static std::mutex task_mutex {};
+static std::condition_variable task_cv {};
+static std::atomic_bool workers_init = false;
 
-task::Status task::getStatus()
-{
-    return _status;
-}
+[[noreturn]] static void worker() {
+    std::unique_lock lock(task_mutex);
+    while (true) {
+        task_cv.wait(lock, []() { return !tasks.empty(); });
 
-void task::wait()
-{
-    if(_future.valid())
-        _future.wait();
-    else {
-        std::mutex wait_start;
-        std::unique_lock<std::mutex> lock(wait_start);
-        _status_cv.wait(lock, [this](){ return _status == Completed; });
+        /* top task is in the future, wait */
+        if (tasks.top().time >= system_clock::now()) {
+            auto wait = tasks.top().time - system_clock::now();
+            task_cv.wait_for(lock, wait, []() {
+                return !tasks.empty() && (tasks.top().time < system_clock::now());
+            });
+        }
+
+        if (!tasks.empty()) {
+            /* May have timed out and is no longer empty */
+            auto f = tasks.top().function;
+            tasks.pop();
+
+            lock.unlock();
+            try {
+                f();
+            } catch(std::exception& e) {
+                ExceptionHandler::Default(e);
+            }
+            lock.lock();
+        }
     }
 }
 
-void task::waitStart()
-{
-    std::mutex wait_start;
-    std::unique_lock<std::mutex> lock(wait_start);
-    _status_cv.wait(lock, [this](){ return _status != Waiting; });
+void logid::init_workers(int worker_count) {
+    std::lock_guard lock(task_mutex);
+
+    for (int i = 0; i < worker_count; ++i)
+        std::thread(&worker).detach();
+
+    workers_init = true;
 }
 
-std::future_status task::waitFor(std::chrono::milliseconds ms)
-{
-    return _future.wait_for(ms);
+void logid::run_task(std::function<void()> function) {
+    task t{
+            .function = std::move(function),
+            .time = std::chrono::system_clock::now()
+    };
+
+    run_task(t);
 }
 
-void task::spawn(const std::function<void ()>& function,
-        const std::function<void (std::exception &)>& exception_handler)
-{
-    auto t = std::make_shared<task>(function, exception_handler);
-    global_workqueue->queue(t);
+void logid::run_task_after(std::function<void()> function, std::chrono::milliseconds delay) {
+    task t{
+            .function = std::move(function),
+            .time = system_clock::now() + delay
+    };
+
+    run_task(t);
+}
+
+void logid::run_task(task t) {
+    std::lock_guard lock(task_mutex);
+
+    if (!workers_init) {
+        throw std::runtime_error("tasks queued before work queue ready");
+    }
+
+    tasks.emplace(std::move(t));
+    // TODO: only need to wake up at top
+    task_cv.notify_one();
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,57 +18,81 @@
 #ifndef LOGID_FEATURE_THUMBWHEEL_H
 #define LOGID_FEATURE_THUMBWHEEL_H
 
-#include "../backend/hidpp20/features/ThumbWheel.h"
-#include "DeviceFeature.h"
-#include "../actions/gesture/Gesture.h"
+#include <features/DeviceFeature.h>
+#include <actions/gesture/Gesture.h>
+#include <backend/hidpp20/features/ThumbWheel.h>
+#include <backend/hidpp/Device.h>
 
-namespace logid {
-namespace features
-{
-    class ThumbWheel : public DeviceFeature
-    {
+namespace logid::features {
+    class ThumbWheel : public DeviceFeature {
     public:
         explicit ThumbWheel(Device* dev);
-        virtual void configure();
-        virtual void listen();
 
-        class Config : public DeviceFeature::Config
-        {
-        public:
-            explicit Config(Device* dev);
-            bool divert() const;
-            bool invert() const;
+        void configure() final;
 
-            const std::shared_ptr<actions::Gesture>& leftAction() const;
-            const std::shared_ptr<actions::Gesture>& rightAction() const;
-            const std::shared_ptr<actions::Action>& proxyAction() const;
-            const std::shared_ptr<actions::Action>& tapAction() const;
-            const std::shared_ptr<actions::Action>& touchAction() const;
-        protected:
-            bool _divert = false;
-            bool _invert = false;
+        void listen() final;
 
-            static std::shared_ptr<actions::Gesture> _genGesture(Device* dev,
-                    libconfig::Setting& setting, const std::string& name);
-            static std::shared_ptr<actions::Action> _genAction(Device* dev,
-                    libconfig::Setting& setting, const std::string& name);
+        void setProfile(config::Profile& profile) final;
 
-            std::shared_ptr<actions::Gesture> _left_action;
-            std::shared_ptr<actions::Gesture> _right_action;
-            std::shared_ptr<actions::Action> _proxy_action;
-            std::shared_ptr<actions::Action> _tap_action;
-            std::shared_ptr<actions::Action> _touch_action;
-        };
     private:
+        void _makeConfig();
+
         void _handleEvent(backend::hidpp20::ThumbWheel::ThumbwheelEvent event);
+
+        void _fixGesture(const std::shared_ptr<actions::Gesture>& gesture) const;
+
+        class IPC : public ipcgull::interface {
+        public:
+            explicit IPC(ThumbWheel* parent);
+
+            [[nodiscard]] std::tuple<bool, bool> getConfig() const;
+
+            void setDivert(bool divert);
+
+            void setInvert(bool invert);
+
+            void setLeft(const std::string& type);
+
+            void setRight(const std::string& type);
+
+            void setProxy(const std::string& type);
+
+            void setTap(const std::string& type);
+
+            void setTouch(const std::string& type);
+
+        private:
+            config::ThumbWheel& _parentConfig();
+
+            ThumbWheel& _parent;
+        };
 
         std::shared_ptr<backend::hidpp20::ThumbWheel> _thumb_wheel;
         backend::hidpp20::ThumbWheel::ThumbwheelInfo _wheel_info;
-        int8_t _last_direction = 0;
+
+        std::shared_ptr<ipcgull::node> _node;
+
+        std::shared_ptr<actions::Gesture> _left_gesture;
+        std::shared_ptr<ipcgull::node> _left_node;
+        std::shared_ptr<actions::Gesture> _right_gesture;
+        std::shared_ptr<ipcgull::node> _right_node;
+        std::shared_ptr<actions::Action> _proxy_action;
+        std::shared_ptr<ipcgull::node> _proxy_node;
+        std::shared_ptr<actions::Action> _tap_action;
+        std::shared_ptr<ipcgull::node> _tap_node;
+        std::shared_ptr<actions::Action> _touch_action;
+        std::shared_ptr<ipcgull::node> _touch_node;
+
         bool _last_proxy = false;
         bool _last_touch = false;
-        Config _config;
+
+        mutable std::shared_mutex _config_mutex;
+        std::reference_wrapper<std::optional<config::ThumbWheel>> _config;
+
+        EventHandlerLock<backend::hidpp::Device> _ev_handler;
+
+        std::shared_ptr<IPC> _ipc_interface;
     };
-}}
+}
 
 #endif //LOGID_FEATURE_THUMBWHEEL_H

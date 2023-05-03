@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,30 +18,27 @@
 #ifndef LOGID_BACKEND_HIDPP20_FEATURE_RESET_H
 #define LOGID_BACKEND_HIDPP20_FEATURE_RESET_H
 
-#include "../Feature.h"
-#include "../feature_defs.h"
+#include <backend/hidpp20/Feature.h>
+#include <backend/hidpp20/feature_defs.h>
 
-namespace logid {
-namespace backend {
-namespace hidpp20
-{
-    class Reset : public Feature
-    {
+namespace logid::backend::hidpp20 {
+    class Reset : public Feature {
     public:
         static const uint16_t ID = FeatureID::RESET;
-        virtual uint16_t getID() { return ID; }
 
-        enum Function : uint8_t
-        {
-             GetProfile = 0,
-             ResetToProfile = 1
+        [[nodiscard]] uint16_t getID() final { return ID; }
+
+        enum Function : uint8_t {
+            GetProfile = 0,
+            ResetToProfile = 1
         };
 
         explicit Reset(Device* device);
 
         uint16_t getProfile();
+
         void reset(uint16_t profile = 0);
     };
-}}}
+}
 
 #endif //LOGID_BACKEND_HIDPP20_FEATURE_RESET_H

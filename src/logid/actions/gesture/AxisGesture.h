@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,44 +18,45 @@
 #ifndef LOGID_ACTION_AXISGESTURE_H
 #define LOGID_ACTION_AXISGESTURE_H
 
-#include "Gesture.h"
+#include <actions/gesture/Gesture.h>
 
-namespace logid {
-    namespace actions
-    {
-        class AxisGesture : public Gesture
-        {
-        public:
-            AxisGesture(Device* device, libconfig::Setting& root);
+namespace logid::actions {
+    class AxisGesture : public Gesture {
+    public:
+        static const char* interface_name;
 
-            virtual void press(bool init_threshold=false);
-            virtual void release(bool primary=false);
-            virtual void move(int16_t axis);
+        AxisGesture(Device* device, config::AxisGesture& config,
+                    const std::shared_ptr<ipcgull::node>& parent);
 
-            virtual bool wheelCompatibility() const;
-            virtual bool metThreshold() const;
+        void press(bool init_threshold) final;
 
-            void setHiresMultiplier(double multiplier);
+        void release(bool primary) final;
 
-            class Config : public Gesture::Config
-            {
-            public:
-                Config(Device* device, libconfig::Setting& setting);
-                unsigned int axis() const;
-                double multiplier() const;
-                void setHiresMultiplier(double multiplier);
-            private:
-                unsigned int _axis;
-                double _multiplier = 1;
-                double _hires_multiplier = 1;
-            };
+        void move(int16_t axis) final;
 
-        protected:
-            int16_t _axis;
-            double _axis_remainder;
-            int _hires_remainder;
-            Config _config;
-        };
-    }}
+        [[nodiscard]] bool wheelCompatibility() const final;
+
+        [[nodiscard]] bool metThreshold() const final;
+
+        void setHiresMultiplier(double multiplier);
+
+        [[nodiscard]] std::tuple<std::string, double, int> getConfig() const;
+
+        void setAxis(const std::string& axis);
+
+        void setMultiplier(double multiplier);
+
+        void setThreshold(int threshold);
+
+    protected:
+        int32_t _axis{};
+        double _axis_remainder{};
+        int _hires_remainder{};
+        std::optional<uint> _input_axis;
+        double _multiplier;
+        double _hires_multiplier = 1.0;
+        config::AxisGesture& _config;
+    };
+}
 
 #endif //LOGID_ACTION_AXISGESTURE_H

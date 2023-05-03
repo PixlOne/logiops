@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,28 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+#ifndef LOGIOPS_IPC_DEFS_H
+#define LOGIOPS_IPC_DEFS_H
 
-#include "Error.h"
+#define SERVICE_ROOT_NAME "pizza.pixl.LogiOps"
+static constexpr auto server_root_node = "/pizza/pixl/logiops";
 
-using namespace logid::backend::dj;
-
-Error::Error(uint8_t code) : _code (code)
-{
-}
-
-const char* Error::what() const noexcept
-{
-    switch(_code) {
-    case Unknown:
-        return "Unknown";
-    case KeepAliveTimeout:
-        return "Keep-alive timeout";
-    default:
-        return "Reserved";
-    }
-}
-
-uint8_t Error::code() const noexcept
-{
-    return _code;
-}
+#endif //LOGIOPS_IPC_DEFS_H

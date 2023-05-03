@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,46 +19,40 @@
 #ifndef LOGID_CONFIGURATION_H
 #define LOGID_CONFIGURATION_H
 
-#include <map>
+#include <config/schema.h>
+#include <ipcgull/interface.h>
 #include <libconfig.h++>
 #include <memory>
 #include <chrono>
 #include <set>
 
-#define LOGID_DEFAULT_IO_TIMEOUT std::chrono::seconds(2)
-#define LOGID_DEFAULT_WORKER_COUNT 4
+namespace logid {
+    namespace defaults {
+        static constexpr double io_timeout = 500;
+        static constexpr int workers = 4;
+        static constexpr int gesture_threshold = 50;
+    }
 
-namespace logid
-{
-    class Configuration
-    {
+    class Configuration : public config::Config {
     public:
-        explicit Configuration(const std::string& config_file);
-        Configuration() = default;
-        libconfig::Setting& getSetting(const std::string& path);
-        std::string getDevice(const std::string& name);
-        bool isIgnored(uint16_t pid) const;
+        explicit Configuration(std::string config_file);
 
-        class DeviceNotFound : public std::exception
-        {
+        Configuration();
+
+        // Reloading is not safe, references will be invalidated
+        //void reload();
+        void save();
+
+        class IPC : public ipcgull::interface {
         public:
-            explicit DeviceNotFound(std::string name);
-            const char* what() const noexcept override;
-        private:
-            std::string _name;
+            explicit IPC(Configuration* config);
         };
 
-        std::chrono::milliseconds ioTimeout() const;
-        int workerCount() const;
     private:
-        std::map<std::string, std::string> _device_paths;
-        std::set<uint16_t> _ignore_list;
-        std::chrono::milliseconds _io_timeout = LOGID_DEFAULT_IO_TIMEOUT;
-        int _worker_threads = LOGID_DEFAULT_WORKER_COUNT;
+        std::string _config_file;
         libconfig::Config _config;
     };
 
-    extern std::shared_ptr<Configuration> global_config;
 }
 
 #endif //LOGID_CONFIGURATION_H

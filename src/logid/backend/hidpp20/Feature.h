@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,38 +20,44 @@
 #define LOGID_BACKEND_HIDPP20_FEATURE_H
 
 #include <cstdint>
-#include "Device.h"
+#include <exception>
+#include <vector>
 
-namespace logid {
-namespace backend {
-namespace hidpp20 {
-    class UnsupportedFeature : public std::exception
-    {
+namespace logid::backend::hidpp20 {
+    class Device;
+
+    class UnsupportedFeature : public std::exception {
     public:
-        explicit UnsupportedFeature(uint16_t ID) : _f_id (ID) {}
-        const char* what() const noexcept override;
-        uint16_t code() const noexcept;
+        explicit UnsupportedFeature(uint16_t ID) : _f_id(ID) {}
+
+        [[nodiscard]] const char* what() const noexcept override;
+
+        [[nodiscard]] uint16_t code() const noexcept;
+
     private:
         uint16_t _f_id;
     };
 
-    class Feature
-    {
+    class Feature {
     public:
         static const uint16_t ID;
+
         virtual uint16_t getID() = 0;
-        uint8_t featureIndex();
+
+        [[nodiscard]] uint8_t featureIndex() const;
+
         virtual ~Feature() = default;
+
     protected:
         explicit Feature(Device* dev, uint16_t _id);
-        std::vector<uint8_t> callFunction(uint8_t function_id,
-            std::vector<uint8_t>& params);
-        void callFunctionNoResponse(uint8_t function_id,
-            std::vector<uint8_t>& params);
-    private:
-        Device* _device;
+
+        std::vector<uint8_t> callFunction(uint8_t function_id, std::vector<uint8_t>& params);
+
+        void callFunctionNoResponse(uint8_t function_id, std::vector<uint8_t>& params);
+
+        Device* const _device;
         uint8_t _index;
     };
-}}}
+}
 
 #endif //LOGID_BACKEND_HIDPP20_FEATURE_H

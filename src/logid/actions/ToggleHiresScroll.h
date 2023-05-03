@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,24 +18,30 @@
 #ifndef LOGID_ACTION_TOGGLEHIRESSCROLL_H
 #define LOGID_ACTION_TOGGLEHIRESSCROLL_H
 
-#include "Action.h"
-#include "../features/HiresScroll.h"
+#include <actions/Action.h>
+#include <features/HiresScroll.h>
 
-namespace logid {
-namespace actions
-{
-    class ToggleHiresScroll : public Action
-    {
+namespace logid::actions {
+    class ToggleHiresScroll : public Action {
     public:
-        explicit ToggleHiresScroll(Device* dev);
+        static const char* interface_name;
 
-        virtual void press();
-        virtual void release();
+        ToggleHiresScroll(Device* dev, const std::shared_ptr<ipcgull::node>& parent);
 
-        virtual uint8_t reprogFlags() const;
+        ToggleHiresScroll(Device* device,
+                          [[maybe_unused]] config::ToggleHiresScroll& action,
+                          const std::shared_ptr<ipcgull::node>& parent) :
+                ToggleHiresScroll(device, parent) {}
+
+        void press() final;
+
+        void release() final;
+
+        [[nodiscard]] uint8_t reprogFlags() const final;
+
     protected:
         std::shared_ptr<features::HiresScroll> _hires_scroll;
     };
-}}
+}
 
 #endif //LOGID_ACTION_TOGGLEHIRESSCROLL_H

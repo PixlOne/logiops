@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,94 +19,164 @@
 #ifndef LOGID_BACKEND_HIDPP_DEVICE_H
 #define LOGID_BACKEND_HIDPP_DEVICE_H
 
+#include <backend/raw/RawDevice.h>
+#include <backend/hidpp/Report.h>
+#include <backend/hidpp/defs.h>
+#include <backend/EventHandlerList.h>
+#include <optional>
+#include <variant>
 #include <string>
 #include <memory>
 #include <functional>
 #include <map>
-#include "../raw/RawDevice.h"
-#include "Report.h"
-#include "defs.h"
 
-namespace logid {
-namespace backend {
-namespace dj
-{
+namespace logid::backend::hidpp10 {
     // Need to define here for a constructor
     class Receiver;
 }
-namespace hidpp
-{
+
+namespace logid::backend::hidpp {
     struct DeviceConnectionEvent;
-    struct EventHandler
-    {
-        std::function<bool(Report&)> condition;
-        std::function<void(Report&)> callback;
-    };
-    class Device
-    {
-    public:
-        class InvalidDevice : std::exception
-        {
+
+    namespace {
+        template <typename T>
+        class DeviceWrapper : public T {
+            friend class Device;
         public:
-            enum Reason
-            {
+            template <typename... Args>
+            explicit DeviceWrapper(Args... args) : T(std::forward<Args>(args)...) { }
+
+            template <typename... Args>
+            static std::shared_ptr<T> make(Args... args) {
+                return std::make_shared<DeviceWrapper>(std::forward<Args>(args)...);
+            }
+        };
+    }
+
+    class Device {
+        template <typename T>
+        friend class DeviceWrapper;
+    public:
+        struct EventHandler {
+            std::function<bool(Report&)> condition;
+            std::function<void(Report&)> callback;
+        };
+
+        class InvalidDevice : std::exception {
+        public:
+            enum Reason {
                 NoHIDPPReport,
                 InvalidRawDevice,
-                Asleep
+                Asleep,
+                VirtualNode
             };
-            InvalidDevice(Reason reason) : _reason (reason) {}
-            virtual const char* what() const noexcept;
-            virtual Reason code() const noexcept;
+
+            explicit InvalidDevice(Reason reason) : _reason(reason) {}
+
+            [[nodiscard]] const char* what() const noexcept override;
+
+            [[nodiscard]] virtual Reason code() const noexcept;
+
         private:
             Reason _reason;
         };
 
-        explicit Device(const std::string& path, DeviceIndex index);
-        Device(std::shared_ptr<raw::RawDevice> raw_device,
-                DeviceIndex index);
-        Device(std::shared_ptr<dj::Receiver> receiver,
-                hidpp::DeviceConnectionEvent event);
-        Device(std::shared_ptr<dj::Receiver> receiver,
-                DeviceIndex index);
-        ~Device();
+        [[nodiscard]] const std::string& devicePath() const;
 
-        std::string devicePath() const;
-        DeviceIndex deviceIndex() const;
-        std::tuple<uint8_t, uint8_t> version() const;
+        [[nodiscard]] DeviceIndex deviceIndex() const;
 
-        std::string name() const;
-        uint16_t pid() const;
+        [[nodiscard]] const std::tuple<uint8_t, uint8_t>& version() const;
 
-        void listen(); // Runs asynchronously
-        void stopListening();
+        [[nodiscard]] const std::string& name() const;
 
-        void addEventHandler(const std::string& nickname,
-                const std::shared_ptr<EventHandler>& handler);
-        void removeEventHandler(const std::string& nickname);
-        const std::map<std::string, std::shared_ptr<EventHandler>>&
-            eventHandlers();
+        [[nodiscard]] uint16_t pid() const;
 
-        Report sendReport(Report& report);
-        void sendReportNoResponse(Report& report);
+        EventHandlerLock<Device> addEventHandler(EventHandler handler);
+
+        virtual Report sendReport(const Report& report);
+
+        virtual void sendReportNoACK(const Report& report);
 
         void handleEvent(Report& report);
+
+        [[nodiscard]] const std::shared_ptr<raw::RawDevice>& rawDevice() const;
+
+        Device(const Device&) = delete;
+        Device(Device&&) = delete;
+        virtual ~Device() = default;
+
+    protected:
+        Device(const std::string& path, DeviceIndex index,
+               const std::shared_ptr<raw::DeviceMonitor>& monitor, double timeout);
+
+        Device(std::shared_ptr<raw::RawDevice> raw_device, DeviceIndex index,
+               double timeout);
+
+        Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
+               hidpp::DeviceConnectionEvent event, double timeout);
+
+        Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
+               DeviceIndex index, double timeout);
+
+        // Returns whether the report is a response
+        virtual bool responseReport(const Report& report);
+
+        bool isStable20();
+
+        bool isStable10();
+
+        void _sendReport(Report report);
+
+        void reportFixup(Report& report) const;
+
+        const std::chrono::milliseconds io_timeout;
+        uint8_t supported_reports{};
+
+        std::mutex _response_mutex;
+        std::condition_variable _response_cv;
     private:
+        void _setupReportsAndInit();
+
         void _init();
 
         std::shared_ptr<raw::RawDevice> _raw_device;
-        std::shared_ptr<dj::Receiver> _receiver;
+        EventHandlerLock<raw::RawDevice> _raw_handler;
+        std::shared_ptr<hidpp10::Receiver> _receiver;
         std::string _path;
         DeviceIndex _index;
-        uint8_t _supported_reports;
 
         std::tuple<uint8_t, uint8_t> _version;
-        uint16_t _pid;
+        uint16_t _pid{};
         std::string _name;
 
-        std::atomic<bool> _listening;
+        std::mutex _send_mutex;
 
-        std::map<std::string, std::shared_ptr<EventHandler>> _event_handlers;
+        typedef std::variant<Report, Report::Hidpp10Error, Report::Hidpp20Error> Response;
+
+        std::optional<Response> _response;
+        std::optional<uint8_t> _sent_sub_id{};
+
+        std::shared_ptr<EventHandlerList<Device>> _event_handlers;
+
+        std::weak_ptr<Device> _self;
+
+    protected:
+        template <typename T, typename... Args>
+        static std::shared_ptr<T> makeDerived(Args... args) {
+            auto device = DeviceWrapper<T>::make(std::forward<Args>(args)...);
+            device->_self = device;
+            device->_setupReportsAndInit();
+            return device;
+        }
+
+    public:
+        template <typename... Args>
+        static std::shared_ptr<Device> make(Args... args) {
+            return makeDerived<Device>(std::forward<Args>(args)...);
+        }
     };
-} } }
+
+    typedef Device::EventHandler EventHandler;
+}
 
 #endif //LOGID_BACKEND_HIDPP_DEVICE_H

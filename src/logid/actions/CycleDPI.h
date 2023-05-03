@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,39 +18,33 @@
 #ifndef LOGID_ACTION_CYCLEDPI_H
 #define LOGID_ACTION_CYCLEDPI_H
 
-#include <libconfig.h++>
-#include "Action.h"
-#include "../features/DPI.h"
+#include <actions/Action.h>
+#include <features/DPI.h>
 
-namespace logid {
-namespace actions {
-    class CycleDPI : public Action
-    {
+namespace logid::actions {
+    class CycleDPI : public Action {
     public:
-        explicit CycleDPI(Device* device, libconfig::Setting& setting);
+        static const char* interface_name;
 
-        virtual void press();
-        virtual void release();
+        CycleDPI(Device* device, config::CycleDPI& setting,
+                 const std::shared_ptr<ipcgull::node>& parent);
 
-        virtual uint8_t reprogFlags() const;
+        void press() final;
 
-    class Config : public Action::Config
-    {
-    public:
-        Config(Device* device, libconfig::Setting& setting);
-        uint16_t nextDPI();
-        bool empty() const;
-        uint8_t sensor() const;
-    private:
-        std::size_t _current_index;
-        std::vector<uint16_t> _dpis;
-        uint8_t _sensor;
-    };
+        void release() final;
+
+        [[nodiscard]] std::vector<int> getDPIs() const;
+
+        void setDPIs(const std::vector<int>& dpis);
+
+        [[nodiscard]] uint8_t reprogFlags() const final;
 
     protected:
-        Config _config;
+        std::mutex _dpi_mutex;
+        config::CycleDPI& _config;
         std::shared_ptr<features::DPI> _dpi;
+        std::list<int>::const_iterator _current_dpi;
     };
-}}
+}
 
 #endif //LOGID_ACTION_CYCLEDPI_H

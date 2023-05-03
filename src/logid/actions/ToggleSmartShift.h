@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,24 +18,31 @@
 #ifndef LOGID_ACTION_TOGGLESMARTSHIFT_H
 #define LOGID_ACTION_TOGGLESMARTSHIFT_H
 
-#include <libconfig.h++>
-#include "Action.h"
-#include "../features/SmartShift.h"
+#include <actions/Action.h>
+#include <features/SmartShift.h>
 
-namespace logid {
-namespace actions {
-    class ToggleSmartShift : public Action
-    {
+namespace logid::actions {
+    class ToggleSmartShift : public Action {
     public:
-        explicit ToggleSmartShift(Device* dev);
+        static const char* interface_name;
 
-        virtual void press();
-        virtual void release();
+        ToggleSmartShift(Device* dev,
+                         const std::shared_ptr<ipcgull::node>& parent);
 
-        virtual uint8_t reprogFlags() const;
+        ToggleSmartShift(Device* device,
+                         [[maybe_unused]] config::ToggleSmartShift& action,
+                         const std::shared_ptr<ipcgull::node>& parent) :
+                ToggleSmartShift(device, parent) {}
+
+        void press() final;
+
+        void release() final;
+
+        [[nodiscard]] uint8_t reprogFlags() const final;
+
     protected:
         std::shared_ptr<features::SmartShift> _smartshift;
     };
-}}
+}
 
 #endif //LOGID_ACTION_TOGGLESMARTSHIFT_H

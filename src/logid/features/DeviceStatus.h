@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,23 +19,26 @@
 #define LOGID_FEATURE_DEVICESTATUS_H
 
 
-#include "DeviceFeature.h"
-#include "../Device.h"
-#include "../backend/hidpp20/features/WirelessDeviceStatus.h"
+#include <features/DeviceFeature.h>
+#include <Device.h>
+#include <backend/hidpp20/features/WirelessDeviceStatus.h>
 
-namespace logid {
-namespace features
-{
-    class DeviceStatus : public DeviceFeature
-    {
+namespace logid::features {
+    class DeviceStatus : public DeviceFeature {
     public:
+        void configure() final;
+
+        void listen() final;
+
+        void setProfile(config::Profile& profile) final;
+
+    protected:
         explicit DeviceStatus(Device* dev);
-        virtual void configure();
-        virtual void listen();
+
     private:
-        std::shared_ptr<backend::hidpp20::WirelessDeviceStatus>
-                _wireless_device_status;
+        EventHandlerLock<backend::hidpp::Device> _ev_handler;
+        std::shared_ptr<backend::hidpp20::WirelessDeviceStatus> _wireless_device_status;
     };
-}}
+}
 
 #endif //LOGID_FEATURE_DEVICESTATUS_H

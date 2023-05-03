@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,26 +25,24 @@
  * hidpp::Device class. No version checks are provided here
  */
 
-#include "Device.h"
+#include <backend/hidpp/Device.h>
 
-namespace logid {
-namespace backend {
-namespace hidpp20
-{
-    class EssentialFeature
-    {
+namespace logid::backend::hidpp20 {
+    class EssentialFeature {
     public:
         static const uint16_t ID;
+
         virtual uint16_t getID() = 0;
 
     protected:
         EssentialFeature(hidpp::Device* dev, uint16_t _id);
+
         std::vector<uint8_t> callFunction(uint8_t function_id,
-                std::vector<uint8_t>& params);
-    private:
-        hidpp::Device* _device;
+                                          std::vector<uint8_t>& params);
+
+        hidpp::Device* const _device;
         uint8_t _index;
     };
-}}}
+}
 
 #endif //LOGID_BACKEND_HIDPP20_ESSENTIAL_FEATURE_H

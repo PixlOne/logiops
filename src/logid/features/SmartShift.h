@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,34 +18,62 @@
 #ifndef LOGID_FEATURE_SMARTSHIFT_H
 #define LOGID_FEATURE_SMARTSHIFT_H
 
-#include "../backend/hidpp20/features/SmartShift.h"
-#include "DeviceFeature.h"
+#include <features/DeviceFeature.h>
+#include <backend/hidpp20/features/SmartShift.h>
+#include <ipcgull/interface.h>
+#include <config/schema.h>
+#include <shared_mutex>
 
-namespace logid {
-namespace features
-{
-    class SmartShift : public DeviceFeature
-    {
+namespace logid::features {
+    class SmartShift : public DeviceFeature {
     public:
+
+        void configure() final;
+
+        void listen() final;
+
+        void setProfile(config::Profile& profile) final;
+
+        typedef backend::hidpp20::SmartShift::SmartshiftStatus Status;
+
+        [[nodiscard]] Status getStatus() const;
+
+        void setStatus(Status status);
+
+    protected:
         explicit SmartShift(Device* dev);
-        virtual void configure();
-        virtual void listen();
 
-        backend::hidpp20::SmartShift::SmartshiftStatus getStatus();
-        void setStatus(backend::hidpp20::SmartShift::SmartshiftStatus status);
-
-        class Config : public DeviceFeature::Config
-        {
-        public:
-            explicit Config(Device* dev);
-            backend::hidpp20::SmartShift::SmartshiftStatus getSettings();
-        protected:
-            backend::hidpp20::SmartShift::SmartshiftStatus _status;
-        };
     private:
-        Config _config;
+        mutable std::shared_mutex _config_mutex;
+        std::reference_wrapper<std::optional<config::SmartShift>> _config;
         std::shared_ptr<backend::hidpp20::SmartShift> _smartshift;
+
+        class IPC : public ipcgull::interface {
+        public:
+            explicit IPC(SmartShift* parent);
+
+            [[nodiscard]] std::tuple<bool, uint8_t> getStatus() const;;
+
+            void setActive(bool active);
+
+            void setThreshold(uint8_t threshold);
+
+            [[nodiscard]] std::tuple<bool, bool, bool, uint8_t> getDefault() const;
+
+            void clearDefaultActive();
+
+            void setDefaultActive(bool active);
+
+            void clearDefaultThreshold();
+
+            void setDefaultThreshold(uint8_t threshold);
+
+        private:
+            SmartShift& _parent;
+        };
+
+        std::shared_ptr<IPC> _ipc_interface;
     };
-}}
+}
 
 #endif //LOGID_FEATURE_SMARTSHIFT_H

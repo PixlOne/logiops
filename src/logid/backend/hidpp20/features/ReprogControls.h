@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,17 +18,15 @@
 #ifndef LOGID_BACKEND_HIDPP20_FEATURE_REPROGCONTROLS_H
 #define LOGID_BACKEND_HIDPP20_FEATURE_REPROGCONTROLS_H
 
+#include <backend/hidpp20/feature_defs.h>
+#include <backend/hidpp20/Feature.h>
+#include <backend/hidpp/Report.h>
 #include <map>
+#include <set>
+#include <memory>
 
-#include "../feature_defs.h"
-#include "../Feature.h"
-
-namespace logid {
-namespace backend {
-namespace hidpp20
-{
-    class ReprogControls : public Feature
-    {
+namespace logid::backend::hidpp20 {
+    class ReprogControls : public Feature {
     public:
         enum Function {
             GetControlCount = 0,
@@ -41,8 +39,7 @@ namespace hidpp20
             DivertedRawXYEvent = 1
         };
 
-        struct ControlInfo
-        {
+        struct ControlInfo {
             uint16_t controlID;
             uint16_t taskID;
             uint8_t flags;
@@ -52,121 +49,127 @@ namespace hidpp20
             uint8_t additionalFlags;
         };
 
-        enum ControlInfoFlags: uint8_t
-        {
+        enum ControlInfoFlags : uint8_t {
             MouseButton = 1, //Mouse button
-            FKey = 1<<1, //Fx key
-            Hotkey = 1<<2,
-            FnToggle = 1<<3,
-            ReprogHint = 1<<4,
-            TemporaryDivertable = 1<<5,
-            PersisentlyDivertable = 1<<6,
-            Virtual = 1<<7
+            FKey = 1 << 1, //Fx key
+            Hotkey = 1 << 2,
+            FnToggle = 1 << 3,
+            ReprogHint = 1 << 4,
+            TemporaryDivertable = 1 << 5,
+            PersistentlyDivertable = 1 << 6,
+            Virtual = 1 << 7
         };
-        enum ControlInfoAdditionalFlags: uint8_t {
-            RawXY = 1<<0
-        };
-
-        enum ControlReportingFlags: uint8_t {
-            TemporaryDiverted = 1<<0,
-            ChangeTemporaryDivert = 1<<1,
-            PersistentlyDiverted = 1<<2,
-            ChangePersistentDivert = 1<<3,
-            RawXYDiverted = 1<<4,
-            ChangeRawXYDivert = 1<<5
+        enum ControlInfoAdditionalFlags : uint8_t {
+            RawXY = 1 << 0
         };
 
-        struct Move
-        {
+        enum ControlReportingFlags : uint8_t {
+            TemporaryDiverted = 1 << 0,
+            ChangeTemporaryDivert = 1 << 1,
+            PersistentlyDiverted = 1 << 2,
+            ChangePersistentDivert [[maybe_unused]] = 1 << 3,
+            RawXYDiverted = 1 << 4,
+            ChangeRawXYDivert = 1 << 5
+        };
+
+        struct Move {
             int16_t x;
             int16_t y;
         };
 
         static const uint16_t ID = FeatureID::REPROG_CONTROLS;
-        virtual uint16_t getID() { return ID; }
 
-        virtual bool supportsRawXY() { return false; }
+        [[nodiscard]] uint16_t getID() override { return ID; }
+
+        [[nodiscard]] virtual bool supportsRawXY() { return false; }
 
         explicit ReprogControls(Device* dev);
 
-        virtual uint8_t getControlCount();
+        [[nodiscard]] virtual uint8_t getControlCount();
 
-        virtual ControlInfo getControlInfo(uint8_t cid);
+        [[nodiscard]] virtual ControlInfo getControlInfo(uint8_t cid);
 
-        virtual ControlInfo getControlIdInfo(uint16_t cid);
+        [[nodiscard]] virtual ControlInfo getControlIdInfo(uint16_t cid);
 
         virtual void initCidMap();
 
-        const std::map<uint16_t, ControlInfo>& getControls() const;
+        [[nodiscard]] const std::map<uint16_t, ControlInfo>& getControls() const;
 
-        // Onlu controlId and flags will be set
-        virtual ControlInfo getControlReporting(uint16_t cid);
+        // Only controlId and flags will be set
+        [[maybe_unused]]
+        [[nodiscard]] virtual ControlInfo getControlReporting(uint16_t cid);
 
         // Only controlId (for remap) and flags will be read
         virtual void setControlReporting(uint8_t cid, ControlInfo info);
 
-        static std::set<uint16_t> divertedButtonEvent(const hidpp::Report&
-            report);
+        [[nodiscard]] static std::set<uint16_t> divertedButtonEvent(const hidpp::Report& report);
 
-        static Move divertedRawXYEvent(const hidpp::Report& report);
+        [[nodiscard]] static Move divertedRawXYEvent(const hidpp::Report& report);
 
-        static std::shared_ptr<ReprogControls> autoVersion(Device *dev);
+        [[nodiscard]] static std::shared_ptr<ReprogControls> autoVersion(Device* dev);
+
     protected:
         ReprogControls(Device* dev, uint16_t _id);
+
         std::map<uint16_t, ControlInfo> _cids;
         bool _cids_initialized = false;
         std::mutex _cids_populating;
     };
 
-    class ReprogControlsV2 : public ReprogControls
-    {
+    class ReprogControlsV2 : public ReprogControls {
     public:
         static const uint16_t ID = FeatureID::REPROG_CONTROLS_V2;
-        virtual uint16_t getID() override { return ID; }
+
+        [[nodiscard]] uint16_t getID() override { return ID; }
 
         explicit ReprogControlsV2(Device* dev);
+
     protected:
         ReprogControlsV2(Device* dev, uint16_t _id);
     };
 
-    class ReprogControlsV2_2 : public ReprogControlsV2
-    {
+    class ReprogControlsV2_2 : public ReprogControlsV2 {
     public:
         static const uint16_t ID = FeatureID::REPROG_CONTROLS_V2_2;
-        virtual uint16_t getID() override { return ID; }
+
+        [[nodiscard]] uint16_t getID() override { return ID; }
 
         explicit ReprogControlsV2_2(Device* dev);
+
     protected:
         ReprogControlsV2_2(Device* dev, uint16_t _id);
     };
 
-    class ReprogControlsV3 : public ReprogControlsV2_2
-    {
+    class ReprogControlsV3 : public ReprogControlsV2_2 {
     public:
         static const uint16_t ID = FeatureID::REPROG_CONTROLS_V3;
-        virtual uint16_t getID() override { return ID; }
+
+        [[nodiscard]] uint16_t getID() override { return ID; }
 
         explicit ReprogControlsV3(Device* dev);
+
     protected:
         ReprogControlsV3(Device* dev, uint16_t _id);
     };
 
-    class ReprogControlsV4 : public ReprogControlsV3
-    {
+    class ReprogControlsV4 : public ReprogControlsV3 {
     public:
         static const uint16_t ID = FeatureID::REPROG_CONTROLS_V4;
-        virtual uint16_t getID() override { return ID; }
 
-        bool supportsRawXY() override { return true; }
+        [[nodiscard]] uint16_t getID() final { return ID; }
 
-        ControlInfo getControlReporting(uint16_t cid) override;
+        [[nodiscard]] bool supportsRawXY() override { return true; }
+
+        [[nodiscard]] ControlInfo getControlReporting(uint16_t cid) override;
 
         void setControlReporting(uint8_t cid, ControlInfo info) override;
 
         explicit ReprogControlsV4(Device* dev);
+
     protected:
+        [[maybe_unused]]
         ReprogControlsV4(Device* dev, uint16_t _id);
     };
-}}}
+}
 
 #endif //LOGID_BACKEND_HIDPP20_FEATURE_REPROGCONTROLS_H

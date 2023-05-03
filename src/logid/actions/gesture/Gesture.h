@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,59 +18,56 @@
 #ifndef LOGID_ACTION_GESTURE_H
 #define LOGID_ACTION_GESTURE_H
 
-#include "../Action.h"
+#include <utility>
+#include <actions/Action.h>
 
-#define LOGID_GESTURE_DEFAULT_THRESHOLD 50
-
-namespace logid {
-namespace actions
-{
-    class InvalidGesture : public std::exception
-    {
+namespace logid::actions {
+    class InvalidGesture : public std::exception {
     public:
-        explicit InvalidGesture(std::string what="") : _what (what)
-        {
+        explicit InvalidGesture(std::string what = "") : _what(std::move(what)) {
         }
-        virtual const char* what() const noexcept
-        {
+
+        [[nodiscard]] const char* what() const noexcept override {
             return _what.c_str();
         }
+
     private:
         std::string _what;
     };
 
-    class Gesture
-    {
+    class Gesture : public ipcgull::interface {
     public:
-        virtual void press(bool init_threshold=false) = 0;
-        virtual void release(bool primary=false) = 0;
+        virtual void press(bool init_threshold) = 0;
+
+        virtual void release(bool primary) = 0;
+
         virtual void move(int16_t axis) = 0;
 
-        virtual bool wheelCompatibility() const = 0;
-        virtual bool metThreshold() const = 0;
+        [[nodiscard]] virtual bool wheelCompatibility() const = 0;
+
+        [[nodiscard]] virtual bool metThreshold() const = 0;
 
         virtual ~Gesture() = default;
 
-        class Config
-        {
-        public:
-            Config(Device* device, libconfig::Setting& root,
-                    bool action_required=true);
-            virtual int16_t threshold() const;
-            virtual std::shared_ptr<Action> action();
-        protected:
-            Device* _device;
-            std::shared_ptr<Action> _action;
-            int16_t _threshold;
-        };
-
         static std::shared_ptr<Gesture> makeGesture(Device* device,
-                libconfig::Setting& setting);
+                                                    config::Gesture& gesture,
+                                                    const std::shared_ptr<ipcgull::node>& parent);
+
+        static std::shared_ptr<Gesture> makeGesture(
+                Device* device, const std::string& type,
+                config::Gesture& gesture,
+                const std::shared_ptr<ipcgull::node>& parent);
 
     protected:
-        explicit Gesture(Device* device);
+        Gesture(Device* device,
+                std::shared_ptr<ipcgull::node> parent,
+                const std::string& name, tables t = {});
+
+        mutable std::shared_mutex _config_mutex;
+
+        const std::shared_ptr<ipcgull::node> _node;
         Device* _device;
     };
-}}
+}
 
 #endif //LOGID_ACTION_GESTURE_H

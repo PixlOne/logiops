@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,82 +15,103 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#include "IntervalGesture.h"
-#include "../../util/log.h"
+#include <actions/gesture/IntervalGesture.h>
+#include <Configuration.h>
+#include <util/log.h>
 
 using namespace logid::actions;
 
-IntervalGesture::IntervalGesture(Device *device, libconfig::Setting &root) :
-    Gesture (device), _config (device, root)
-{
+const char* IntervalGesture::interface_name = "OnInterval";
+
+IntervalGesture::IntervalGesture(
+        Device* device, config::IntervalGesture& config,
+        const std::shared_ptr<ipcgull::node>& parent) :
+        Gesture(device, parent, interface_name, {
+                {
+                        {"GetConfig", {this, &IntervalGesture::getConfig, {"interval", "threshold"}}},
+                        {"SetInterval", {this, &IntervalGesture::setInterval, {"interval"}}},
+                        {"SetThreshold", {this, &IntervalGesture::setThreshold, {"interval"}}},
+                        {"SetAction", {this, &IntervalGesture::setAction, {"type"}}}
+                },
+                {},
+                {}
+        }),
+        _axis(0), _interval_pass_count(0), _config(config) {
+    if (config.action) {
+        try {
+            _action = Action::makeAction(device, config.action.value(), _node);
+        } catch (InvalidAction& e) {
+            logPrintf(WARN, "Mapping gesture to invalid action");
+        }
+    }
 }
 
-void IntervalGesture::press(bool init_threshold)
-{
-    _axis = init_threshold ? _config.threshold() : 0;
+void IntervalGesture::press(bool init_threshold) {
+    std::shared_lock lock(_config_mutex);
+    if (init_threshold) {
+        _axis = (int32_t) _config.threshold.value_or(defaults::gesture_threshold);
+    } else {
+        _axis = 0;
+    }
     _interval_pass_count = 0;
 }
 
-void IntervalGesture::release(bool primary)
-{
-    // Do nothing
-    (void)primary; // Suppress unused warning
+void IntervalGesture::release([[maybe_unused]] bool primary) {
 }
 
-void IntervalGesture::move(int16_t axis)
-{
-    _axis += axis;
-    if(_axis < _config.threshold())
+void IntervalGesture::move(int16_t axis) {
+    std::shared_lock lock(_config_mutex);
+    if (!_config.interval.has_value())
         return;
 
-    int16_t new_interval_count = (_axis - _config.threshold())/
-            _config.interval();
-    if(new_interval_count > _interval_pass_count) {
-        _config.action()->press();
-        _config.action()->release();
+    const auto threshold =
+            _config.threshold.value_or(defaults::gesture_threshold);
+    _axis += axis;
+    if (_axis < threshold)
+        return;
+
+    int32_t new_interval_count = (_axis - threshold) / _config.interval.value();
+    if (new_interval_count > _interval_pass_count) {
+        if (_action) {
+            _action->press();
+            _action->release();
+        }
     }
     _interval_pass_count = new_interval_count;
 }
 
-bool IntervalGesture::wheelCompatibility() const
-{
+bool IntervalGesture::wheelCompatibility() const {
     return true;
 }
 
-bool IntervalGesture::metThreshold() const
-{
-    return _axis >= _config.threshold();
+bool IntervalGesture::metThreshold() const {
+    std::shared_lock lock(_config_mutex);
+    return _axis >= _config.threshold.value_or(defaults::gesture_threshold);
 }
 
-IntervalGesture::Config::Config(Device *device, libconfig::Setting &setting) :
-    Gesture::Config(device, setting)
-{
-    try {
-        auto& interval = setting.lookup("interval");
-        if(interval.getType() != libconfig::Setting::TypeInt) {
-            logPrintf(WARN, "Line %d: interval must be an integer, skipping.",
-                    interval.getSourceLine());
-            throw InvalidGesture();
-        }
-        _interval = (int)interval;
-    } catch(libconfig::SettingNotFoundException& e) {
-        try {
-            // pixels is an alias for interval
-            auto& interval = setting.lookup("pixels");
-            if(interval.getType() != libconfig::Setting::TypeInt) {
-                logPrintf(WARN, "Line %d: pixels must be an integer, skipping.",
-                          interval.getSourceLine());
-                throw InvalidGesture();
-            }
-            _interval = (int)interval;
-        } catch(libconfig::SettingNotFoundException& e) {
-            logPrintf(WARN, "Line %d: interval is a required field, skipping.",
-                      setting.getSourceLine());
-        }
-    }
+std::tuple<int, int> IntervalGesture::getConfig() const {
+    std::shared_lock lock(_config_mutex);
+    return {_config.interval.value_or(0), _config.threshold.value_or(0)};
 }
 
-int16_t IntervalGesture::Config::interval() const
-{
-    return _interval;
+void IntervalGesture::setInterval(int interval) {
+    std::unique_lock lock(_config_mutex);
+    if (interval == 0)
+        _config.interval.reset();
+    else
+        _config.interval = interval;
+}
+
+void IntervalGesture::setThreshold(int threshold) {
+    std::unique_lock lock(_config_mutex);
+    if (threshold == 0)
+        _config.threshold.reset();
+    else
+        _config.threshold = threshold;
+}
+
+void IntervalGesture::setAction(const std::string& type) {
+    std::unique_lock lock(_config_mutex);
+    _action.reset();
+    _action = Action::makeAction(_device, type, _config.action, _node);
 }
