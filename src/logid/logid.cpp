@@ -138,9 +138,9 @@ int main(int argc, char** argv) {
     // Read config
     try {
         config = std::make_shared<Configuration>(options.config_file);
-    }
-    catch (std::exception& e) {
-        config = std::make_shared<Configuration>();
+    } catch (std::exception &e) {
+        logPrintf(ERROR, "%s", e.what());
+        return EXIT_FAILURE;
     }
 
     init_workers(config->workers.value_or(defaults::workers));
