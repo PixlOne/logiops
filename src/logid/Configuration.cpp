@@ -19,6 +19,7 @@
 #include <Configuration.h>
 #include <util/log.h>
 #include <utility>
+#include <filesystem>
 #include <ipc_defs.h>
 
 using namespace logid;
@@ -27,19 +28,23 @@ using namespace logid::config;
 
 Configuration::Configuration(std::string config_file) :
         _config_file(std::move(config_file)) {
-    try {
-        _config.readFile(_config_file);
-    } catch (const FileIOException& e) {
-        logPrintf(ERROR, "I/O Error while reading %s: %s", _config_file.c_str(),
+    if (std::filesystem::exists(_config_file)) {
+        try {
+            _config.readFile(_config_file);
+        } catch (const FileIOException& e) {
+            logPrintf(ERROR, "I/O Error while reading %s: %s", _config_file.c_str(),
                   e.what());
-        throw;
-    } catch (const ParseException& e) {
-        logPrintf(ERROR, "Parse error in %s, line %d: %s", e.getFile(),
+            throw;
+        } catch (const ParseException& e) {
+            logPrintf(ERROR, "Parse error in %s, line %d: %s", e.getFile(),
                   e.getLine(), e.getError());
-        throw;
-    }
+            throw;
+        }
 
-    Config::operator=(get<Config>(_config.getRoot()));
+        Config::operator=(get<Config>(_config.getRoot()));
+    } else {
+        logPrintf(INFO, "Config file does not exist, using empty config.");
+    }
 
     if (!devices.has_value())
         devices.emplace();
