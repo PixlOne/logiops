@@ -30,7 +30,7 @@ Configuration::Configuration(std::string config_file) :
         _config_file(std::move(config_file)) {
     if (std::filesystem::exists(_config_file)) {
         try {
-            _config.readFile(_config_file);
+            _config.readFile(_config_file.c_str());
         } catch (const FileIOException& e) {
             logPrintf(ERROR, "I/O Error while reading %s: %s", _config_file.c_str(),
                   e.what());
@@ -57,7 +57,7 @@ Configuration::Configuration() {
 void Configuration::save() {
     config::set(_config.getRoot(), *this);
     try {
-        _config.writeFile(_config_file);
+        _config.writeFile(_config_file.c_str());
     } catch (const FileIOException& e) {
         logPrintf(ERROR, "I/O Error while writing %s: %s",
                   _config_file.c_str(), e.what());
