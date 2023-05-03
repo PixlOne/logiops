@@ -47,5 +47,5 @@ bool NullGesture::wheelCompatibility() const {
 }
 
 bool NullGesture::metThreshold() const {
-    return _axis > _config.threshold.value_or(defaults::gesture_threshold);
+    return _axis >= _config.threshold.value_or(defaults::gesture_threshold);
 }

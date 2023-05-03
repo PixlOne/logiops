@@ -220,8 +220,9 @@ void Button::_makeConfig() {
     }
 }
 
-void Button::press() const {
+void Button::press() {
     std::shared_lock lock(_action_lock);
+    _first_move = true;
     if (_action)
         _action->press();
 }
@@ -232,10 +233,12 @@ void Button::release() const {
         _action->release();
 }
 
-void Button::move(int16_t x, int16_t y) const {
+void Button::move(int16_t x, int16_t y) {
     std::shared_lock lock(_action_lock);
-    if (_action)
+    if (_action && !_first_move)
         _action->move(x, y);
+    else if (_first_move)
+        _first_move = false;
 }
 
 bool Button::pressed() const {

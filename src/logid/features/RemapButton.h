@@ -36,11 +36,11 @@ namespace logid::features {
                 Info info, int index, Device* device, ConfigFunction conf_func,
                 const std::shared_ptr<ipcgull::node>& root, config::Button& config);
 
-        void press() const;
+        void press();
 
         void release() const;
 
-        void move(int16_t x, int16_t y) const;
+        void move(int16_t x, int16_t y);
 
         void setProfile(config::Button& config);
 
@@ -81,6 +81,8 @@ namespace logid::features {
         mutable std::shared_mutex _action_lock;
         std::shared_ptr<actions::Action> _action;
         const Info _info;
+
+        bool _first_move{};
 
         std::weak_ptr<Button> _self;
 

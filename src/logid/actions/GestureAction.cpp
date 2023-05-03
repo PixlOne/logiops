@@ -92,6 +92,12 @@ GestureAction::GestureAction(Device* dev, config::GestureAction& config,
                         direction,Gesture::makeGesture(
                                 dev, x.second,
                                 _node->make_child(fromDirection(direction))));
+                if (direction == None) {
+                    auto& gesture = x.second;
+                    std::visit([](auto&& x) {
+                        x.threshold.emplace(0);
+                    }, gesture);
+                }
             } catch (std::invalid_argument& e) {
                 logPrintf(WARN, "%s is not a direction", x.first.c_str());
             }
@@ -122,7 +128,7 @@ void GestureAction::release() {
     }
 
     for (auto& gesture: _gestures) {
-        if (gesture.first == d)
+        if (gesture.first == d || gesture.first == None)
             continue;
         if (!threshold_met) {
             if (gesture.second->metThreshold()) {
@@ -130,21 +136,15 @@ void GestureAction::release() {
                 // secondary one.
                 threshold_met = true;
                 gesture.second->release(true);
-                break;
             }
         } else {
             gesture.second->release(false);
         }
     }
 
-    if (!threshold_met) {
-        try {
-            auto none = _gestures.at(None);
-            if (none) {
-                none->press(false);
-                none->release(false);
-            }
-        } catch (std::out_of_range& e) {}
+    auto none_gesture = _gestures.find(None);
+    if (none_gesture != _gestures.end()) {
+        none_gesture->second->release(!threshold_met);
     }
 }
 
@@ -239,15 +239,23 @@ void GestureAction::setGesture(const std::string& direction, const std::string& 
 
     auto dir_name = fromDirection(d);
 
+    auto& gesture = _config.gestures.value()[dir_name];
+
     _gestures[d].reset();
     try {
         _gestures[d] = Gesture::makeGesture(
-                _device, type, _config.gestures.value()[dir_name],
+                _device, type, gesture,
                 _node->make_child(dir_name));
     } catch (InvalidGesture& e) {
         _gestures[d] = Gesture::makeGesture(
-                _device, _config.gestures.value()[dir_name],
+                _device, gesture,
                 _node->make_child(dir_name));
         throw std::invalid_argument("Invalid gesture type");
+    }
+
+    if (d == None) {
+        std::visit([](auto&& x) {
+            x.threshold = 0;
+        }, gesture);
     }
 }
