@@ -1,6 +1,6 @@
 # LogiOps
 
-![Build Status](https://github.com/PixlOne/logiops/actions/workflows/main.yml/badge.svg)
+![Build Status](https://github.com/PixlOne/logiops/actions/workflows/build-test.yml/badge.svg)
 
 This is an unofficial driver for Logitech mice and keyboard.
 
