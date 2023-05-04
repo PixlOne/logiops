@@ -1,4 +1,6 @@
-# logiops
+# LogiOps
+
+![Build Status](https://github.com/PixlOne/logiops/actions/workflows/main.yml/badge.svg)
 
 This is an unofficial driver for Logitech mice and keyboard.
 
@@ -16,17 +18,17 @@ Default location for the configuration file is /etc/logid.cfg, but another can b
 This project requires a C++20 compiler, `cmake`, `libevdev`, `libudev`, `glib`, and `libconfig`.
 For popular distributions, I've included commands below.
 
-**Arch Linux:** `sudo pacman -S base-devel cmake g++ libevdev libconfig pkgconf glib2`
+**Arch Linux:** `sudo pacman -S base-devel cmake libevdev libconfig systemd-libs glib2`
 
-**Debian/Ubuntu:** `sudo apt install git cmake g++ libevdev-dev libudev-dev libconfig++-dev libglib2.0-dev`
+**Debian/Ubuntu:** `sudo apt install build-essential cmake pkg-config libevdev-dev libudev-dev libconfig++-dev libglib2.0-dev`
 
-**Fedora:** `sudo dnf install cmake libevdev-devel systemd-devel libconfig-devel gcc-c++ glib2`
+**Fedora:** `sudo dnf install cmake libevdev-devel systemd-devel libconfig-devel gcc-c++ glib2-devel`
 
 **Gentoo Linux:** `sudo emerge dev-libs/libconfig dev-libs/libevdev dev-libs/glib dev-util/cmake virtual/libudev`
 
-**Solus:** `sudo eopkg install cmake libevdev-devel libconfig-devel libgudev-devel glib2`
+**Solus:** `sudo eopkg install cmake libevdev-devel libconfig-devel libgudev-devel glib2-devel`
 
-**openSUSE:** `sudo zypper install cmake libevdev-devel systemd-devel libconfig-devel gcc-c++ libconfig++-devel libudev-devel glib2`
+**openSUSE:** `sudo zypper install cmake libevdev-devel systemd-devel libconfig-devel gcc-c++ libconfig++-devel libudev-devel glib2-devel`
 
 ## Building
 

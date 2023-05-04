@@ -13,10 +13,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(USE_USER_BUS "Uses user bus" OFF)
 
-find_package(Git REQUIRED)
+find_package(Git)
 
 # Set version number and update submodules
-if(EXISTS ${CMAKE_SOURCE_DIR}/.git)
+if(EXISTS ${CMAKE_SOURCE_DIR}/.git AND GIT_FOUND)
     execute_process(COMMAND ${GIT_EXECUTABLE} describe --tags
          OUTPUT_VARIABLE LOGIOPS_VERSION
          RESULT_VARIABLE LOGIOPS_VERSION_RET
@@ -36,9 +36,10 @@ elseif(EXISTS ${CMAKE_SOURCE_DIR}/version.txt)
     file(READ version.txt LOGIOPS_VERSION)
     string(REGEX REPLACE "\n$" "" LOGIOPS_VERSION ${LOGIOPS_VERSION})
 
-    IF(NOT EXISTS src/ipcgull)
-        message(FATAL_ERROR "Missing ipcgull submodule")
-    endif()
+endif()
+
+IF(NOT EXISTS src/ipcgull)
+    message(FATAL_ERROR "Missing ipcgull submodule")
 endif()
 
 if(NOT LOGIOPS_VERSION)

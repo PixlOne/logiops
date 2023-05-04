@@ -1,0 +1,33 @@
+name: Publish release tarball
+on:
+  push:
+    tags:
+      - 'v*.*'
+
+jobs:
+  publish:
+    name: Publish release tarball
+    runs-on: ubuntu-latest
+    strategy:
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Add version info
+        run: echo ${{ github.ref_name }} > version.txt
+
+      - name: Remove git repo information
+        run: find . -name '.git' | xargs rm -rf
+
+      - name: Create tarball
+        run: |
+          tar cvfz /tmp/logiops.tar.gz .
+          mv /tmp/logiops.tar.gz logiops-${{ github.ref_name }}.tar.gz
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v0.1.15
+        with:
+          files: logiops-${{ github.ref_name }}.tar.gz
