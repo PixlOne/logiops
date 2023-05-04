@@ -38,55 +38,45 @@ namespace logid::config {
     template<typename T>
     void append(libconfig::Setting& list, const T& t);
 
-    namespace {
-        template<typename T, typename... M>
-        struct group_io {
-        };
+    template<typename T, typename... M>
+    struct group_io {
+    };
 
-        template<typename T>
-        struct group_io<T> {
-            static inline void get(
-                    [[maybe_unused]] const libconfig::Setting& s,
-                    [[maybe_unused]] T* t,
-                    [[maybe_unused]] const std::vector<std::string>& names,
-                    [[maybe_unused]] const std::size_t index) {}
+    template<typename T>
+    struct group_io<T> {
+        static void get(const libconfig::Setting&, T*,
+                        const std::vector<std::string>&, const std::size_t) {}
 
-            static inline void set(
-                    [[maybe_unused]] libconfig::Setting& s,
-                    [[maybe_unused]] const T* t,
-                    [[maybe_unused]] const std::vector<std::string>& names,
-                    [[maybe_unused]] const std::size_t index) {}
-        };
+        static void set(libconfig::Setting&, const T*,
+                        const std::vector<std::string>&, const std::size_t) {}
+    };
 
-        template<typename T, typename A, typename... M>
-        struct group_io<T, A, M...> {
-            static inline void get(
-                    const libconfig::Setting& s, T* t,
-                    const std::vector<std::string>& names,
-                    const std::size_t index, A T::* arg, M T::*... rest) {
-                auto& x = t->*(arg);
-                A old{x};
-                try {
-                    x = config::get<A>(s, names[index]);
-                    group_io<T, M...>::get(s, t, names, index + 1, rest...);
-                } catch (libconfig::SettingTypeException& e) {
-                    x = old;
-                    throw;
-                } catch (libconfig::SettingException& e) {
-                    x = old;
-                    throw libconfig::SettingTypeException(s);
-                }
+    template<typename T, typename A, typename... M>
+    struct group_io<T, A, M...> {
+        static void get(const libconfig::Setting& s, T* t,
+                        const std::vector<std::string>& names,
+                        const std::size_t index, A T::* arg, M T::*... rest) {
+            auto& x = t->*(arg);
+            A old{x};
+            try {
+                x = config::get<A>(s, names[index]);
+                group_io<T, M...>::get(s, t, names, index + 1, rest...);
+            } catch (libconfig::SettingTypeException& e) {
+                x = old;
+                throw;
+            } catch (libconfig::SettingException& e) {
+                x = old;
+                throw libconfig::SettingTypeException(s);
             }
+        }
 
-            static inline void set(
-                    libconfig::Setting& s, const T* t,
-                    const std::vector<std::string>& names,
-                    const std::size_t index, A T::* arg, M T::*... rest) {
-                config::set(s, names[index], t->*(arg));
-                group_io<T, M...>::set(s, t, names, index + 1, rest...);
-            }
-        };
-    }
+        static void set(libconfig::Setting& s, const T* t,
+                        const std::vector<std::string>& names,
+                        const std::size_t index, A T::* arg, M T::*... rest) {
+            config::set(s, names[index], t->*(arg));
+            group_io<T, M...>::set(s, t, names, index + 1, rest...);
+        }
+    };
 
     template<typename Sign>
     struct signed_group;
@@ -149,22 +139,19 @@ namespace logid::config {
         }
     };
 
-    namespace {
-        template<typename T>
-        struct normalize_signature {
-            static inline const T& make(const T& ret) { return ret; }
-        };
+    template<typename T>
+    struct normalize_signature {
+        static const T& make(const T& ret) { return ret; }
+    };
 
-        template<>
-        struct normalize_signature<std::string> {
-            static inline std::string make(const std::string& data) {
-                std::string ret = data;
-                std::transform(ret.begin(), ret.end(),
-                               ret.begin(), ::tolower);
-                return ret;
-            }
-        };
-    }
+    template<>
+    struct normalize_signature<std::string> {
+        static std::string make(const std::string& data) {
+            std::string ret = data;
+            std::transform(ret.begin(), ret.end(), ret.begin(), ::tolower);
+            return ret;
+        }
+    };
 
     template<typename Sign>
     struct signed_group : public group {

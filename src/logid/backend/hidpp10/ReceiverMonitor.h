@@ -26,20 +26,19 @@
 
 namespace logid::backend::hidpp10 {
 
-    namespace {
-        template <typename T>
-        class ReceiverMonitorWrapper : public T {
-            friend class ReceiverMonitor;
-        public:
-            template <typename... Args>
-            explicit ReceiverMonitorWrapper(Args... args) : T(std::forward<Args>(args)...) { }
+    template<typename T>
+    class _receiverMonitorWrapper : public T {
+        friend class ReceiverMonitor;
 
-            template <typename... Args>
-            static std::shared_ptr<T> make(Args... args) {
-                return std::make_shared<ReceiverMonitorWrapper>(std::forward<Args>(args)...);
-            }
-        };
-    }
+    public:
+        template<typename... Args>
+        explicit _receiverMonitorWrapper(Args... args) : T(std::forward<Args>(args)...) {}
+
+        template<typename... Args>
+        static std::shared_ptr<T> make(Args... args) {
+            return std::make_shared<_receiverMonitorWrapper>(std::forward<Args>(args)...);
+        }
+    };
 
     static constexpr int max_tries = 5;
     static constexpr int ready_backoff = 250;
@@ -50,7 +49,9 @@ namespace logid::backend::hidpp10 {
         void enumerate();
 
         ReceiverMonitor(const ReceiverMonitor&) = delete;
+
         ReceiverMonitor(ReceiverMonitor&&) = delete;
+
     protected:
         ReceiverMonitor(const std::string& path,
                         const std::shared_ptr<raw::DeviceMonitor>& monitor,
@@ -101,9 +102,9 @@ namespace logid::backend::hidpp10 {
         std::weak_ptr<ReceiverMonitor> _self;
 
     public:
-        template <typename T, typename... Args>
+        template<typename T, typename... Args>
         static std::shared_ptr<T> make(Args... args) {
-            auto receiver_monitor = ReceiverMonitorWrapper<T>::make(std::forward<Args>(args)...);
+            auto receiver_monitor = _receiverMonitorWrapper<T>::make(std::forward<Args>(args)...);
             receiver_monitor->_self = receiver_monitor;
             receiver_monitor->_ready();
             return receiver_monitor;

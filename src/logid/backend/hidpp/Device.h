@@ -38,24 +38,25 @@ namespace logid::backend::hidpp10 {
 namespace logid::backend::hidpp {
     struct DeviceConnectionEvent;
 
-    namespace {
-        template <typename T>
-        class DeviceWrapper : public T {
-            friend class Device;
-        public:
-            template <typename... Args>
-            explicit DeviceWrapper(Args... args) : T(std::forward<Args>(args)...) { }
+    template<typename T>
+    class _deviceWrapper : public T {
+        friend class Device;
 
-            template <typename... Args>
-            static std::shared_ptr<T> make(Args... args) {
-                return std::make_shared<DeviceWrapper>(std::forward<Args>(args)...);
-            }
-        };
-    }
+    public:
+        template<typename... Args>
+        explicit _deviceWrapper(Args... args) : T(std::forward<Args>(args)...) {}
+
+        template<typename... Args>
+        static std::shared_ptr<T> make(Args... args) {
+            return std::make_shared<_deviceWrapper>(std::forward<Args>(args)...);
+        }
+    };
 
     class Device {
-        template <typename T>
-        friend class DeviceWrapper;
+        template<typename T>
+        friend
+        class _deviceWrapper;
+
     public:
         struct EventHandler {
             std::function<bool(Report&)> condition;
@@ -102,7 +103,9 @@ namespace logid::backend::hidpp {
         [[nodiscard]] const std::shared_ptr<raw::RawDevice>& rawDevice() const;
 
         Device(const Device&) = delete;
+
         Device(Device&&) = delete;
+
         virtual ~Device() = default;
 
     protected:
@@ -161,16 +164,16 @@ namespace logid::backend::hidpp {
         std::weak_ptr<Device> _self;
 
     protected:
-        template <typename T, typename... Args>
+        template<typename T, typename... Args>
         static std::shared_ptr<T> makeDerived(Args... args) {
-            auto device = DeviceWrapper<T>::make(std::forward<Args>(args)...);
+            auto device = _deviceWrapper<T>::make(std::forward<Args>(args)...);
             device->_self = device;
             device->_setupReportsAndInit();
             return device;
         }
 
     public:
-        template <typename... Args>
+        template<typename... Args>
         static std::shared_ptr<Device> make(Args... args) {
             return makeDerived<Device>(std::forward<Args>(args)...);
         }

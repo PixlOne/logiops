@@ -40,21 +40,19 @@ namespace logid::features {
         }
     };
 
-    namespace {
-        template<typename T>
-        class FeatureWrapper : public T {
-            friend class DeviceFeature;
+    template<typename T>
+    class _featureWrapper : public T {
+        friend class DeviceFeature;
 
-        public:
-            template<typename... Args>
-            explicit FeatureWrapper(Args... args) : T(std::forward<Args>(args)...) {}
+    public:
+        template<typename... Args>
+        explicit _featureWrapper(Args... args) : T(std::forward<Args>(args)...) {}
 
-            template<typename... Args>
-            static std::shared_ptr<T> make(Args... args) {
-                return std::make_shared<FeatureWrapper>(std::forward<Args>(args)...);
-            }
-        };
-    }
+        template<typename... Args>
+        static std::shared_ptr<T> make(Args... args) {
+            return std::make_shared<_featureWrapper>(std::forward<Args>(args)...);
+        }
+    };
 
     class DeviceFeature {
         std::weak_ptr<DeviceFeature> _self;
@@ -68,7 +66,9 @@ namespace logid::features {
         virtual ~DeviceFeature() = default;
 
         DeviceFeature(const DeviceFeature&) = delete;
+
         DeviceFeature(DeviceFeature&&) = delete;
+
     protected:
         explicit DeviceFeature(Device* dev) : _device(dev) {}
 
@@ -82,7 +82,7 @@ namespace logid::features {
     public:
         template<typename T, typename... Args>
         static std::shared_ptr<T> make(Args... args) {
-            auto feature = FeatureWrapper<T>::make(std::forward<Args>(args)...);
+            auto feature = _featureWrapper<T>::make(std::forward<Args>(args)...);
             feature->_self = feature;
 
             return feature;

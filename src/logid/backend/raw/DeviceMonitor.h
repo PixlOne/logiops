@@ -36,21 +36,19 @@ namespace logid::backend::raw {
     static constexpr int max_tries = 5;
     static constexpr int ready_backoff = 500;
 
-    namespace {
-        template<typename T>
-        class DeviceMonitorWrapper : public T {
-            friend class Device;
+    template<typename T>
+    class _deviceMonitorWrapper : public T {
+        friend class Device;
 
-        public:
-            template<typename... Args>
-            explicit DeviceMonitorWrapper(Args... args) : T(std::forward<Args>(args)...) {}
+    public:
+        template<typename... Args>
+        explicit _deviceMonitorWrapper(Args... args) : T(std::forward<Args>(args)...) {}
 
-            template<typename... Args>
-            static std::shared_ptr<T> make(Args... args) {
-                return std::make_shared<DeviceMonitorWrapper>(std::forward<Args>(args)...);
-            }
-        };
-    }
+        template<typename... Args>
+        static std::shared_ptr<T> make(Args... args) {
+            return std::make_shared<_deviceMonitorWrapper>(std::forward<Args>(args)...);
+        }
+    };
 
     class DeviceMonitor {
     public:
@@ -62,7 +60,7 @@ namespace logid::backend::raw {
 
         template<typename T, typename... Args>
         static std::shared_ptr<T> make(Args... args) {
-            auto device_monitor = DeviceMonitorWrapper<T>::make(std::forward<Args>(args)...);
+            auto device_monitor = _deviceMonitorWrapper<T>::make(std::forward<Args>(args)...);
             device_monitor->_self = device_monitor;
             device_monitor->ready();
 
@@ -79,7 +77,7 @@ namespace logid::backend::raw {
 
         virtual void removeDevice(std::string device) = 0;
 
-        template <typename T>
+        template<typename T>
         [[nodiscard]] std::weak_ptr<T> self() const {
             return std::dynamic_pointer_cast<T>(_self.lock());
         }
