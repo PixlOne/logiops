@@ -16,10 +16,11 @@ option(USE_USER_BUS "Uses user bus" OFF)
 find_package(Git)
 
 # Set version number and update submodules
-if(EXISTS ${CMAKE_SOURCE_DIR}/.git AND GIT_FOUND)
+if(EXISTS ${PROJECT_SOURCE_DIR}/.git AND GIT_FOUND)
     execute_process(COMMAND ${GIT_EXECUTABLE} describe --tags
          OUTPUT_VARIABLE LOGIOPS_VERSION
          RESULT_VARIABLE LOGIOPS_VERSION_RET
+         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
          ERROR_QUIET)
     if(NOT LOGIOPS_VERSION_RET EQUAL "0")
         execute_process(COMMAND ${GIT_EXECUTABLE}
@@ -29,10 +30,11 @@ if(EXISTS ${CMAKE_SOURCE_DIR}/.git AND GIT_FOUND)
     endif()
 
     execute_process(COMMAND ${GIT_EXECUTABLE}
-            submodule update --init --recursive)
+            submodule update --init --recursive
+            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
 
     string(REGEX REPLACE "\n$" "" LOGIOPS_VERSION ${LOGIOPS_VERSION})
-elseif(EXISTS ${CMAKE_SOURCE_DIR}/version.txt)
+elseif(EXISTS ${PROJECT_SOURCE_DIR}/version.txt)
     file(READ version.txt LOGIOPS_VERSION)
     string(REGEX REPLACE "\n$" "" LOGIOPS_VERSION ${LOGIOPS_VERSION})
 
