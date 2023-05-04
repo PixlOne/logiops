@@ -38,7 +38,7 @@ elseif(EXISTS ${CMAKE_SOURCE_DIR}/version.txt)
 
 endif()
 
-IF(NOT EXISTS src/ipcgull)
+IF(NOT EXISTS ${PROJECT_SOURCE_DIR}/src/ipcgull)
     message(FATAL_ERROR "Missing ipcgull submodule")
 endif()
 
