@@ -8,7 +8,8 @@ jobs:
   publish:
     name: Publish release tarball
     runs-on: ubuntu-latest
-    strategy:
+    env:
+      ARCHIVE_NAME: logiops-${{ github.ref_name }}
 
     steps:
       - name: Checkout repository
@@ -19,13 +20,14 @@ jobs:
       - name: Add version info
         run: echo ${{ github.ref_name }} > version.txt
 
-      - name: Remove git repo information
+      - name: Remove git repo info
         run: find . -name '.git' | xargs rm -rf
 
       - name: Create tarball
         run: |
-          tar cvfz /tmp/logiops.tar.gz .
-          mv /tmp/logiops.tar.gz logiops-${{ github.ref_name }}.tar.gz
+          find * -type f| tar caf /tmp/$ARCHIVE_NAME.tar.gz \
+            --xform s:^:$ARCHIVE_NAME/: --verbatim-files-from -T-
+          mv /tmp/$ARCHIVE_NAME.tar.gz .
 
       - name: Upload release asset
         uses: softprops/action-gh-release@v0.1.15
