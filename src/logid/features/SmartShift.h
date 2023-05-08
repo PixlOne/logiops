@@ -27,18 +27,21 @@
 namespace logid::features {
     class SmartShift : public DeviceFeature {
     public:
-
         void configure() final;
 
         void listen() final;
 
         void setProfile(config::Profile& profile) final;
 
-        typedef backend::hidpp20::SmartShift::SmartshiftStatus Status;
+        typedef backend::hidpp20::SmartShift::Status Status;
 
         [[nodiscard]] Status getStatus() const;
 
         void setStatus(Status status);
+
+        [[nodiscard]] const backend::hidpp20::SmartShift::Defaults& getDefaults() const;
+
+        [[nodiscard]] bool supportsTorque() const;
 
     protected:
         explicit SmartShift(Device* dev);
@@ -48,25 +51,20 @@ namespace logid::features {
         std::reference_wrapper<std::optional<config::SmartShift>> _config;
         std::shared_ptr<backend::hidpp20::SmartShift> _smartshift;
 
+        backend::hidpp20::SmartShift::Defaults _defaults{};
+        bool _torque_support = false;
+
         class IPC : public ipcgull::interface {
         public:
             explicit IPC(SmartShift* parent);
 
-            [[nodiscard]] std::tuple<bool, uint8_t> getStatus() const;;
+            [[nodiscard]] std::tuple<uint8_t, uint8_t, uint8_t> getConfig() const;
 
-            void setActive(bool active);
+            void setActive(bool active, bool clear);
 
-            void setThreshold(uint8_t threshold);
+            void setThreshold(uint8_t threshold, bool clear);
 
-            [[nodiscard]] std::tuple<bool, bool, bool, uint8_t> getDefault() const;
-
-            void clearDefaultActive();
-
-            void setDefaultActive(bool active);
-
-            void clearDefaultThreshold();
-
-            void setDefaultThreshold(uint8_t threshold);
+            void setTorque(uint8_t torque, bool clear);
 
         private:
             SmartShift& _parent;

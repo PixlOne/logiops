@@ -25,9 +25,33 @@ using namespace logid::backend;
 SmartShift::SmartShift(Device* device) : DeviceFeature(device),
                                          _config(device->activeProfile().smartshift) {
     try {
-        _smartshift = std::make_shared<hidpp20::SmartShift>(&device->hidpp20());
+        _smartshift = hidpp20::SmartShift::autoVersion(&device->hidpp20());
     } catch (hidpp20::UnsupportedFeature& e) {
         throw UnsupportedFeature();
+    }
+
+    _torque_support = _smartshift->supportsTorque();
+    _defaults = _smartshift->getDefaults();
+
+    if (_config.get().has_value()) {
+        auto& config = _config.get().value();
+
+        if (config.threshold.has_value()) {
+            auto& threshold = config.threshold.value();
+
+            /* 0 means no change, clip to 1. */
+            if (threshold == 0)
+                threshold = 1;
+        }
+
+        if (config.torque.has_value()) {
+            auto& torque = config.torque.value();
+            /* torque is a percentage, clip between 1-100 */
+            if (torque == 0)
+                torque = 1;
+            else if (torque > 100)
+                torque = 100;
+        }
     }
 
     _ipc_interface = _device->ipcNode()->make_interface<IPC>(this);
@@ -45,6 +69,9 @@ void SmartShift::configure() {
         settings.setAutoDisengage = conf.threshold.has_value();
         if (settings.setAutoDisengage)
             settings.autoDisengage = conf.threshold.value();
+        settings.setTorque = conf.torque.has_value();
+        if (settings.setTorque)
+            settings.torque = conf.torque.value();
 
         _smartshift->setStatus(settings);
     }
@@ -66,86 +93,108 @@ void SmartShift::setStatus(Status status) {
     _smartshift->setStatus(status);
 }
 
+const hidpp20::SmartShift::Defaults& SmartShift::getDefaults() const {
+    return _defaults;
+}
+
+bool SmartShift::supportsTorque() const {
+    return _torque_support;
+}
+
 SmartShift::IPC::IPC(SmartShift* parent) :
         ipcgull::interface(
                 SERVICE_ROOT_NAME ".SmartShift", {
-                        {"GetStatus",             {this, &IPC::getStatus,           {"active",    "threshold"}}},
-                        {"SetActive",             {this, &IPC::setActive,           {"active"}}},
-                        {"SetThreshold",          {this, &IPC::setThreshold,        {"threshold"}}},
-                        {"GetDefault",            {this, &IPC::getDefault,          {"setActive", "active", "setThreshold", "threshold"}}},
-                        {"ClearDefaultActive",    {this, &IPC::clearDefaultActive}},
-                        {"SetDefaultActive",      {this, &IPC::setDefaultActive,    {"active"}}},
-                        {"ClearDefaultThreshold", {this, &IPC::clearDefaultThreshold}},
-                        {"SetDefaultThreshold",   {this, &IPC::setDefaultThreshold, {"threshold"}}}
-                }, {}, {}),
+                        {"GetConfig",    {this, &IPC::getConfig,    {"active",    "threshold", "torque"}}},
+                        {"SetActive",    {this, &IPC::setActive,    {"active",    "clear"}}},
+                        {"SetThreshold", {this, &IPC::setThreshold, {"threshold", "clear"}}},
+                        {"SetTorque",    {this, &IPC::setTorque,    {"torque",    "clear"}}},
+                },
+                {
+                        {"TorqueSupport", ipcgull::property<bool>(
+                                ipcgull::property_readable, parent->supportsTorque())},
+                }, {}),
         _parent(*parent) {
 }
 
-std::tuple<bool, uint8_t> SmartShift::IPC::getStatus() const {
-    auto ret = _parent.getStatus();
-    return std::make_tuple(ret.active, ret.autoDisengage);
+std::tuple<uint8_t, uint8_t, uint8_t> SmartShift::IPC::getConfig() const {
+    std::shared_lock lock(_parent._config_mutex);
+    auto& config = _parent._config.get();
+    auto& defaults = _parent.getDefaults();
+    if (config.has_value()) {
+        auto& conf_value = config.value();
+        return {
+                conf_value.on.has_value() ? (conf_value.on.value() ? 2 : 1) : 0,
+                conf_value.threshold.value_or(defaults.autoDisengage),
+                conf_value.torque.value_or(defaults.torque),
+        };
+    } else {
+        return {0, 0, 0};
+    }
 }
 
-void SmartShift::IPC::setActive(bool active) {
-    Status status{};
-    status.setActive = true;
-    status.active = active;
-    _parent.setStatus(status);
+void SmartShift::IPC::setActive(bool active, bool clear) {
+    std::unique_lock lock(_parent._config_mutex);
+    auto& config = _parent._config.get();
+    if (clear) {
+        if (config.has_value())
+            config.value().on.reset();
+    } else {
+        if (!config.has_value())
+            config = config::SmartShift{};
+        config.value().on = active;
+        Status status{};
+        status.active = active, status.setActive = true;
+        _parent.setStatus(status);
+    }
 }
 
-void SmartShift::IPC::setThreshold(uint8_t threshold) {
+void SmartShift::IPC::setThreshold(uint8_t threshold, bool clear) {
+    std::unique_lock lock(_parent._config_mutex);
+    auto& config = _parent._config.get();
     Status status{};
     status.setAutoDisengage = true;
-    status.autoDisengage = threshold;
+
+    /* clip threshold */
+    if (threshold == 0)
+        threshold = 1;
+
+    if (clear) {
+        if (config.has_value())
+            config.value().threshold.reset();
+        status.autoDisengage = _parent.getDefaults().autoDisengage;
+    } else {
+        if (!config.has_value())
+            config = config::SmartShift{};
+        config.value().threshold = threshold;
+        status.autoDisengage = threshold;
+    }
     _parent.setStatus(status);
 }
 
-std::tuple<bool, bool, bool, uint8_t> SmartShift::IPC::getDefault() const {
-    std::shared_lock lock(_parent._config_mutex);
-
-    auto& config = _parent._config.get();
-
-    if (!config.has_value())
-        return {false, false, false, 0};
-
-    std::tuple<bool, bool, bool, uint8_t> ret;
-    std::get<0>(ret) = config.value().on.has_value();
-    if (std::get<0>(ret))
-        std::get<1>(ret) = config.value().on.value();
-    std::get<2>(ret) = config.value().threshold.has_value();
-    if (std::get<2>(ret))
-        std::get<3>(ret) = config.value().threshold.value();
-
-    return ret;
-}
-
-void SmartShift::IPC::clearDefaultActive() {
+void SmartShift::IPC::setTorque(uint8_t torque, bool clear) {
     std::unique_lock lock(_parent._config_mutex);
     auto& config = _parent._config.get();
-    if (config.has_value())
-        config.value().on.reset();
-}
+    Status status{};
+    status.setTorque = true;
 
-void SmartShift::IPC::setDefaultActive(bool active) {
-    std::unique_lock lock(_parent._config_mutex);
-    auto& config = _parent._config.get();
-    if (!config.has_value())
-        config = config::SmartShift{};
-    config.value().on = active;
-}
+    /* clip torque */
+    if (torque == 0)
+        torque = 1;
+    else if (torque > 100)
+        torque = 100;
 
+    if (!_parent.supportsTorque())
+        throw std::invalid_argument("torque unsupported");
 
-void SmartShift::IPC::clearDefaultThreshold() {
-    std::unique_lock lock(_parent._config_mutex);
-    auto& config = _parent._config.get();
-    if (config.has_value())
-        config.value().threshold.reset();
-}
-
-void SmartShift::IPC::setDefaultThreshold(uint8_t threshold) {
-    std::unique_lock lock(_parent._config_mutex);
-    auto& config = _parent._config.get();
-    if (!config.has_value())
-        config = config::SmartShift{};
-    config.value().threshold = threshold;
+    if (clear) {
+        if (config.has_value())
+            config.value().torque.reset();
+        status.torque = _parent.getDefaults().torque;
+    } else {
+        if (!config.has_value())
+            config = config::SmartShift{};
+        config.value().torque = torque;
+        status.torque = torque;
+    }
+    _parent.setStatus(status);
 }
