@@ -135,13 +135,17 @@ void DeviceMonitor::enumerate() {
         const char* name = udev_list_entry_get_name(udev_enum_entry);
 
         struct udev_device* device = udev_device_new_from_syspath(_udev_context, name);
-        if (!device)
-            throw std::runtime_error("udev_device_new_from_syspath failed");
+        if (device) {
+            const char* dev_node_cstr = udev_device_get_devnode(device);
+            if (dev_node_cstr) {
+                const std::string dev_node {dev_node_cstr};
+                udev_device_unref(device);
 
-        std::string dev_node = udev_device_get_devnode(device);
-        udev_device_unref(device);
-
-        _addHandler(dev_node);
+                _addHandler(dev_node);
+            } else {
+                udev_device_unref(device);
+            }
+        }
     }
 
     udev_enumerate_unref(udev_enum);
