@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,64 +16,128 @@
  *
  */
 
-#include <algorithm>
-#include "Action.h"
-#include "../util/log.h"
-#include "KeypressAction.h"
-#include "ToggleSmartShift.h"
-#include "ToggleHiresScroll.h"
-#include "GestureAction.h"
-#include "NullAction.h"
-#include "CycleDPI.h"
-#include "ChangeDPI.h"
-#include "ChangeHostAction.h"
+#include <actions/Action.h>
+#include <actions/KeypressAction.h>
+#include <actions/ToggleSmartShift.h>
+#include <actions/ToggleHiresScroll.h>
+#include <actions/GestureAction.h>
+#include <actions/NullAction.h>
+#include <actions/CycleDPI.h>
+#include <actions/ChangeDPI.h>
+#include <actions/ChangeHostAction.h>
+#include <actions/ChangeProfile.h>
+#include <ipc_defs.h>
 
 using namespace logid;
 using namespace logid::actions;
 
-std::shared_ptr<Action> Action::makeAction(Device *device, libconfig::Setting
-    &setting)
-{
-    if(!setting.isGroup()) {
-        logPrintf(WARN, "Line %d: Action is not a group, ignoring.",
-                setting.getSourceLine());
-        throw InvalidAction();
+namespace logid::actions {
+    template<typename T>
+    struct action_type {
+        typedef typename T::action type;
+    };
+
+    template<typename T>
+    struct action_type<const T> : action_type<T> {
+    };
+
+    template<typename T>
+    struct action_type<T&> : action_type<T> {
+    };
+
+    template<typename T>
+    std::shared_ptr<Action> _makeAction(
+            Device* device, T& action,
+            const std::shared_ptr<ipcgull::node>& parent) {
+        return parent->make_interface<typename action_type<T>::type>(
+                device, std::forward<T&>(action), parent);
     }
 
-    try {
-        auto& action_type = setting.lookup("type");
-
-        if(action_type.getType() != libconfig::Setting::TypeString) {
-            logPrintf(WARN, "Line %d: Action type must be a string",
-                    action_type.getSourceLine());
-            throw InvalidAction();
+    template<typename T>
+    std::shared_ptr<Action> _makeAction(
+            Device* device, const std::string& name,
+            std::optional<T>& config,
+            const std::shared_ptr<ipcgull::node>& parent) {
+        if (name == ChangeDPI::interface_name) {
+            config = config::ChangeDPI();
+        } else if (name == CycleDPI::interface_name) {
+            config = config::CycleDPI();
+        } else if (name == KeypressAction::interface_name) {
+            config = config::KeypressAction();
+        } else if (name == NullAction::interface_name) {
+            config = config::NoAction();
+        } else if (name == ChangeHostAction::interface_name) {
+            config = config::ChangeHost();
+        } else if (name == ToggleHiresScroll::interface_name) {
+            config = config::ToggleHiresScroll();
+        } else if (name == ToggleSmartShift::interface_name) {
+            config = config::ToggleSmartShift();
+        } else if (name == ChangeProfile::interface_name) {
+            config = config::ChangeProfile();
+        } else if (name == "Default") {
+            config.reset();
+            return nullptr;
+        } else {
+            throw InvalidAction(name);
         }
 
-        std::string type = action_type;
-        std::transform(type.begin(), type.end(), type.begin(), ::tolower);
-
-        if(type == "keypress")
-            return std::make_shared<KeypressAction>(device, setting);
-        else if(type == "togglesmartshift")
-            return std::make_shared<ToggleSmartShift>(device);
-        else if(type == "togglehiresscroll")
-            return std::make_shared<ToggleHiresScroll>(device);
-        else if(type == "gestures")
-            return std::make_shared<GestureAction>(device, setting);
-        else if(type == "cycledpi")
-            return std::make_shared<CycleDPI>(device, setting);
-        else if(type == "changedpi")
-            return std::make_shared<ChangeDPI>(device, setting);
-        else if(type == "none")
-            return std::make_shared<NullAction>(device);
-        else if(type == "changehost")
-            return std::make_shared<ChangeHostAction>(device, setting);
-        else
-            throw InvalidAction(type);
-
-    } catch(libconfig::SettingNotFoundException& e) {
-        logPrintf(WARN, "Line %d: Action type is missing, ignoring.",
-                setting.getSourceLine());
-        throw InvalidAction();
+        return Action::makeAction(device, config.value(), parent);
     }
+}
+
+std::shared_ptr<Action> Action::makeAction(
+        Device* device, const std::string& name,
+        std::optional<config::BasicAction>& config,
+        const std::shared_ptr<ipcgull::node>& parent) {
+    auto ret = _makeAction(device, name, config, parent);
+    if (ret)
+        ret->_self = ret;
+    return ret;
+}
+
+std::shared_ptr<Action> Action::makeAction(
+        Device* device, const std::string& name,
+        std::optional<config::Action>& config,
+        const std::shared_ptr<ipcgull::node>& parent) {
+    try {
+        auto ret = _makeAction(device, name, config, parent);
+        if (ret)
+            ret->_self = ret;
+        return ret;
+    } catch (actions::InvalidAction& e) {
+        if (name == GestureAction::interface_name) {
+            config = config::GestureAction();
+            return makeAction(device, config.value(), parent);
+        }
+        throw;
+    }
+}
+
+std::shared_ptr<Action> Action::makeAction(
+        Device* device, config::BasicAction& action,
+        const std::shared_ptr<ipcgull::node>& parent) {
+    std::shared_ptr<Action> ret;
+    std::visit([&device, &ret, &parent](auto&& x) {
+        ret = _makeAction(device, x, parent);
+    }, action);
+    if (ret)
+        ret->_self = ret;
+    return ret;
+}
+
+std::shared_ptr<Action> Action::makeAction(
+        Device* device, config::Action& action,
+        const std::shared_ptr<ipcgull::node>& parent) {
+    std::shared_ptr<Action> ret;
+    std::visit([&device, &ret, &parent](auto&& x) {
+        ret = _makeAction(device, x, parent);
+    }, action);
+    if (ret)
+        ret->_self = ret;
+    return ret;
+}
+
+Action::Action(Device* device, const std::string& name, tables t) :
+        ipcgull::interface(SERVICE_ROOT_NAME ".Action." + name, std::move(t)),
+        _device(device), _pressed(false) {
 }

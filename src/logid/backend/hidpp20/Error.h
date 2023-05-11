@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,18 +19,16 @@
 #ifndef LOGID_BACKEND_HIDPP20_ERROR_H
 #define LOGID_BACKEND_HIDPP20_ERROR_H
 
+#include <backend/hidpp/defs.h>
 #include <stdexcept>
 #include <cstdint>
 
-namespace logid {
-namespace backend {
-namespace hidpp20 {
+namespace logid::backend::hidpp20 {
     static constexpr uint8_t ErrorID = 0xFF;
 
-    class Error: public std::exception
-    {
+    class Error : public std::exception {
     public:
-        enum ErrorCode: uint8_t {
+        enum ErrorCode : uint8_t {
             NoError = 0,
             Unknown = 1,
             InvalidArgument = 2,
@@ -44,14 +42,18 @@ namespace hidpp20 {
             UnknownDevice = 10
         };
 
-        explicit Error(uint8_t code);
+        Error(uint8_t code, hidpp::DeviceIndex index);
 
-        const char* what() const noexcept override;
-        uint8_t code() const noexcept;
+        [[nodiscard]] const char* what() const noexcept override;
+
+        [[nodiscard]] uint8_t code() const noexcept;
+
+        [[nodiscard]] hidpp::DeviceIndex deviceIndex() const noexcept;
 
     private:
         uint8_t _code;
+        hidpp::DeviceIndex _index;
     };
-}}}
+}
 
 #endif //LOGID_BACKEND_HIDPP20_ERROR_H

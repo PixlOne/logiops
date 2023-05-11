@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,170 +16,177 @@
  *
  */
 
-#include "DeviceMonitor.h"
-#include "../../util/task.h"
-#include "../../util/log.h"
-#include "RawDevice.h"
-#include "../hidpp/Device.h"
-
-#include <thread>
+#include <backend/raw/DeviceMonitor.h>
+#include <backend/raw/IOMonitor.h>
+#include <backend/raw/RawDevice.h>
+#include <backend/hidpp/Device.h>
+#include <backend/Error.h>
+#include <util/task.h>
+#include <util/log.h>
 #include <system_error>
 
 extern "C"
 {
-#include <unistd.h>
 #include <libudev.h>
 }
 
+using namespace logid;
 using namespace logid::backend::raw;
 
-DeviceMonitor::DeviceMonitor()
-{
-    if(-1 == pipe(_pipe))
-        throw std::system_error(errno, std::system_category(),
-                "pipe creation failed");
-
-    _udev_context = udev_new();
-    if(!_udev_context)
-        throw std::runtime_error("udev_new failed");
-}
-
-DeviceMonitor::~DeviceMonitor()
-{
-    this->stop();
-
-    udev_unref(_udev_context);
-
-    for(int i : _pipe)
-        close(i);
-}
-
-void DeviceMonitor::run()
-{
+DeviceMonitor::DeviceMonitor() : _io_monitor(std::make_shared<IOMonitor>()),
+                                 _ready(false) {
     int ret;
-    std::lock_guard<std::mutex> lock(_running);
+    _udev_context = udev_new();
+    if (!_udev_context)
+        throw std::runtime_error("udev_new failed");
 
-    struct udev_monitor* monitor = udev_monitor_new_from_netlink(_udev_context,
-            "udev");
-    if(!monitor)
+    _udev_monitor = udev_monitor_new_from_netlink(_udev_context,
+                                                  "udev");
+    if (!_udev_monitor) {
+        if (_udev_context)
+            udev_unref(_udev_context);
         throw std::runtime_error("udev_monitor_new_from_netlink failed");
-
-    ret = udev_monitor_filter_add_match_subsystem_devtype(monitor, "hidraw",
-            nullptr);
-    if (0 != ret)
-        throw std::system_error (-ret, std::system_category(),
-                "udev_monitor_filter_add_match_subsystem_devtype");
-
-    ret = udev_monitor_enable_receiving(monitor);
-    if(0 != ret)
-        throw std::system_error(-ret, std::system_category(),
-                "udev_moniotr_enable_receiving");
-
-    this->enumerate();
-
-    int fd = udev_monitor_get_fd(monitor);
-
-    _run_monitor = true;
-    while (_run_monitor) {
-        fd_set fds;
-        FD_ZERO(&fds);
-        FD_SET(_pipe[0], &fds);
-        FD_SET(fd, &fds);
-
-        if (-1 == select (std::max (_pipe[0], fd)+1, &fds, nullptr,
-                nullptr, nullptr)) {
-            if (errno == EINTR)
-                continue;
-            throw std::system_error (errno, std::system_category(),
-                    "udev_monitor select");
-        }
-
-        if (FD_ISSET(fd, &fds)) {
-            struct udev_device *device = udev_monitor_receive_device(monitor);
-            std::string action = udev_device_get_action(device);
-            std::string devnode = udev_device_get_devnode(device);
-
-            if (action == "add")
-                task::spawn([this, name=devnode]() {
-                    // Wait for device to initialise
-                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                    auto supported_reports = backend::hidpp::getSupportedReports(
-                            RawDevice::getReportDescriptor(name));
-                    if(supported_reports)
-                        this->addDevice(name);
-                    else
-                        logPrintf(DEBUG, "Unsupported device %s ignored",
-                                  name.c_str());
-                }, [name=devnode](std::exception& e){
-                    logPrintf(WARN, "Error adding device %s: %s",
-                              name.c_str(), e.what());
-                });
-            else if (action == "remove")
-                task::spawn([this, name=devnode]() {
-                    this->removeDevice(name);
-                }, [name=devnode](std::exception& e){
-                    logPrintf(WARN, "Error removing device %s: %s",
-                               name.c_str(), e.what());
-                });
-
-            udev_device_unref (device);
-        }
-        if (FD_ISSET(_pipe[0], &fds)) {
-            char c;
-            if (-1 == read(_pipe[0], &c, sizeof (char)))
-                throw std::system_error (errno, std::system_category(),
-                                         "read pipe");
-            break;
-        }
     }
+
+    ret = udev_monitor_filter_add_match_subsystem_devtype(
+            _udev_monitor, "hidraw", nullptr);
+    if (0 != ret) {
+        if (_udev_monitor)
+            udev_monitor_unref(_udev_monitor);
+        if (_udev_context)
+            udev_unref(_udev_context);
+        throw std::system_error(
+                -ret, std::system_category(),
+                "udev_monitor_filter_add_match_subsystem_devtype");
+    }
+
+    ret = udev_monitor_enable_receiving(_udev_monitor);
+    if (0 != ret) {
+        if (_udev_monitor)
+            udev_monitor_unref(_udev_monitor);
+        if (_udev_context)
+            udev_unref(_udev_context);
+        throw std::system_error(-ret, std::system_category(),
+                                "udev_monitor_enable_receiving");
+    }
+
+    _fd = udev_monitor_get_fd(_udev_monitor);
 }
 
-void DeviceMonitor::stop()
-{
-    _run_monitor = false;
-    std::lock_guard<std::mutex> lock(_running);
+DeviceMonitor::~DeviceMonitor() {
+    if (_ready)
+        _io_monitor->remove(_fd);
+
+    if (_udev_monitor)
+        udev_monitor_unref(_udev_monitor);
+    if (_udev_context)
+        udev_unref(_udev_context);
 }
 
-void DeviceMonitor::enumerate()
-{
+void DeviceMonitor::ready() {
+    if (_ready)
+        return;
+    _ready = true;
+
+    _io_monitor->add(_fd, {
+            [this]() {
+                struct udev_device* device = udev_monitor_receive_device(_udev_monitor);
+                std::string action = udev_device_get_action(device);
+                std::string dev_node = udev_device_get_devnode(device);
+
+                if (action == "add")
+                    run_task([self_weak = _self, dev_node]() {
+                        if (auto self = self_weak.lock())
+                            self->_addHandler(dev_node);
+                    });
+                else if (action == "remove")
+                    run_task([self_weak = _self, dev_node]() {
+                        if (auto self = self_weak.lock())
+                            self->_removeHandler(dev_node);
+                    });
+
+                udev_device_unref(device);
+            },
+            []() {
+                throw std::runtime_error("udev hangup");
+            },
+            []() {
+                throw std::runtime_error("udev error");
+            }
+    });
+}
+
+void DeviceMonitor::enumerate() {
     int ret;
     struct udev_enumerate* udev_enum = udev_enumerate_new(_udev_context);
     ret = udev_enumerate_add_match_subsystem(udev_enum, "hidraw");
-    if(0 != ret)
+    if (0 != ret)
         throw std::system_error(-ret, std::system_category(),
-                "udev_enumerate_add_match_subsystem");
+                                "udev_enumerate_add_match_subsystem");
 
     ret = udev_enumerate_scan_devices(udev_enum);
-    if(0 != ret)
+    if (0 != ret)
         throw std::system_error(-ret, std::system_category(),
                                 "udev_enumerate_scan_devices");
 
     struct udev_list_entry* udev_enum_entry;
     udev_list_entry_foreach(udev_enum_entry,
-            udev_enumerate_get_list_entry(udev_enum)) {
+                            udev_enumerate_get_list_entry(udev_enum)) {
         const char* name = udev_list_entry_get_name(udev_enum_entry);
 
-        struct udev_device* device = udev_device_new_from_syspath(_udev_context,
-                name);
-        if(!device)
-            throw std::runtime_error("udev_device_new_from_syspath failed");
+        struct udev_device* device = udev_device_new_from_syspath(_udev_context, name);
+        if (device) {
+            const char* dev_node_cstr = udev_device_get_devnode(device);
+            if (dev_node_cstr) {
+                const std::string dev_node {dev_node_cstr};
+                udev_device_unref(device);
 
-        std::string devnode = udev_device_get_devnode(device);
-        udev_device_unref(device);
-
-        task::spawn([this, name=devnode]() {
-            auto supported_reports = backend::hidpp::getSupportedReports(
-                    RawDevice::getReportDescriptor(name));
-            if(supported_reports)
-                this->addDevice(name);
-            else
-                logPrintf(DEBUG, "Unsupported device %s ignored",
-                          name.c_str());
-        }, [name=devnode](std::exception& e){
-            logPrintf(WARN, "Error adding device %s: %s",
-                      name.c_str(), e.what());
-        });
+                _addHandler(dev_node);
+            } else {
+                udev_device_unref(device);
+            }
+        }
     }
 
     udev_enumerate_unref(udev_enum);
+}
+
+void DeviceMonitor::_addHandler(const std::string& device, int tries) {
+    try {
+        auto supported_reports = backend::hidpp::getSupportedReports(
+                RawDevice::getReportDescriptor(device));
+        if (supported_reports)
+            addDevice(device);
+        else
+            logPrintf(DEBUG, "Unsupported device %s ignored", device.c_str());
+    } catch (backend::DeviceNotReady& e) {
+        if (tries == max_tries) {
+            logPrintf(WARN, "Failed to add device %s after %d tries. Treating as failure.",
+                      device.c_str(), max_tries);
+        } else {
+            /* Do exponential backoff for 2^tries * backoff ms. */
+            std::chrono::milliseconds wait((1 << tries) * ready_backoff);
+            logPrintf(DEBUG, "Failed to add device %s on try %d, backing off for %dms",
+                      device.c_str(), tries + 1, wait.count());
+            run_task_after([self_weak = _self, device, tries]() {
+                if (auto self = self_weak.lock())
+                    self->_addHandler(device, tries + 1);
+            }, wait);
+        }
+    } catch (std::exception& e) {
+        logPrintf(WARN, "Error adding device %s: %s", device.c_str(), e.what());
+    }
+}
+
+void DeviceMonitor::_removeHandler(const std::string& device) {
+    try {
+        removeDevice(device);
+    } catch (std::exception& e) {
+        logPrintf(WARN, "Error removing device %s: %s",
+                  device.c_str(), e.what());
+    }
+}
+
+std::shared_ptr<IOMonitor> DeviceMonitor::ioMonitor() const {
+    return _io_monitor;
 }

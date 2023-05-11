@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,33 +22,80 @@
 #include <string>
 #include <mutex>
 #include <atomic>
+#include <memory>
 
 extern "C"
 {
-#include <libudev.h>
+struct udev;
+struct udev_monitor;
 }
 
-namespace logid {
-namespace backend {
-namespace raw
-{
-    class DeviceMonitor
-    {
+namespace logid::backend::raw {
+    class IOMonitor;
+
+    static constexpr int max_tries = 5;
+    static constexpr int ready_backoff = 500;
+
+    template<typename T>
+    class _deviceMonitorWrapper : public T {
+        friend class Device;
+
     public:
+        template<typename... Args>
+        explicit _deviceMonitorWrapper(Args... args) : T(std::forward<Args>(args)...) {}
+
+        template<typename... Args>
+        static std::shared_ptr<T> make(Args... args) {
+            return std::make_shared<_deviceMonitorWrapper>(std::forward<Args>(args)...);
+        }
+    };
+
+    class DeviceMonitor {
+    public:
+        virtual ~DeviceMonitor();
+
         void enumerate();
-        void run();
-        void stop();
+
+        [[nodiscard]] std::shared_ptr<IOMonitor> ioMonitor() const;
+
+        template<typename T, typename... Args>
+        static std::shared_ptr<T> make(Args... args) {
+            auto device_monitor = _deviceMonitorWrapper<T>::make(std::forward<Args>(args)...);
+            device_monitor->_self = device_monitor;
+            device_monitor->ready();
+
+            return device_monitor;
+        }
+
     protected:
         DeviceMonitor();
-        virtual ~DeviceMonitor();
+
+        // This should be run once the derived class is ready
+        void ready();
+
         virtual void addDevice(std::string device) = 0;
+
         virtual void removeDevice(std::string device) = 0;
+
+        template<typename T>
+        [[nodiscard]] std::weak_ptr<T> self() const {
+            return std::dynamic_pointer_cast<T>(_self.lock());
+        }
+
     private:
+        void _addHandler(const std::string& device, int tries = 0);
+
+        void _removeHandler(const std::string& device);
+
+        std::shared_ptr<IOMonitor> _io_monitor;
+
         struct udev* _udev_context;
-        int _pipe[2];
-        std::atomic<bool> _run_monitor;
-        std::mutex _running;
+        struct udev_monitor* _udev_monitor;
+        int _fd;
+        bool _ready;
+
+        std::weak_ptr<DeviceMonitor> _self;
     };
-}}}
+}
 
 #endif //LOGID_BACKEND_RAW_DEVICEMONITOR_H

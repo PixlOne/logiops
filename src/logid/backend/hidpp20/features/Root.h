@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,50 +19,36 @@
 #ifndef LOGID_BACKEND_HIDPP20_FEATURE_ROOT_H
 #define LOGID_BACKEND_HIDPP20_FEATURE_ROOT_H
 
-#include "../Feature.h"
-#include "../EssentialFeature.h"
-#include "../feature_defs.h"
+#include <backend/hidpp20/EssentialFeature.h>
+#include <backend/hidpp20/feature_defs.h>
 
-namespace logid {
-namespace backend {
-namespace hidpp20
-{
-    class Root : public Feature
-    {
+namespace logid::backend::hidpp20 {
+
+    class Root : public EssentialFeature {
     public:
         static const uint16_t ID = FeatureID::ROOT;
-        virtual uint16_t getID() { return ID; }
 
-        enum Function : uint8_t
-        {
+        uint16_t getID() final { return ID; }
+
+        explicit Root(hidpp::Device* device);
+
+        enum Function : uint8_t {
             GetFeature = 0,
             Ping = 1
         };
 
-        explicit Root(Device* device);
+        feature_info getFeature(uint16_t feature_id);
 
-        feature_info getFeature (uint16_t feature_id);
+        uint8_t ping(uint8_t byte);
+
         std::tuple<uint8_t, uint8_t> getVersion();
 
-        enum FeatureFlag : uint8_t
-        {
-            Obsolete = 1<<7,
-            Hidden = 1<<6,
-            Internal = 1<<5
+        enum FeatureFlag : uint8_t {
+            Obsolete = 1 << 7,
+            Hidden = 1 << 6,
+            Internal = 1 << 5
         };
     };
-
-    class EssentialRoot : public EssentialFeature
-    {
-    public:
-        static const uint16_t ID = FeatureID::ROOT;
-        virtual uint16_t getID() { return ID; }
-
-        explicit EssentialRoot(hidpp::Device* device);
-
-        feature_info getFeature(uint16_t feature_id);
-        std::tuple<uint8_t, uint8_t> getVersion();
-    };
-}}}
+}
 
 #endif //LOGID_BACKEND_HIDPP20_FEATURE_ROOT_H

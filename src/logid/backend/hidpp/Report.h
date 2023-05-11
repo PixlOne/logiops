@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,23 +19,19 @@
 #ifndef LOGID_BACKEND_HIDPP_REPORT_H
 #define LOGID_BACKEND_HIDPP_REPORT_H
 
+#include <backend/raw/RawDevice.h>
+#include <backend/hidpp/defs.h>
 #include <cstdint>
-#include "../raw/RawDevice.h"
-#include "defs.h"
 
-/* Some devices only support a subset of these reports */
-#define HIDPP_REPORT_SHORT_SUPPORTED      1U
-#define HIDPP_REPORT_LONG_SUPPORTED	      1U<<1U
-/* Very long reports exist, however they have not been encountered so far */
+namespace logid::backend::hidpp {
+    uint8_t getSupportedReports(const std::vector<uint8_t>& report_desc);
 
-namespace logid {
-namespace backend {
-namespace hidpp
-{
-    uint8_t getSupportedReports(std::vector<uint8_t>&& rdesc);
+    /* Some devices only support a subset of these reports */
+    static constexpr uint8_t ShortReportSupported = 1U;
+    static constexpr uint8_t LongReportSupported = (1U<<1);
+    /* Very long reports exist, however they have not been encountered so far */
 
-    namespace Offset
-    {
+    namespace Offset {
         static constexpr uint8_t Type = 0;
         static constexpr uint8_t DeviceIndex = 1;
         static constexpr uint8_t SubID = 2;
@@ -45,23 +41,22 @@ namespace hidpp
         static constexpr uint8_t Parameters = 4;
     }
 
-    class Report
-    {
+    class Report {
     public:
         typedef ReportType::ReportType Type;
 
-        class InvalidReportID: public std::exception
-        {
+        class InvalidReportID : public std::exception {
         public:
             InvalidReportID() = default;
-            const char* what() const noexcept override;
+
+            [[nodiscard]] const char* what() const noexcept override;
         };
 
-        class InvalidReportLength: public std::exception
-        {
+        class InvalidReportLength : public std::exception {
         public:
-            InvalidReportLength() = default;;
-            const char* what() const noexcept override;
+            InvalidReportLength() = default;
+
+            [[nodiscard]] const char* what() const noexcept override;
         };
 
         static constexpr std::size_t MaxDataLength = 20;
@@ -69,57 +64,72 @@ namespace hidpp
         Report(Report::Type type, DeviceIndex device_index,
                uint8_t sub_id,
                uint8_t address);
+
         Report(Report::Type type, DeviceIndex device_index,
-                uint8_t feature_index,
-                uint8_t function,
-                uint8_t sw_id);
+               uint8_t feature_index,
+               uint8_t function,
+               uint8_t sw_id);
+
         explicit Report(const std::vector<uint8_t>& data);
 
-        Report::Type type() const;
+        [[nodiscard]] Report::Type type() const;
+
         void setType(Report::Type type);
 
-        logid::backend::hidpp::DeviceIndex deviceIndex() const;
-        void setDeviceIndex(hidpp::DeviceIndex index);
+        [[nodiscard]] DeviceIndex deviceIndex() const;
 
-        uint8_t feature() const;
-        void setFeature(uint8_t feature);
+        [[maybe_unused]] void setDeviceIndex(DeviceIndex index);
 
-        uint8_t subId() const;
-        void setSubId(uint8_t sub_id);
+        [[nodiscard]] uint8_t feature() const;
 
-        uint8_t function() const;
-        void setFunction(uint8_t function);
+        [[maybe_unused]] void setFeature(uint8_t feature);
 
-        uint8_t swId() const;
+        [[nodiscard]] uint8_t subId() const;
+
+        [[maybe_unused]] void setSubId(uint8_t sub_id);
+
+        [[nodiscard]] uint8_t function() const;
+
+        [[maybe_unused]] void setFunction(uint8_t function);
+
+        [[nodiscard]] uint8_t swId() const;
+
         void setSwId(uint8_t sw_id);
 
-        uint8_t address() const;
-        void setAddress(uint8_t address);
+        [[nodiscard]] uint8_t address() const;
 
-        std::vector<uint8_t>::iterator paramBegin();
-        std::vector<uint8_t>::iterator paramEnd();
-        std::vector<uint8_t>::const_iterator paramBegin() const;
-        std::vector<uint8_t>::const_iterator paramEnd() const;
+        [[maybe_unused]] void setAddress(uint8_t address);
+
+        [[nodiscard]] std::vector<uint8_t>::iterator paramBegin();
+
+        [[nodiscard]] std::vector<uint8_t>::iterator paramEnd();
+
+        [[nodiscard]] std::vector<uint8_t>::const_iterator paramBegin() const;
+
+        [[nodiscard]] std::vector<uint8_t>::const_iterator paramEnd() const;
+
         void setParams(const std::vector<uint8_t>& _params);
 
-        struct Hidpp10Error
-        {
+        struct Hidpp10Error {
+            hidpp::DeviceIndex device_index;
             uint8_t sub_id, address, error_code;
         };
-        bool isError10(Hidpp10Error* error);
 
-        struct Hidpp20Error
-        {
+        bool isError10(Hidpp10Error& error) const;
+
+        struct Hidpp20Error {
+            hidpp::DeviceIndex device_index;
             uint8_t feature_index, function, software_id, error_code;
         };
-        bool isError20(Hidpp20Error* error);
 
-        std::vector<uint8_t> rawReport () const { return _data; }
+        bool isError20(Hidpp20Error& error) const;
+
+        [[nodiscard]] const std::vector<uint8_t>& rawReport() const;
 
         static constexpr std::size_t HeaderLength = 4;
     private:
         std::vector<uint8_t> _data;
     };
-}}}
+}
 
 #endif //LOGID_BACKEND_HIDPP_REPORT_H

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,18 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+#ifndef LOGIOPS_IPC_DEFS_H
+#define LOGIOPS_IPC_DEFS_H
 
-#ifndef LOGID_LOGID_H
-#define LOGID_LOGID_H
+#define SERVICE_ROOT_NAME "pizza.pixl.LogiOps"
+static constexpr auto server_root_node = "/pizza/pixl/logiops";
 
-#include <mutex>
-
-namespace logid
-{
-    // void reload();
-
-    extern bool kill_logid;
-    extern std::mutex device_manager_reload;
-}
-
-#endif //LOGID_LOGID_H
+#endif //LOGIOPS_IPC_DEFS_H

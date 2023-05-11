@@ -1,4 +1,6 @@
-# logiops
+# LogiOps
+
+![Build Status](https://github.com/PixlOne/logiops/actions/workflows/build-test.yml/badge.svg)
 
 This is an unofficial driver for Logitech mice and keyboard.
 
@@ -13,19 +15,20 @@ Default location for the configuration file is /etc/logid.cfg, but another can b
 
 ## Dependencies
 
-This project requires a C++14 compiler, `cmake`, `libevdev`, `libudev`, and `libconfig`. For popular distributions, I've included commands below.
+This project requires a C++20 compiler, `cmake`, `libevdev`, `libudev`, `glib`, and `libconfig`.
+For popular distributions, I've included commands below.
 
-**Arch Linux:** `sudo pacman -S cmake libevdev libconfig pkgconf`
+**Arch Linux:** `sudo pacman -S base-devel cmake libevdev libconfig systemd-libs glib2`
 
-**Debian/Ubuntu:** `sudo apt install cmake libevdev-dev libudev-dev libconfig++-dev`
+**Debian/Ubuntu:** `sudo apt install build-essential cmake pkg-config libevdev-dev libudev-dev libconfig++-dev libglib2.0-dev`
 
-**Fedora:** `sudo dnf install cmake libevdev-devel systemd-devel libconfig-devel gcc-c++`
+**Fedora:** `sudo dnf install cmake libevdev-devel systemd-devel libconfig-devel gcc-c++ glib2-devel`
 
-**Gentoo Linux:** `sudo emerge dev-libs/libconfig dev-libs/libevdev dev-util/cmake virtual/libudev`
+**Gentoo Linux:** `sudo emerge dev-libs/libconfig dev-libs/libevdev dev-libs/glib dev-util/cmake virtual/libudev`
 
-**Solus:** `sudo eopkg install libevdev-devel libconfig-devel libgudev-devel`
+**Solus:** `sudo eopkg install cmake libevdev-devel libconfig-devel libgudev-devel glib2-devel`
 
-**openSUSE:** `sudo zypper install cmake libevdev-devel systemd-devel libconfig-devel gcc-c++ libconfig++-devel libudev-devel`
+**openSUSE:** `sudo zypper install cmake libevdev-devel systemd-devel libconfig-devel gcc-c++ libconfig++-devel libudev-devel glib2-devel`
 
 ## Building
 
@@ -34,11 +37,17 @@ To build this project, run:
 ```bash
 mkdir build
 cd build
-cmake ..
+cmake -DCMAKE_BUILD_TYPE=Release ..
 make
 ```
 
 To install, run `sudo make install` after building. You can set the daemon to start at boot by running `sudo systemctl enable logid` or `sudo systemctl enable --now logid` if you want to enable and start the daemon.
+
+## Development
+
+The project may only run as root, but for development purposes, you may find it
+convenient to run as non-root on the user bus. You must compile with the CMake
+flag `-DUSE_USER_BUS=ON` to use the user bus.
 
 ## Donate
 This program is (and will always be) provided free of charge. If you would like to support the development of this project by donating, you can donate to my Ko-Fi below.

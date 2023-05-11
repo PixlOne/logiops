@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,9 +16,9 @@
  *
  */
 
+#include <InputDevice.h>
 #include <system_error>
-
-#include "InputDevice.h"
+#include <mutex>
 
 extern "C"
 {
@@ -29,17 +29,18 @@ extern "C"
 using namespace logid;
 
 InputDevice::InvalidEventCode::InvalidEventCode(const std::string& name) :
-        _what ("Invalid event code " + name)
-{
+        _what("Invalid event code " + name) {
 }
 
-const char* InputDevice::InvalidEventCode::what() const noexcept
-{
+InputDevice::InvalidEventCode::InvalidEventCode(uint code) :
+        _what("Invalid event code " + std::to_string(code)) {
+}
+
+const char* InputDevice::InvalidEventCode::what() const noexcept {
     return _what.c_str();
 }
 
-InputDevice::InputDevice(const char* name)
-{
+InputDevice::InputDevice(const char* name) {
     device = libevdev_new();
     libevdev_set_name(device, name);
 
@@ -56,27 +57,28 @@ InputDevice::InputDevice(const char* name)
         }
     }
 
+    for (bool& axis: registered_axis)
+        axis = false;
+
     libevdev_enable_event_type(device, EV_REL);
 
     int err = libevdev_uinput_create_from_device(device,
-            LIBEVDEV_UINPUT_OPEN_MANAGED, &ui_device);
+                                                 LIBEVDEV_UINPUT_OPEN_MANAGED, &ui_device);
 
-    if(err != 0) {
+    if (err != 0) {
         libevdev_free(device);
         throw std::system_error(-err, std::generic_category());
     }
 }
 
-InputDevice::~InputDevice()
-{
+InputDevice::~InputDevice() {
     libevdev_uinput_destroy(ui_device);
     libevdev_free(device);
 }
 
-void InputDevice::registerKey(uint code)
-{
+void InputDevice::registerKey(uint code) {
     // TODO: Maybe print error message, if wrong code is passed?
-    if(registered_keys[code] || code > KEY_CNT) {
+    if (code >= KEY_CNT || registered_keys[code]) {
         return;
     }
 
@@ -85,10 +87,9 @@ void InputDevice::registerKey(uint code)
     registered_keys[code] = true;
 }
 
-void InputDevice::registerAxis(uint axis)
-{
+void InputDevice::registerAxis(uint axis) {
     // TODO: Maybe print error message, if wrong code is passed?
-    if(registered_axis[axis] || axis > REL_CNT) {
+    if (axis >= REL_CNT || registered_axis[axis]) {
         return;
     }
 
@@ -97,67 +98,77 @@ void InputDevice::registerAxis(uint axis)
     registered_axis[axis] = true;
 }
 
-void InputDevice::moveAxis(uint axis, int movement)
-{
+void InputDevice::moveAxis(uint axis, int movement) {
     _sendEvent(EV_REL, axis, movement);
 }
 
-void InputDevice::pressKey(uint code)
-{
+void InputDevice::pressKey(uint code) {
     _sendEvent(EV_KEY, code, 1);
 }
 
-void InputDevice::releaseKey(uint code)
-{
+void InputDevice::releaseKey(uint code) {
     _sendEvent(EV_KEY, code, 0);
 }
 
-uint InputDevice::toKeyCode(const std::string& name)
-{
+std::string InputDevice::toKeyName(uint code) {
+    return _toEventName(EV_KEY, code);
+}
+
+uint InputDevice::toKeyCode(const std::string& name) {
     return _toEventCode(EV_KEY, name);
 }
 
-uint InputDevice::toAxisCode(const std::string& name)
-{
+std::string InputDevice::toAxisName(uint code) {
+    return _toEventName(EV_REL, code);
+}
+
+uint InputDevice::toAxisCode(const std::string& name) {
     return _toEventCode(EV_REL, name);
 }
 
 /* Returns -1 if axis_code is not hi-res */
-int InputDevice::getLowResAxis(const uint axis_code)
-{
+int InputDevice::getLowResAxis(const uint axis_code) {
     /* Some systems don't have these hi-res axes */
 #ifdef REL_WHEEL_HI_RES
-    if(axis_code == REL_WHEEL_HI_RES)
+    if (axis_code == REL_WHEEL_HI_RES)
         return REL_WHEEL;
 #endif
 #ifdef REL_HWHEEL_HI_RES
-    if(axis_code == REL_HWHEEL_HI_RES)
+    if (axis_code == REL_HWHEEL_HI_RES)
         return REL_HWHEEL;
 #endif
 
     return -1;
 }
 
-uint InputDevice::_toEventCode(uint type, const std::string& name)
-{
+std::string InputDevice::_toEventName(uint type, uint code) {
+    const char* ret = libevdev_event_code_get_name(type, code);
+
+    if (!ret)
+        throw InvalidEventCode(code);
+
+    return {ret};
+}
+
+uint InputDevice::_toEventCode(uint type, const std::string& name) {
     int code = libevdev_event_code_from_name(type, name.c_str());
 
-    if(code == -1)
+    if (code == -1)
         throw InvalidEventCode(name);
 
     return code;
 }
 
-void InputDevice::_enableEvent(const uint type, const uint code)
-{
+void InputDevice::_enableEvent(const uint type, const uint code) {
+    std::unique_lock lock(_input_mutex);
     libevdev_uinput_destroy(ui_device);
 
     libevdev_enable_event_code(device, type, code, nullptr);
 
     int err = libevdev_uinput_create_from_device(device,
-            LIBEVDEV_UINPUT_OPEN_MANAGED, &ui_device);
+                                                 LIBEVDEV_UINPUT_OPEN_MANAGED, &ui_device);
 
-    if(err != 0) {
+    if (err != 0) {
         libevdev_free(device);
         device = nullptr;
         ui_device = nullptr;
@@ -165,8 +176,8 @@ void InputDevice::_enableEvent(const uint type, const uint code)
     }
 }
 
-void InputDevice::_sendEvent(uint type, uint code, int value)
-{
+void InputDevice::_sendEvent(uint type, uint code, int value) {
+    std::unique_lock lock(_input_mutex);
     libevdev_uinput_write_event(ui_device, type, code, value);
     libevdev_uinput_write_event(ui_device, EV_SYN, SYN_REPORT, 0);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,37 +18,41 @@
 #ifndef LOGID_ACTION_INTERVALGESTURE_H
 #define LOGID_ACTION_INTERVALGESTURE_H
 
-#include "Gesture.h"
+#include <actions/gesture/Gesture.h>
 
-namespace logid {
-namespace actions
-{
-    class IntervalGesture : public Gesture
-    {
+namespace logid::actions {
+    class IntervalGesture : public Gesture {
     public:
-        IntervalGesture(Device* device, libconfig::Setting& root);
+        static const char* interface_name;
 
-        virtual void press(bool init_threshold=false);
-        virtual void release(bool primary=false);
-        virtual void move(int16_t axis);
+        IntervalGesture(Device* device, config::IntervalGesture& config,
+                        const std::shared_ptr<ipcgull::node>& parent);
 
-        virtual bool wheelCompatibility() const;
-        virtual bool metThreshold() const;
+        void press(bool init_threshold) final;
 
-        class Config : public Gesture::Config
-        {
-        public:
-            Config(Device* device, libconfig::Setting& setting);
-            int16_t interval() const;
-        private:
-            int16_t _interval;
-        };
+        void release(bool primary) final;
+
+        void move(int16_t axis) final;
+
+        [[nodiscard]] bool wheelCompatibility() const final;
+
+        [[nodiscard]] bool metThreshold() const final;
+
+        [[nodiscard]] std::tuple<int, int> getConfig() const;
+
+        void setInterval(int interval);
+
+        void setThreshold(int threshold);
+
+        void setAction(const std::string& type);
 
     protected:
-        int16_t _axis;
-        int16_t _interval_pass_count;
-        Config _config;
+        int32_t _axis;
+        int32_t _interval_pass_count;
+        std::shared_ptr<Action> _action;
+        config::IntervalGesture& _config;
+    private:
     };
-}}
+}
 
 #endif //LOGID_ACTION_INTERVALGESTURE_H

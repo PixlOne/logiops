@@ -1,0 +1,55 @@
+name: Build test
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    container: ${{ matrix.container }}
+    strategy:
+      matrix:
+        container: [ 'ubuntu:latest', 'ubuntu:20.04', 'fedora:latest', 'archlinux:base-devel' ]
+
+    steps:
+      - name: Install dependencies (Ubuntu)
+        if: startsWith(matrix.container, 'ubuntu')
+        env:
+          DEBIAN_FRONTEND: noninteractive
+          TZ: Etc/UTC
+        run: |
+          apt-get update -y -q
+          apt-get install -y -q \
+            build-essential cmake git pkg-config \
+            libevdev-dev libudev-dev libconfig++-dev libglib2.0-dev
+
+      - name: Install dependencies (Fedora)
+        if: startsWith(matrix.container, 'fedora')
+        run: |
+          dnf update -y
+          dnf install -y \
+            cmake git libevdev-devel \
+            systemd-devel libconfig-devel gcc-c++ glib2-devel
+
+      - name: Install dependencies (Arch Linux)
+        if: startsWith(matrix.container, 'archlinux')
+        run: |
+          pacman -Syu --noconfirm \
+            cmake git libevdev libconfig systemd-libs glib2
+
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Build LogiOps
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_FLAGS="-Werror"
+          cmake --build build -j$(nproc)

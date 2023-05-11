@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,27 +16,23 @@
  *
  */
 
-#include "Error.h"
+#ifndef LOGID_BACKEND_RAW_DEFS_H
+#define LOGID_BACKEND_RAW_DEFS_H
 
-using namespace logid::backend::dj;
+#include <functional>
+#include <cstdint>
+#include <vector>
 
-Error::Error(uint8_t code) : _code (code)
-{
+namespace logid::backend::raw {
+    struct RawEventHandler {
+        std::function<bool(const std::vector<uint8_t>&)> condition;
+        std::function<void(const std::vector<uint8_t>&)> callback;
+
+        RawEventHandler(std::function<bool(const std::vector<uint8_t>&)> cond,
+                        std::function<void(const std::vector<uint8_t>&)> call) :
+                condition(std::move(cond)), callback(std::move(call)) {
+        }
+    };
 }
 
-const char* Error::what() const noexcept
-{
-    switch(_code) {
-    case Unknown:
-        return "Unknown";
-    case KeepAliveTimeout:
-        return "Keep-alive timeout";
-    default:
-        return "Reserved";
-    }
-}
-
-uint8_t Error::code() const noexcept
-{
-    return _code;
-}
+#endif //LOGID_BACKEND_RAW_DEFS_H

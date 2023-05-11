@@ -1,0 +1,3 @@
+[submodule "src/ipcgull"]
+	path = src/ipcgull
+	url = https://github.com/PixlOne/ipcgull.git

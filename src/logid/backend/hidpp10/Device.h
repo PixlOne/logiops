@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,30 +19,66 @@
 #ifndef LOGID_BACKEND_HIDPP10_DEVICE_H
 #define LOGID_BACKEND_HIDPP10_DEVICE_H
 
-#include "../hidpp/Device.h"
+#include <optional>
+#include <variant>
+#include <backend/hidpp/Device.h>
+#include <backend/hidpp10/Error.h>
+#include <backend/hidpp10/defs.h>
 
-namespace logid {
-namespace backend {
-namespace hidpp10
-{
-    class Device : public hidpp::Device
-    {
+namespace logid::backend::hidpp10 {
+    class Device : public hidpp::Device {
     public:
-        Device(const std::string& path, hidpp::DeviceIndex index);
-        Device(std::shared_ptr<raw::RawDevice> raw_dev,
-                hidpp::DeviceIndex index);
-        Device(std::shared_ptr<dj::Receiver> receiver,
-               hidpp::DeviceIndex index);
+
+        hidpp::Report sendReport(const hidpp::Report& report) final;
 
         std::vector<uint8_t> getRegister(uint8_t address,
-                const std::vector<uint8_t>& params, hidpp::Report::Type type);
+                                         const std::vector<uint8_t>& params,
+                                         hidpp::Report::Type type);
 
         std::vector<uint8_t> setRegister(uint8_t address,
-                const std::vector<uint8_t>& params, hidpp::Report::Type type);
+                                         const std::vector<uint8_t>& params,
+                                         hidpp::Report::Type type);
+
+    protected:
+        Device(const std::string& path, hidpp::DeviceIndex index,
+               const std::shared_ptr<raw::DeviceMonitor>& monitor, double timeout);
+
+        Device(std::shared_ptr<raw::RawDevice> raw_dev,
+               hidpp::DeviceIndex index, double timeout);
+
+        Device(const std::shared_ptr<hidpp10::Receiver>& receiver,
+               hidpp::DeviceIndex index, double timeout);
+
+        bool responseReport(const hidpp::Report& report) final;
+
     private:
-        std::vector<uint8_t> accessRegister(uint8_t sub_id,
-                uint8_t address, const std::vector<uint8_t>& params);
+        typedef std::variant<hidpp::Report, hidpp::Report::Hidpp10Error> Response;
+        struct ResponseSlot {
+            std::optional<Response> response;
+            std::optional<uint8_t> sub_id;
+            void reset();
+        };
+        std::array<ResponseSlot, SubIDCount> _responses;
+
+        std::vector<uint8_t> accessRegister(
+                uint8_t sub_id, uint8_t address, const std::vector<uint8_t>& params);
+
+    protected:
+        template <typename T, typename... Args>
+        static std::shared_ptr<T> makeDerived(Args... args) {
+            auto device = hidpp::Device::makeDerived<T>(std::forward<Args>(args)...);
+
+            if (std::get<0>(device->version()) != 1)
+                throw std::invalid_argument("not a hid++ 1.0 device");
+
+            return device;
+        }
+    public:
+        template <typename... Args>
+        static std::shared_ptr<Device> make(Args... args) {
+            return makeDerived<Device>(std::forward<Args>(args)...);
+        }
     };
-}}}
+}
 
 #endif //LOGID_BACKEND_HIDPP10_DEVICE_H

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,9 +16,14 @@
  *
  */
 
-#include "Error.h"
+#include <backend/Error.h>
 
-const char *logid::backend::TimeoutError::what() const noexcept
-{
+using namespace logid::backend;
+
+const char* DeviceNotReady::what() const noexcept {
+    return "device not ready";
+}
+
+const char* TimeoutError::what() const noexcept {
     return "Device timed out";
 }

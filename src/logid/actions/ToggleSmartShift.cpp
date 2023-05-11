@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,43 +15,48 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#include "ToggleSmartShift.h"
-#include "../Device.h"
-#include "../backend/hidpp20/features/ReprogControls.h"
-#include "../util/task.h"
+
+#include <actions/ToggleSmartShift.h>
+#include <Device.h>
+#include <backend/hidpp20/features/ReprogControls.h>
+#include <util/task.h>
+#include <util/log.h>
 
 using namespace logid::actions;
 using namespace logid::backend;
 
-ToggleSmartShift::ToggleSmartShift(Device *dev) : Action (dev)
-{
+const char* ToggleSmartShift::interface_name = "ToggleSmartShift";
+
+ToggleSmartShift::ToggleSmartShift(
+        Device* dev,
+        [[maybe_unused]] const std::shared_ptr<ipcgull::node>& parent) :
+        Action(dev, interface_name) {
     _smartshift = _device->getFeature<features::SmartShift>("smartshift");
-    if(!_smartshift)
+    if (!_smartshift)
         logPrintf(WARN, "%s:%d: SmartShift feature not found, cannot use "
                         "ToggleSmartShift action.",
-                        _device->hidpp20().devicePath().c_str(),
-                        _device->hidpp20().deviceIndex());
+                  _device->hidpp20().devicePath().c_str(),
+                  _device->hidpp20().deviceIndex());
 }
 
-void ToggleSmartShift::press()
-{
+void ToggleSmartShift::press() {
     _pressed = true;
-    if(_smartshift) {
-        task::spawn([ss=this->_smartshift](){
-            auto status = ss->getStatus();
-            status.setActive = true;
-            status.active = !status.active;
-            ss->setStatus(status);
+    if (_smartshift) {
+        run_task([self_weak = self<ToggleSmartShift>()]() {
+            if (auto self = self_weak.lock()) {
+                auto status = self->_smartshift->getStatus();
+                status.setActive = true;
+                status.active = !status.active;
+                self->_smartshift->setStatus(status);
+            }
         });
     }
 }
 
-void ToggleSmartShift::release()
-{
+void ToggleSmartShift::release() {
     _pressed = false;
 }
 
-uint8_t ToggleSmartShift::reprogFlags() const
-{
+uint8_t ToggleSmartShift::reprogFlags() const {
     return hidpp20::ReprogControls::TemporaryDiverted;
 }

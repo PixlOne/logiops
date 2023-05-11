@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,22 +18,27 @@
 #ifndef LOGID_ACTION_NULL_H
 #define LOGID_ACTION_NULL_H
 
-#include "Action.h"
+#include <actions/Action.h>
 
-namespace logid {
-namespace actions
-{
-    class NullAction : public Action
-    {
+namespace logid::actions {
+    class NullAction : public Action {
     public:
-        explicit NullAction(Device* device);
+        static const char* interface_name;
 
-        virtual void press();
-        virtual void release();
+        NullAction(Device* device,
+                   const std::shared_ptr<ipcgull::node>& parent);
 
-        virtual uint8_t reprogFlags() const;
+        NullAction(Device* device, [[maybe_unused]] config::NoAction& config,
+                   const std::shared_ptr<ipcgull::node>& parent) :
+                NullAction(device, parent) {}
+
+        void press() final;
+
+        void release() final;
+
+        [[nodiscard]] uint8_t reprogFlags() const final;
     };
-}}
+}
 
 
 #endif //LOGID_ACTION_NULL_H

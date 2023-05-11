@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne, michtere
+ * Copyright 2019-2023 PixlOne, michtere
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,31 +18,40 @@
 #ifndef LOGID_ACTION_THRESHOLDGESTURE_H
 #define LOGID_ACTION_THRESHOLDGESTURE_H
 
-#include "Gesture.h"
+#include <actions/gesture/Gesture.h>
 
-namespace logid {
-namespace actions
-{
-    class ThresholdGesture : public Gesture
-    {
+namespace logid::actions {
+    class ThresholdGesture : public Gesture {
     public:
-        ThresholdGesture(Device* device, libconfig::Setting& root);
+        static const char* interface_name;
 
-        virtual void press(bool init_threshold=false);
-        virtual void release(bool primary=false);
-        virtual void move(int16_t axis);
+        ThresholdGesture(Device* device, config::ThresholdGesture& config,
+                         const std::shared_ptr<ipcgull::node>& parent);
 
-        virtual bool metThreshold() const;
+        void press(bool init_threshold) final;
 
-        virtual bool wheelCompatibility() const;
+        void release(bool primary) final;
+
+        void move(int16_t axis) final;
+
+        [[nodiscard]] bool metThreshold() const final;
+
+        [[nodiscard]] bool wheelCompatibility() const final;
+
+        [[nodiscard]] int getThreshold() const;
+
+        void setThreshold(int threshold);
+
+        void setAction(const std::string& type);
 
     protected:
-        int16_t _axis;
-        Gesture::Config _config;
+        int32_t _axis{};
+        std::shared_ptr<actions::Action> _action;
+        config::ThresholdGesture& _config;
 
     private:
         bool _executed = false;
     };
-}}
+}
 
 #endif //LOGID_ACTION_THRESHOLDGESTURE_H

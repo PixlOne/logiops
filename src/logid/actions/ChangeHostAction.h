@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,37 +18,31 @@
 #ifndef LOGID_ACTION_CHANGEHOSTACTION_H
 #define LOGID_ACTION_CHANGEHOSTACTION_H
 
-#include <libconfig.h++>
-#include "Action.h"
-#include "../backend/hidpp20/features/ChangeHost.h"
+#include <actions/Action.h>
+#include <backend/hidpp20/features/ChangeHost.h>
 
-namespace logid {
-namespace actions
-{
-    class ChangeHostAction : public Action
-    {
+namespace logid::actions {
+    class ChangeHostAction : public Action {
     public:
-        ChangeHostAction(Device* device, libconfig::Setting& config);
+        static const char* interface_name;
 
-        virtual void press();
-        virtual void release();
+        ChangeHostAction(Device* device, config::ChangeHost& config,
+                         const std::shared_ptr<ipcgull::node>& parent);
 
-        virtual uint8_t reprogFlags() const;
+        void press() final;
 
-        class Config : public Action::Config
-        {
-        public:
-            Config(Device* device, libconfig::Setting& setting);
-            uint8_t nextHost(backend::hidpp20::ChangeHost::HostInfo info);
-        private:
-            bool _offset;
-            int _host;
-        };
+        void release() final;
+
+        [[nodiscard]] std::string getHost() const;
+
+        void setHost(std::string host);
+
+        [[nodiscard]] uint8_t reprogFlags() const final;
 
     protected:
         std::shared_ptr<backend::hidpp20::ChangeHost> _change_host;
-        Config _config;
+        config::ChangeHost& _config;
     };
-}}
+}
 
 #endif //LOGID_ACTION_CHANGEHOSTACTION_H
