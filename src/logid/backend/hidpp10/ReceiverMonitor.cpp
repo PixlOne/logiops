@@ -159,18 +159,24 @@ void ReceiverMonitor::enumerate() {
 
 void ReceiverMonitor::waitForDevice(hidpp::DeviceIndex index) {
     auto handler_id = std::make_shared<EventHandlerLock<raw::RawDevice>>();
+    auto executed = std::make_shared<bool>(false);
 
     *handler_id = _receiver->rawDevice()->addEventHandler(
             {[index](const std::vector<uint8_t>& report) -> bool {
                 return report[Offset::DeviceIndex] == index;
             },
-             [self_weak = _self, index, handler_id](
+             [self_weak = _self, index, handler_id, executed](
                      [[maybe_unused]] const std::vector<uint8_t>& report) {
+                if (*executed)
+                    return;
+
                  hidpp::DeviceConnectionEvent event{};
                  event.withPayload = false;
                  event.linkEstablished = true;
                  event.index = index;
                  event.fromTimeoutCheck = true;
+
+                 *executed = true;
 
                  run_task([self_weak, event, handler_id]() {
                      *handler_id = {};
