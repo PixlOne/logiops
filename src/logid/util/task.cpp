@@ -18,6 +18,7 @@
 #include <util/task.h>
 #include <queue>
 #include <optional>
+#include <cassert>
 
 using namespace logid;
 using namespace std::chrono;
@@ -35,18 +36,38 @@ static std::priority_queue<task, std::vector<task>, task_less> tasks {};
 static std::mutex task_mutex {};
 static std::condition_variable task_cv {};
 static std::atomic_bool workers_init = false;
+static std::atomic_bool workers_run = false;
 
-[[noreturn]] static void worker() {
+void stop_workers() {
     std::unique_lock lock(task_mutex);
-    while (true) {
-        task_cv.wait(lock, []() { return !tasks.empty(); });
+    if (workers_init) {
+        workers_run = false;
+        lock.unlock();
+        task_cv.notify_all();
+
+        /* Wait for all workers to end */
+        lock.lock();
+    }
+}
+
+void worker() {
+    std::unique_lock lock(task_mutex);
+    while (workers_run) {
+        task_cv.wait(lock, []() { return !tasks.empty() || !workers_run; });
+
+        if (!workers_run)
+            break;
 
         /* top task is in the future, wait */
         if (tasks.top().time >= system_clock::now()) {
             auto wait = tasks.top().time - system_clock::now();
             task_cv.wait_for(lock, wait, []() {
-                return !tasks.empty() && (tasks.top().time < system_clock::now());
+                return (!tasks.empty() && (tasks.top().time < system_clock::now())) ||
+                    !workers_run;
             });
+
+            if (!workers_run)
+                break;
         }
 
         if (!tasks.empty()) {
@@ -67,11 +88,15 @@ static std::atomic_bool workers_init = false;
 
 void logid::init_workers(int worker_count) {
     std::lock_guard lock(task_mutex);
+    assert(!workers_init);
 
     for (int i = 0; i < worker_count; ++i)
         std::thread(&worker).detach();
 
     workers_init = true;
+    workers_run = true;
+
+    atexit(&stop_workers);
 }
 
 void logid::run_task(std::function<void()> function) {
