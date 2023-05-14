@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 PixlOne
+ * Copyright 2019-2023 PixlOne
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
  */
 #include <backend/raw/IOMonitor.h>
 #include <cassert>
+#include <optional>
 
 extern "C"
 {
@@ -34,6 +35,55 @@ IOHandler::IOHandler(std::function<void()> r,
         hangup(std::move(hup)),
         error(std::move(err)) {
 }
+
+class IOMonitor::io_lock {
+    std::optional<std::unique_lock<std::mutex>> _lock;
+    IOMonitor* _io_monitor;
+    const uint64_t counter = 1;
+
+public:
+    explicit io_lock(IOMonitor* io_monitor) : _io_monitor(io_monitor) {
+        _io_monitor->_interrupting = true;
+        [[maybe_unused]] ssize_t ret = ::write(_io_monitor->_event_fd, &counter, sizeof(counter));
+        assert(ret == sizeof(counter));
+        _lock.emplace(_io_monitor->_run_mutex);
+    }
+
+    io_lock(const io_lock&) = delete;
+
+    io_lock& operator=(const io_lock&) = delete;
+
+    io_lock(io_lock&& o) noexcept: _lock(std::move(o._lock)), _io_monitor(o._io_monitor) {
+        o._lock.reset();
+        o._io_monitor = nullptr;
+    }
+
+    io_lock& operator=(io_lock&& o) noexcept {
+        if (this != &o) {
+            _lock = std::move(o._lock);
+            _io_monitor = o._io_monitor;
+            o._lock.reset();
+            o._io_monitor = nullptr;
+        }
+
+        return *this;
+    }
+
+    ~io_lock() noexcept {
+        if (_lock && _io_monitor) {
+            uint64_t buf{};
+            [[maybe_unused]] const ssize_t ret = ::read(
+                    _io_monitor->_event_fd, &buf, sizeof(counter));
+
+            assert(ret != -1);
+
+            if (buf == counter) {
+                _io_monitor->_interrupting = false;
+                _io_monitor->_interrupt_cv.notify_one();
+            }
+        }
+    }
+};
 
 IOMonitor::IOMonitor() : _epoll_fd(epoll_create1(0)),
                          _event_fd(eventfd(0, EFD_NONBLOCK)) {
@@ -69,7 +119,6 @@ IOMonitor::IOMonitor() : _epoll_fd(epoll_create1(0)),
 }
 
 IOMonitor::~IOMonitor() noexcept {
-    std::lock_guard<std::mutex> ctl_lock(_ctl_lock);
     _stop();
 
     if (_event_fd >= 0)
@@ -80,23 +129,21 @@ IOMonitor::~IOMonitor() noexcept {
 }
 
 void IOMonitor::_listen() {
-    std::lock_guard<std::mutex> run_lock(_run_lock);
+    std::unique_lock lock(_run_mutex);
     std::vector<struct epoll_event> events;
 
     _is_running = true;
 
     while (_is_running) {
         if (_interrupting) {
-            std::unique_lock<std::mutex> lock(_interrupt_mutex);
             _interrupt_cv.wait(lock, [this]() {
-                return !(bool) _interrupting;
+                return !_interrupting;
             });
 
             if (!_is_running)
                 break;
         }
 
-        std::lock_guard<std::mutex> io_lock(_io_lock);
         if (events.size() != _fds.size())
             events.resize(_fds.size());
         int ev_count = ::epoll_wait(_epoll_fd, events.data(), (int) events.size(), -1);
@@ -113,76 +160,32 @@ void IOMonitor::_listen() {
 }
 
 void IOMonitor::_stop() noexcept {
-    _interrupt();
-    _is_running = false;
-    _continue();
+    {
+        [[maybe_unused]] const io_lock lock(this);
+        _is_running = false;
+    }
     _io_thread->join();
 }
 
-[[maybe_unused]]
-bool IOMonitor::_running() const {
-    std::unique_lock<std::mutex> run_lock(_run_lock, std::try_to_lock);
-    return !run_lock.owns_lock() || _is_running;
-}
-
 void IOMonitor::add(int fd, IOHandler handler) {
-    std::lock_guard<std::mutex> lock(_ctl_lock);
-    _interrupt();
+    [[maybe_unused]] const io_lock lock(this);
 
     struct epoll_event event{};
     event.events = EPOLLIN | EPOLLHUP | EPOLLERR;
     event.data.fd = fd;
 
     // TODO: EPOLL_CTL_MOD
-    if (_fds.contains(fd)) {
-        _continue();
+    if (_fds.contains(fd))
         throw std::runtime_error("duplicate io fd");
-    }
 
-    if (::epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, fd, &event)) {
-        _continue();
+    if (::epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, fd, &event))
         throw std::system_error(errno, std::generic_category());
-    }
     _fds.emplace(fd, std::move(handler));
-
-    _continue();
 }
 
 void IOMonitor::remove(int fd) noexcept {
-    std::lock_guard<std::mutex> lock(_ctl_lock);
-    _interrupt();
-    std::lock_guard<std::mutex> io_lock(_io_lock);
+    [[maybe_unused]] const io_lock lock(this);
 
     ::epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, fd, nullptr);
     _fds.erase(fd);
-
-    _continue();
-}
-
-void IOMonitor::_interrupt() noexcept {
-    std::unique_lock<std::mutex> run_lock(_run_lock, std::try_to_lock);
-
-    _interrupting = true;
-
-    uint64_t counter = 1;
-    [[maybe_unused]] ssize_t ret = ::write(_event_fd, &counter, sizeof(counter));
-    assert(ret == sizeof(counter));
-
-    // Wait for the IO monitor to _stop
-    std::lock_guard<std::mutex> io_lock(_io_lock);
-
-}
-
-void IOMonitor::_continue() noexcept {
-    std::unique_lock<std::mutex> run_lock(_run_lock, std::try_to_lock);
-
-    uint64_t counter;
-    [[maybe_unused]] ssize_t ret = ::read(_event_fd, &counter, sizeof(counter));
-
-    assert(ret != -1);
-
-    if (counter == 1) {
-        _interrupting = false;
-        _interrupt_cv.notify_all();
-    }
 }

@@ -40,6 +40,14 @@ namespace logid::backend::raw {
     public:
         IOMonitor();
 
+        IOMonitor(IOMonitor&&) = delete;
+
+        IOMonitor(const IOMonitor&) = delete;
+
+        IOMonitor& operator=(IOMonitor&&) = delete;
+
+        IOMonitor& operator=(const IOMonitor&) = delete;
+
         ~IOMonitor() noexcept;
 
         void add(int fd, IOHandler handler);
@@ -50,26 +58,19 @@ namespace logid::backend::raw {
         void _listen(); // This is a blocking call
         void _stop() noexcept;
 
-        [[maybe_unused]]
-        [[nodiscard]] bool _running() const;
-
-        void _interrupt() noexcept;
-
-        void _continue() noexcept;
-
         std::unique_ptr<std::thread> _io_thread;
 
         std::map<int, IOHandler> _fds;
-        std::mutex _io_lock, _ctl_lock;
-        mutable std::mutex _run_lock;
+        mutable std::mutex _run_mutex;
         std::atomic_bool _is_running;
 
         std::atomic_bool _interrupting;
-        std::mutex _interrupt_mutex;
         std::condition_variable _interrupt_cv;
 
         const int _epoll_fd;
         const int _event_fd;
+
+        class io_lock;
     };
 }
 
