@@ -24,21 +24,64 @@
 #include <mutex>
 #include <shared_mutex>
 #include <list>
+#include <atomic>
 
 template <class T>
 class EventHandlerLock;
 
 template <class T>
-struct EventHandlerList {
-    typedef std::list<typename T::EventHandler> list_t;
-    typedef typename list_t::const_iterator iterator_t;
+class EventHandlerList {
+public:
+    typedef std::list<std::pair<typename T::EventHandler, std::atomic_bool>> list_t;
+    typedef typename list_t::iterator iterator_t;
+private:
+    list_t list;
+    std::shared_mutex mutex;
+    std::shared_mutex add_mutex;
 
-    std::list<typename T::EventHandler> list;
-    mutable std::shared_mutex mutex;
+    void cleanup() {
+        std::unique_lock lock(mutex, std::try_to_lock);
+        if (lock.owns_lock()) {
+            std::list<iterator_t> to_remove;
+            for (auto it = list.begin(); it != list.end(); ++it) {
+                if (!it->second)
+                    to_remove.push_back(it);
+            }
+
+            for(auto& it : to_remove)
+                list.erase(it);
+        }
+    }
+public:
+    iterator_t add(typename T::EventHandler handler) {
+        std::unique_lock add_lock(add_mutex);
+        list.emplace_front(std::move(handler), true);
+        return list.begin();
+    }
 
     void remove(iterator_t iterator) {
-        std::unique_lock lock(mutex);
-        list.erase(iterator);
+        std::unique_lock lock(mutex, std::try_to_lock);
+        if (lock.owns_lock()) {
+            std::unique_lock add_lock(add_mutex);
+            list.erase(iterator);
+        } else {
+            iterator->second = false;
+        }
+    }
+
+    template <typename Arg>
+    void run_all(Arg arg) {
+        cleanup();
+        std::shared_lock lock(mutex);
+        std::shared_lock add_lock(add_mutex);
+        for (auto& handler : list) {
+            add_lock.unlock();
+            if (handler.second) {
+                if (handler.first.condition(arg))
+                    handler.first.callback(arg);
+            }
+            add_lock.lock();
+        }
     }
 };
 

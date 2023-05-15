@@ -156,9 +156,7 @@ void RawDevice::sendReport(const std::vector<uint8_t>& report) {
 }
 
 EventHandlerLock<RawDevice> RawDevice::addEventHandler(RawEventHandler handler) {
-    std::unique_lock<std::shared_mutex> lock(_event_handlers->mutex);
-    _event_handlers->list.emplace_front(std::move(handler));
-    return {_event_handlers, _event_handlers->list.cbegin()};
+    return {_event_handlers, _event_handlers->add(std::forward<RawEventHandler>(handler))};
 }
 
 void RawDevice::_readReports() {
@@ -181,8 +179,5 @@ void RawDevice::_readReports() {
 }
 
 void RawDevice::_handleEvent(const std::vector<uint8_t>& report) {
-    std::shared_lock<std::shared_mutex> lock(_event_handlers->mutex);
-    for (auto& handler : _event_handlers->list)
-        if (handler.condition(report))
-            handler.callback(report);
+    _event_handlers->run_all(report);
 }

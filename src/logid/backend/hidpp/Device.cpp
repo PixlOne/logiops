@@ -214,19 +214,14 @@ void Device::_init() {
 }
 
 EventHandlerLock<Device> Device::addEventHandler(EventHandler handler) {
-    std::unique_lock lock(_event_handlers->mutex);
-    _event_handlers->list.emplace_front(std::move(handler));
-    return {_event_handlers, _event_handlers->list.cbegin()};
+    return {_event_handlers, _event_handlers->add(std::move(handler))};
 }
 
 void Device::handleEvent(Report& report) {
     if (responseReport(report))
         return;
 
-    std::shared_lock lock(_event_handlers->mutex);
-    for (auto& handler: _event_handlers->list)
-        if (handler.condition(report))
-            handler.callback(report);
+    _event_handlers->run_all(report);
 }
 
 Report Device::sendReport(const Report& report) {
