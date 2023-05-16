@@ -158,34 +158,31 @@ void ReceiverMonitor::enumerate() {
 }
 
 void ReceiverMonitor::waitForDevice(hidpp::DeviceIndex index) {
-    auto handler_id = std::make_shared<EventHandlerLock<raw::RawDevice>>();
-    auto executed = std::make_shared<bool>(false);
+    const std::lock_guard lock(_wait_mutex);
+    if (!_waiters.count(index)) {
+        _waiters.emplace(index, _receiver->rawDevice()->addEventHandler(
+                {[index](const std::vector<uint8_t>& report) -> bool {
+                    /* Connection events should be handled by connect_ev_handler */
+                    auto sub_id = report[Offset::SubID];
+                    return report[Offset::DeviceIndex] == index &&
+                           sub_id != Receiver::DeviceConnection &&
+                           sub_id != Receiver::DeviceDisconnection;
+                },
+                 [self_weak = _self, index](
+                         [[maybe_unused]] const std::vector<uint8_t>& report) {
+                     hidpp::DeviceConnectionEvent event{};
+                     event.withPayload = false;
+                     event.linkEstablished = true;
+                     event.index = index;
+                     event.fromTimeoutCheck = true;
 
-    *handler_id = _receiver->rawDevice()->addEventHandler(
-            {[index](const std::vector<uint8_t>& report) -> bool {
-                return report[Offset::DeviceIndex] == index;
-            },
-             [self_weak = _self, index, handler_id, executed](
-                     [[maybe_unused]] const std::vector<uint8_t>& report) {
-                if (*executed)
-                    return;
-
-                 hidpp::DeviceConnectionEvent event{};
-                 event.withPayload = false;
-                 event.linkEstablished = true;
-                 event.index = index;
-                 event.fromTimeoutCheck = true;
-
-                 *executed = true;
-
-                 run_task([self_weak, event, handler_id]() {
-                     *handler_id = {};
-                     if (auto self = self_weak.lock()) {
-                         self->_addHandler(event);
-                     }
-                 });
-             }
-            });
+                     run_task([self_weak, event]() {
+                         if (auto self = self_weak.lock())
+                             self->_addHandler(event);
+                     });
+                 }
+                }));
+    }
 }
 
 std::shared_ptr<Receiver> ReceiverMonitor::receiver() const {
@@ -223,6 +220,8 @@ void ReceiverMonitor::_addHandler(const hidpp::DeviceConnectionEvent& event, int
     auto device_path = _receiver->devicePath();
     try {
         addDevice(event);
+        const std::lock_guard lock(_wait_mutex);
+        _waiters.erase(event.index);
     } catch (DeviceNotReady& e) {
         if (tries == max_tries) {
             logPrintf(WARN, "Failed to add device %s:%d after %d tries."

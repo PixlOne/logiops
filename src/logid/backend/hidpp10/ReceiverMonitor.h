@@ -101,6 +101,9 @@ namespace logid::backend::hidpp10 {
 
         std::weak_ptr<ReceiverMonitor> _self;
 
+        std::mutex _wait_mutex;
+        std::map<hidpp::DeviceIndex, EventHandlerLock<raw::RawDevice>> _waiters;
+
     public:
         template<typename T, typename... Args>
         static std::shared_ptr<T> make(Args... args) {
