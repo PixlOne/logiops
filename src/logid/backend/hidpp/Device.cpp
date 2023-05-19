@@ -114,35 +114,8 @@ void Device::_setupReportsAndInit() {
     /* hid_logitech_dj creates virtual /dev/hidraw nodes for receiver
      * devices. We should ignore these devices.
      */
-    if (_index == hidpp::DefaultDevice) {
-        _raw_handler = _raw_device->addEventHandler(
-                {[](const std::vector<uint8_t>& report) -> bool {
-                    return (report[Offset::Type] == Report::Type::Short ||
-                            report[Offset::Type] == Report::Type::Long);
-                },
-                 [self_weak = _self](const std::vector<uint8_t>& report) -> void {
-                     Report _report(report);
-                     if(auto self = self_weak.lock())
-                        self->handleEvent(_report);
-                 }});
-
-        try {
-            auto rsp = sendReport({ReportType::Short, _index,
-                                   hidpp20::FeatureID::ROOT, hidpp20::Root::Ping,
-                                   hidpp::softwareID});
-            if (rsp.deviceIndex() != _index)
-                throw InvalidDevice(InvalidDevice::VirtualNode);
-        } catch (hidpp10::Error& e) {
-            if (e.deviceIndex() != _index)
-                throw InvalidDevice(InvalidDevice::VirtualNode);
-        } catch (hidpp20::Error& e) {
-            /* This shouldn't happen, the device must not be ready */
-            if (e.deviceIndex() != _index)
-                throw InvalidDevice(InvalidDevice::VirtualNode);
-            else
-                throw DeviceNotReady();
-        }
-    }
+    if (_raw_device->isSubDevice())
+        throw InvalidDevice(InvalidDevice::VirtualNode);
 
     _raw_handler = _raw_device->addEventHandler(
             {[index = _index](
@@ -214,25 +187,21 @@ void Device::_init() {
 }
 
 EventHandlerLock<Device> Device::addEventHandler(EventHandler handler) {
-    std::unique_lock lock(_event_handlers->mutex);
-    _event_handlers->list.emplace_front(std::move(handler));
-    return {_event_handlers, _event_handlers->list.cbegin()};
+    return {_event_handlers, _event_handlers->add(std::move(handler))};
 }
 
 void Device::handleEvent(Report& report) {
     if (responseReport(report))
         return;
 
-    std::shared_lock lock(_event_handlers->mutex);
-    for (auto& handler: _event_handlers->list)
-        if (handler.condition(report))
-            handler.callback(report);
+    _event_handlers->run_all(report);
 }
 
 Report Device::sendReport(const Report& report) {
     /* Must complete transaction before next send */
     std::lock_guard send_lock(_send_mutex);
     _sent_sub_id = report.subId();
+    _sent_address = report.address();
     std::unique_lock lock(_response_mutex);
     _sendReport(report);
 
@@ -249,6 +218,7 @@ Report Device::sendReport(const Report& report) {
     Response response = _response.value();
     _response.reset();
     _sent_sub_id.reset();
+    _sent_address.reset();
 
     if (std::holds_alternative<Report>(response)) {
         return std::get<Report>(response);
@@ -268,20 +238,23 @@ bool Device::responseReport(const Report& report) {
     std::lock_guard lock(_response_mutex);
     Response response = report;
     uint8_t sub_id;
+    uint8_t address;
 
     Report::Hidpp10Error hidpp10_error{};
     Report::Hidpp20Error hidpp20_error{};
     if (report.isError10(hidpp10_error)) {
         sub_id = hidpp10_error.sub_id;
+        address = hidpp10_error.address;
         response = hidpp10_error;
     } else if (report.isError20(hidpp20_error)) {
         sub_id = hidpp20_error.feature_index;
-        response = hidpp20_error;
+        address = (hidpp20_error.function << 4) | (hidpp20_error.software_id & 0x0f);
     } else {
         sub_id = report.subId();
+        address = report.address();
     }
 
-    if (sub_id == _sent_sub_id) {
+    if (sub_id == _sent_sub_id && address == _sent_address) {
         _response = response;
         _response_cv.notify_all();
         return true;

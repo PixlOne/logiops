@@ -39,9 +39,16 @@ namespace logid::backend::raw {
         static constexpr int max_data_length = 32;
         typedef RawEventHandler EventHandler;
 
+        enum BusType {
+            USB,
+            Bluetooth,
+            OtherBus
+        };
+
         struct dev_info {
             int16_t vid;
             int16_t pid;
+            BusType bus_type;
         };
 
         RawDevice(std::string path, const std::shared_ptr<DeviceMonitor>& monitor);
@@ -56,6 +63,10 @@ namespace logid::backend::raw {
         [[nodiscard]] int16_t vendorId() const;
 
         [[nodiscard]] int16_t productId() const;
+
+        [[nodiscard]] BusType busType() const;
+
+        [[nodiscard]] bool isSubDevice() const;
 
         static std::vector<uint8_t> getReportDescriptor(const std::string& path);
 
@@ -79,6 +90,8 @@ namespace logid::backend::raw {
         const std::vector<uint8_t> _report_desc;
 
         std::shared_ptr<IOMonitor> _io_monitor;
+
+        bool _sub_device = false;
 
         std::shared_ptr<EventHandlerList<RawDevice>> _event_handlers;
 

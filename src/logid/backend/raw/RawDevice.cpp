@@ -24,6 +24,7 @@
 #include <string>
 #include <system_error>
 #include <utility>
+#include <regex>
 
 extern "C"
 {
@@ -32,11 +33,16 @@ extern "C"
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <linux/hidraw.h>
+#include <linux/input.h>
 }
 
 using namespace logid::backend::raw;
 using namespace logid::backend;
 using namespace std::chrono;
+
+static constexpr int max_write_tries = 8;
+
+static const std::regex virtual_path_regex(R"~((.*\/)(.*:)([0-9]+))~");
 
 int get_fd(const std::string& path) {
     int fd = ::open(path.c_str(), O_RDWR | O_NONBLOCK);
@@ -56,7 +62,37 @@ RawDevice::dev_info get_dev_info(int fd) {
                                 "RawDevice HIDIOCGRAWINFO failed");
     }
 
-    return {dev_info.vendor, dev_info.product};
+    RawDevice::BusType type = RawDevice::OtherBus;
+
+    switch (dev_info.bustype) {
+        case BUS_USB:
+            type = RawDevice::USB;
+            break;
+        case BUS_BLUETOOTH:
+            type = RawDevice::Bluetooth;
+            break;
+        default:;
+    }
+
+
+    return {
+            .vid = dev_info.vendor,
+            .pid = dev_info.product,
+            .bus_type = type
+    };
+}
+
+std::string get_phys(int fd) {
+    ssize_t len;
+    char buf[256];
+    if (-1 == (len = ::ioctl(fd, HIDIOCGRAWPHYS(sizeof(buf)), buf))) {
+        int err = errno;
+        ::close(fd);
+        throw std::system_error(err, std::system_category(),
+                                "RawDevice HIDIOCGRAWPHYS failed");
+    }
+
+    return {buf, static_cast<size_t>(len) - 1};
 }
 
 std::string get_name(int fd) {
@@ -68,7 +104,7 @@ std::string get_name(int fd) {
         throw std::system_error(err, std::system_category(),
                                 "RawDevice HIDIOCGRAWNAME failed");
     }
-    return {name_buf, static_cast<size_t>(len)};
+    return {name_buf, static_cast<size_t>(len) - 1};
 }
 
 RawDevice::RawDevice(std::string path, const std::shared_ptr<DeviceMonitor>& monitor) :
@@ -76,6 +112,12 @@ RawDevice::RawDevice(std::string path, const std::shared_ptr<DeviceMonitor>& mon
         _dev_info(get_dev_info(_fd)), _name(get_name(_fd)),
         _report_desc(getReportDescriptor(_fd)), _io_monitor(monitor->ioMonitor()),
         _event_handlers(std::make_shared<EventHandlerList<RawDevice>>()) {
+
+    if (busType() == USB) {
+        auto phys = get_phys(_fd);
+        _sub_device = std::regex_match(phys, virtual_path_regex);
+    }
+
     _io_monitor->add(_fd, {
             [this]() { _readReports(); },
             [this]() { _valid = false; },
@@ -103,6 +145,14 @@ int16_t RawDevice::vendorId() const {
 
 int16_t RawDevice::productId() const {
     return _dev_info.pid;
+}
+
+RawDevice::BusType RawDevice::busType() const {
+    return _dev_info.bus_type;
+}
+
+bool RawDevice::isSubDevice() const {
+    return _sub_device;
 }
 
 std::vector<uint8_t> RawDevice::getReportDescriptor(const std::string& path) {
@@ -150,15 +200,17 @@ void RawDevice::sendReport(const std::vector<uint8_t>& report) {
         printf("\n");
     }
 
-    if (write(_fd, report.data(), report.size()) == -1)
-        throw std::system_error(errno, std::system_category(),
-                                "sendReport write failed");
+
+    for (int i = 0; i < max_write_tries && write(_fd, report.data(), report.size()) == -1; ++i) {
+        auto err = errno;
+        if (err != EPIPE)
+            throw std::system_error(err, std::system_category(),
+                                    "sendReport write failed");
+    }
 }
 
 EventHandlerLock<RawDevice> RawDevice::addEventHandler(RawEventHandler handler) {
-    std::unique_lock<std::shared_mutex> lock(_event_handlers->mutex);
-    _event_handlers->list.emplace_front(std::move(handler));
-    return {_event_handlers, _event_handlers->list.cbegin()};
+    return {_event_handlers, _event_handlers->add(std::forward<RawEventHandler>(handler))};
 }
 
 void RawDevice::_readReports() {
@@ -181,8 +233,5 @@ void RawDevice::_readReports() {
 }
 
 void RawDevice::_handleEvent(const std::vector<uint8_t>& report) {
-    std::shared_lock<std::shared_mutex> lock(_event_handlers->mutex);
-    for (auto& handler : _event_handlers->list)
-        if (handler.condition(report))
-            handler.callback(report);
+    _event_handlers->run_all(report);
 }

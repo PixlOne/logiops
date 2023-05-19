@@ -184,7 +184,6 @@ void Device::sleep() {
 
 void Device::wakeup() {
     std::lock_guard<std::mutex> lock(_state_lock);
-    logPrintf(INFO, "%s:%d woke up.", _path.c_str(), _index);
 
     reconfigure();
 
@@ -192,6 +191,8 @@ void Device::wakeup() {
         _awake = true;
         _ipc_interface->notifyStatus();
     }
+
+    logPrintf(INFO, "%s:%d woke up.", _path.c_str(), _index);
 }
 
 void Device::reconfigure() {

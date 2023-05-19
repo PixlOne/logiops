@@ -24,6 +24,23 @@
 using namespace logid::backend;
 using namespace logid::backend::hidpp10;
 
+hidpp::Report setupRegReport(hidpp::DeviceIndex index,
+                             uint8_t sub_id, uint8_t address,
+                             const std::vector<uint8_t>& params) {
+    hidpp::Report::Type type = params.size() <= hidpp::ShortParamLength ?
+                               hidpp::Report::Type::Short : hidpp::Report::Type::Long;
+
+    if (sub_id == SetRegisterLong) {
+        // When setting a long register, the report must be long.
+        type = hidpp::Report::Type::Long;
+    }
+
+    hidpp::Report request(type, index, sub_id, address);
+    std::copy(params.begin(), params.end(), request.paramBegin());
+
+    return request;
+}
+
 Device::Device(const std::string& path, hidpp::DeviceIndex index,
                const std::shared_ptr<raw::DeviceMonitor>& monitor, double timeout) :
         hidpp::Device(path, index, monitor, timeout) {
@@ -124,22 +141,24 @@ std::vector<uint8_t> Device::setRegister(uint8_t address,
     return accessRegister(sub_id, address, params);
 }
 
+void Device::setRegisterNoResponse(uint8_t address,
+                                   const std::vector<uint8_t>& params,
+                                   hidpp::Report::Type type) {
+    assert(params.size() <= hidpp::LongParamLength);
+
+    uint8_t sub_id = type == hidpp::Report::Type::Short ?
+                     SetRegisterShort : SetRegisterLong;
+
+    return accessRegisterNoResponse(sub_id, address, params);
+}
+
 std::vector<uint8_t> Device::accessRegister(uint8_t sub_id, uint8_t address,
                                             const std::vector<uint8_t>& params) {
-    hidpp::Report::Type type = params.size() <= hidpp::ShortParamLength ?
-                               hidpp::Report::Type::Short : hidpp::Report::Type::Long;
-
-    if (sub_id == SetRegisterLong) {
-        // When setting a long register, the report must be long.
-        type = hidpp::Report::Type::Long;
-    }
-
-    hidpp::Report request(type, deviceIndex(), sub_id, address);
-    std::copy(params.begin(), params.end(), request.paramBegin());
-
-    auto response = sendReport(request);
+    auto response = sendReport(setupRegReport(deviceIndex(), sub_id, address, params));
     return {response.paramBegin(), response.paramEnd()};
 }
 
-
-
+void Device::accessRegisterNoResponse(uint8_t sub_id, uint8_t address,
+                                      const std::vector<uint8_t>& params) {
+    sendReportNoACK(setupRegReport(deviceIndex(), sub_id, address, params));
+}

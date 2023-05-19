@@ -68,7 +68,7 @@ void Receiver::setNotifications(NotificationFlags flags) {
 }
 
 void Receiver::enumerate() {
-    setRegister(ConnectionState, {2}, hidpp::ReportType::Short);
+    setRegisterNoResponse(ConnectionState, {2}, hidpp::ReportType::Short);
 }
 
 ///TODO: Investigate usage

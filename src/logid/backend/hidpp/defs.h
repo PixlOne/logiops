@@ -42,7 +42,7 @@ namespace logid::backend::hidpp {
 
     static constexpr uint8_t softwareID = 2;
     /* For sending reports with no response, use a different SW ID */
-    static constexpr uint8_t noAckSoftwareID = 1;
+    static constexpr uint8_t noAckSoftwareID = 3;
 
     static constexpr std::size_t ShortParamLength = 3;
     static constexpr std::size_t LongParamLength = 16;

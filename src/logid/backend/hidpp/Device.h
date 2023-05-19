@@ -158,6 +158,7 @@ namespace logid::backend::hidpp {
 
         std::optional<Response> _response;
         std::optional<uint8_t> _sent_sub_id{};
+        std::optional<uint8_t> _sent_address{};
 
         std::shared_ptr<EventHandlerList<Device>> _event_handlers;
 

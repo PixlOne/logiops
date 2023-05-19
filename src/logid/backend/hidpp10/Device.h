@@ -39,6 +39,9 @@ namespace logid::backend::hidpp10 {
                                          const std::vector<uint8_t>& params,
                                          hidpp::Report::Type type);
 
+        void setRegisterNoResponse(uint8_t address, const std::vector<uint8_t>& params,
+                                   hidpp::Report::Type type);
+
     protected:
         Device(const std::string& path, hidpp::DeviceIndex index,
                const std::shared_ptr<raw::DeviceMonitor>& monitor, double timeout);
@@ -53,18 +56,24 @@ namespace logid::backend::hidpp10 {
 
     private:
         typedef std::variant<hidpp::Report, hidpp::Report::Hidpp10Error> Response;
+
         struct ResponseSlot {
             std::optional<Response> response;
             std::optional<uint8_t> sub_id;
+
             void reset();
         };
+
         std::array<ResponseSlot, SubIDCount> _responses;
 
         std::vector<uint8_t> accessRegister(
                 uint8_t sub_id, uint8_t address, const std::vector<uint8_t>& params);
 
+        void accessRegisterNoResponse(
+                uint8_t sub_id, uint8_t address, const std::vector<uint8_t>& params);
+
     protected:
-        template <typename T, typename... Args>
+        template<typename T, typename... Args>
         static std::shared_ptr<T> makeDerived(Args... args) {
             auto device = hidpp::Device::makeDerived<T>(std::forward<Args>(args)...);
 
@@ -73,8 +82,9 @@ namespace logid::backend::hidpp10 {
 
             return device;
         }
+
     public:
-        template <typename... Args>
+        template<typename... Args>
         static std::shared_ptr<Device> make(Args... args) {
             return makeDerived<Device>(std::forward<Args>(args)...);
         }
