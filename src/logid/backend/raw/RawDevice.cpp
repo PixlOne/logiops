@@ -117,11 +117,22 @@ RawDevice::RawDevice(std::string path, const std::shared_ptr<DeviceMonitor>& mon
         auto phys = get_phys(_fd);
         _sub_device = std::regex_match(phys, virtual_path_regex);
     }
+}
 
+void RawDevice::_ready() {
     _io_monitor->add(_fd, {
-            [this]() { _readReports(); },
-            [this]() { _valid = false; },
-            [this]() { _valid = false; }
+            [self_weak = _self]() {
+                if (auto self = self_weak.lock())
+                    self->_readReports();
+            },
+            [self_weak = _self]() {
+                if (auto self = self_weak.lock())
+                    self->_valid = false;
+            },
+            [self_weak = _self]() {
+                if (auto self = self_weak.lock())
+                    self->_valid = false;
+            }
     });
 }
 

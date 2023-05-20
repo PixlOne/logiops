@@ -34,7 +34,16 @@ namespace logid::backend::raw {
 
     class IOMonitor;
 
+    template <typename T>
+    class RawDeviceWrapper : public T {
+    public:
+        template <typename... Args>
+        RawDeviceWrapper(Args... args) : T(std::forward<Args>(args)...) { }
+    };
+
     class RawDevice {
+        template <typename>
+        friend class RawDeviceWrapper;
     public:
         static constexpr int max_data_length = 32;
         typedef RawEventHandler EventHandler;
@@ -51,7 +60,14 @@ namespace logid::backend::raw {
             BusType bus_type;
         };
 
-        RawDevice(std::string path, const std::shared_ptr<DeviceMonitor>& monitor);
+        template <typename... Args>
+        static std::shared_ptr<RawDevice> make(Args... args) {
+            auto raw_dev = std::make_shared<RawDeviceWrapper<RawDevice>>(
+                    std::forward<Args>(args)...);
+            raw_dev->_self = raw_dev;
+            raw_dev->_ready();
+            return raw_dev;
+        }
 
         ~RawDevice() noexcept;
 
@@ -79,6 +95,10 @@ namespace logid::backend::raw {
         [[nodiscard]] EventHandlerLock<RawDevice> addEventHandler(RawEventHandler handler);
 
     private:
+        RawDevice(std::string path, const std::shared_ptr<DeviceMonitor>& monitor);
+
+        void _ready();
+
         void _readReports();
 
         std::atomic_bool _valid;
@@ -90,6 +110,8 @@ namespace logid::backend::raw {
         const std::vector<uint8_t> _report_desc;
 
         std::shared_ptr<IOMonitor> _io_monitor;
+
+        std::weak_ptr<RawDevice> _self;
 
         bool _sub_device = false;
 

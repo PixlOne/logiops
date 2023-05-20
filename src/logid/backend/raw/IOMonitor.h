@@ -21,9 +21,10 @@
 #include <atomic>
 #include <functional>
 #include <map>
+#include <memory>
 #include <mutex>
-#include <thread>
 #include <condition_variable>
+#include <thread>
 
 namespace logid::backend::raw {
     struct IOHandler {
@@ -53,24 +54,21 @@ namespace logid::backend::raw {
         void add(int fd, IOHandler handler);
 
         void remove(int fd) noexcept;
-
     private:
         void _listen(); // This is a blocking call
         void _stop() noexcept;
+        std::unique_lock<std::mutex> _yield() noexcept;
 
         std::unique_ptr<std::thread> _io_thread;
 
-        std::map<int, IOHandler> _fds;
-        mutable std::mutex _run_mutex;
-        std::atomic_bool _is_running;
+        std::mutex _run_mutex;
+        std::mutex _yield_mutex;
 
-        std::atomic_bool _interrupting;
-        std::condition_variable _interrupt_cv;
+        std::map<int, std::shared_ptr<IOHandler>> _fds;
+        std::atomic_bool _is_running;
 
         const int _epoll_fd;
         const int _event_fd;
-
-        class io_lock;
     };
 }
 

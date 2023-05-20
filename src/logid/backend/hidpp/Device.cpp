@@ -53,7 +53,7 @@ Device::Device(const std::string& path, DeviceIndex index,
                const std::shared_ptr<raw::DeviceMonitor>& monitor, double timeout) :
         io_timeout(duration_cast<milliseconds>(
                 duration<double, std::milli>(timeout))),
-        _raw_device(std::make_shared<raw::RawDevice>(path, monitor)),
+        _raw_device(raw::RawDevice::make(path, monitor)),
         _receiver(nullptr), _path(path), _index(index) {
 }
 

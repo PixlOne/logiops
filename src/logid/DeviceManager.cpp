@@ -66,11 +66,11 @@ void DeviceManager::addDevice(std::string path) {
 
     // Check if device is ignored before continuing
     {
-        raw::RawDevice raw_dev(path, self<DeviceManager>().lock());
+        auto raw_dev = raw::RawDevice::make(path, self<DeviceManager>().lock());
         if (config()->ignore.has_value() &&
-            config()->ignore.value().contains(raw_dev.productId())) {
+            config()->ignore.value().contains(raw_dev->productId())) {
             logPrintf(DEBUG, "%s: Device 0x%04x ignored.",
-                      path.c_str(), raw_dev.productId());
+                      path.c_str(), raw_dev->productId());
             return;
         }
     }
