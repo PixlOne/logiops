@@ -138,7 +138,7 @@ Device::Device(Receiver* receiver, hidpp::DeviceIndex index,
 }
 
 void Device::_init() {
-    logPrintf(INFO, "Device found: %s on %s:%d", name().c_str(),
+    logPrintf(INFO, "Device found: \"%s\" on %s:%d", name().c_str(),
               hidpp20().devicePath().c_str(), _index);
 
     {
