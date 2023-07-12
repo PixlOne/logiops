@@ -89,23 +89,25 @@ void DeviceMonitor::ready() {
     _ready = true;
 
     _io_monitor->add(_fd, {
-            [this]() {
-                struct udev_device* device = udev_monitor_receive_device(_udev_monitor);
-                std::string action = udev_device_get_action(device);
-                std::string dev_node = udev_device_get_devnode(device);
+            [self_weak = _self]() {
+                if (auto self = self_weak.lock()) {
+                    struct udev_device* device = udev_monitor_receive_device(self->_udev_monitor);
+                    std::string action = udev_device_get_action(device);
+                    std::string dev_node = udev_device_get_devnode(device);
 
-                if (action == "add")
-                    run_task([self_weak = _self, dev_node]() {
-                        if (auto self = self_weak.lock())
-                            self->_addHandler(dev_node);
-                    });
-                else if (action == "remove")
-                    run_task([self_weak = _self, dev_node]() {
-                        if (auto self = self_weak.lock())
-                            self->_removeHandler(dev_node);
-                    });
+                    if (action == "add")
+                        run_task([self_weak, dev_node]() {
+                            if (auto self = self_weak.lock())
+                                self->_addHandler(dev_node);
+                        });
+                    else if (action == "remove")
+                        run_task([self_weak, dev_node]() {
+                            if (auto self = self_weak.lock())
+                                self->_removeHandler(dev_node);
+                        });
 
-                udev_device_unref(device);
+                    udev_device_unref(device);
+                }
             },
             []() {
                 throw std::runtime_error("udev hangup");
