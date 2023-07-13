@@ -150,6 +150,17 @@ void RemapButton::setProfile(config::Profile& profile) {
         button.second->setProfile(config[button.first]);
 }
 
+bool RemapButton::onHiresScroll(int16_t deltaV)
+{
+    bool handled = false;
+    for (const auto& button: _buttons)
+        if (button.second->pressed()) {
+            button.second->getAction()->scroll(deltaV);
+                handled = true;
+        }
+    return handled;
+}
+
 void RemapButton::_buttonEvent(const std::set<uint16_t>& new_state) {
     // Ensure I/O doesn't occur while updating button state
     std::lock_guard<std::mutex> lock(_button_lock);
