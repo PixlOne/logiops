@@ -49,6 +49,9 @@ namespace logid::actions {
         void setThreshold(int threshold);
 
     protected:
+        void registerAxis(uint axis);
+
+    protected:
         int32_t _axis{};
         double _axis_remainder{};
         int _hires_remainder{};
