@@ -129,7 +129,7 @@ ReprogControls::ControlInfo ReprogControls::getControlIdInfo(uint16_t cid) {
     return report;
 }
 
-void ReprogControls::setControlReporting(uint8_t cid, ControlInfo info) {
+void ReprogControls::setControlReporting(uint16_t cid, ControlInfo info) {
     // This function does not exist pre-v4 and cannot be emulated, ignore.
     (void) cid;
     (void) info; // Suppress unused warnings
@@ -173,7 +173,7 @@ ReprogControls::ControlInfo ReprogControlsV4::getControlReporting(uint16_t cid) 
     return info;
 }
 
-void ReprogControlsV4::setControlReporting(uint8_t cid, ControlInfo info) {
+void ReprogControlsV4::setControlReporting(uint16_t cid, ControlInfo info) {
     std::vector<uint8_t> params(5);
     params[0] = (cid >> 8) & 0xff;
     params[1] = cid & 0xff;
