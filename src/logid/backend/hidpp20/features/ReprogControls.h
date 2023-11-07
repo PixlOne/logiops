@@ -100,7 +100,7 @@ namespace logid::backend::hidpp20 {
         [[nodiscard]] virtual ControlInfo getControlReporting(uint16_t cid);
 
         // Only controlId (for remap) and flags will be read
-        virtual void setControlReporting(uint8_t cid, ControlInfo info);
+        virtual void setControlReporting(uint16_t cid, ControlInfo info);
 
         [[nodiscard]] static std::set<uint16_t> divertedButtonEvent(const hidpp::Report& report);
 
@@ -162,7 +162,7 @@ namespace logid::backend::hidpp20 {
 
         [[nodiscard]] ControlInfo getControlReporting(uint16_t cid) override;
 
-        void setControlReporting(uint8_t cid, ControlInfo info) override;
+        void setControlReporting(uint16_t cid, ControlInfo info) override;
 
         explicit ReprogControlsV4(Device* dev);
 
