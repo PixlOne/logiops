@@ -22,6 +22,7 @@
 #include <type_traits>
 #include <functional>
 #include <utility>
+#include <algorithm>
 
 namespace logid::config {
     template<typename T>
