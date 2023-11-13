@@ -15,7 +15,7 @@ Default location for the configuration file is /etc/logid.cfg, but another can b
 
 ## Dependencies
 
-This project requires a C++20 compiler, `cmake`, `libevdev`, `libudev`, `glib`, and `libconfig`.
+This project requires a C++20 compiler, `cmake`, `libevdev`, `libudev`, `glib`, `git`, and `libconfig`.
 For popular distributions, I've included commands below.
 
 **Arch Linux:** `sudo pacman -S base-devel cmake libevdev libconfig systemd-libs glib2`
@@ -29,6 +29,8 @@ For popular distributions, I've included commands below.
 **Solus:** `sudo eopkg install cmake libevdev-devel libconfig-devel libgudev-devel glib2-devel`
 
 **openSUSE:** `sudo zypper install cmake libevdev-devel systemd-devel libconfig-devel gcc-c++ libconfig++-devel libudev-devel glib2-devel`
+
+**Nix:** `nix-shell --pure -p cmake libevdev glib libconfig libudev-zero pcre pcre2 libuuid libselinux libsepol git`
 
 ## Building
 
