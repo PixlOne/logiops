@@ -158,7 +158,6 @@ void ReceiverMonitor::enumerate() {
 }
 
 void ReceiverMonitor::waitForDevice(hidpp::DeviceIndex index) {
-    const std::lock_guard lock(_wait_mutex);
     if (!_waiters.count(index)) {
         _waiters.emplace(index, _receiver->rawDevice()->addEventHandler(
                 {[index](const std::vector<uint8_t>& report) -> bool {
@@ -219,9 +218,8 @@ void ReceiverMonitor::_stopPair() {
 void ReceiverMonitor::_addHandler(const hidpp::DeviceConnectionEvent& event, int tries) {
     auto device_path = _receiver->devicePath();
     try {
-        addDevice(event);
-        const std::lock_guard lock(_wait_mutex);
         _waiters.erase(event.index);
+        addDevice(event);
     } catch (DeviceNotReady& e) {
         if (tries == max_tries) {
             logPrintf(WARN, "Failed to add device %s:%d after %d tries."
