@@ -111,9 +111,11 @@ elseif (NOT SYSTEMD_FOUND AND SYSTEMD_SERVICES_INSTALL_DIR)
 endif ()
 
 # Install DBus conf
-# TODO: Is there a better way of setting the system policy directory?
-set(DBUS_SYSTEM_POLICY_INSTALL_DIR "/usr/share/dbus-1/system.d")
 configure_file(logiops-dbus.conf.in ${CMAKE_BINARY_DIR}/pizza.pixl.LogiOps.conf)
+if (NOT DEFINED DBUS_SYSTEM_POLICY_INSTALL_DIR)
+    # TODO: Is there a better way of setting the system policy directory?
+    set(DBUS_SYSTEM_POLICY_INSTALL_DIR "/usr/share/dbus-1/system.d")
+endif ()
 message(STATUS "dbus system policy will be installed at ${DBUS_SYSTEM_POLICY_INSTALL_DIR}")
 install(FILES ${CMAKE_BINARY_DIR}/pizza.pixl.LogiOps.conf
         DESTINATION ${DBUS_SYSTEM_POLICY_INSTALL_DIR}
