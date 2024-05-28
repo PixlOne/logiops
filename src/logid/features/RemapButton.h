@@ -50,6 +50,10 @@ namespace logid::features {
 
         bool pressed() const;
 
+        auto getAction() const {
+            return _action;
+        };
+
     private:
         friend class ButtonWrapper;
 
@@ -96,6 +100,8 @@ namespace logid::features {
         void listen() final;
 
         void setProfile(config::Profile& profile) final;
+
+        bool onHiresScroll(int16_t);
 
     protected:
         explicit RemapButton(Device* dev);

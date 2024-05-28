@@ -37,6 +37,10 @@ GestureAction::Direction GestureAction::toDirection(std::string direction) {
         return Left;
     else if (direction == "right")
         return Right;
+    else if(direction == "scrollup")
+        return ScrollUp;
+    else if(direction == "scrolldown")
+        return ScrollDown;
     else if (direction == "none")
         return None;
     else
@@ -53,6 +57,10 @@ std::string GestureAction::fromDirection(Direction direction) {
             return "left";
         case Right:
             return "right";
+        case ScrollUp:
+            return "scrollup";
+        case ScrollDown:
+            return "scrolldown";
         case None:
             return "none";
     }
@@ -61,15 +69,15 @@ std::string GestureAction::fromDirection(Direction direction) {
     throw InvalidGesture();
 }
 
-GestureAction::Direction GestureAction::toDirection(int32_t x, int32_t y) {
-    if (x >= 0 && y >= 0)
-        return x >= y ? Right : Down;
-    else if (x < 0 && y >= 0)
-        return -x <= y ? Down : Left;
-    else if (x <= 0 /* && y < 0 */)
-        return x <= y ? Left : Up;
+GestureAction::Direction GestureAction::toDirection(int32_t x, int32_t y, int16_t s) {
+    if(isScroll())
+        return s > 0 ? ScrollUp : ScrollDown;
+    else if(isVertical())
+        return y < 0 ? Up : Down;
+    else if(isHorizontal())
+        return x < 0 ? Left : Right;
     else
-        return x <= -y ? Up : Right;
+        return None;
 }
 
 GestureAction::GestureAction(Device* dev, config::GestureAction& config,
@@ -118,40 +126,50 @@ void GestureAction::release() {
     std::shared_lock lock(_config_mutex);
 
     _pressed = false;
-    bool threshold_met = false;
-
-    auto d = toDirection(_x, _y);
-    auto primary_gesture = _gestures.find(d);
-    if (primary_gesture != _gestures.end()) {
-        threshold_met = primary_gesture->second->metThreshold();
-        primary_gesture->second->release(true);
-    }
+    Direction d = toDirection(_x, _y, _s);
 
     for (auto& gesture: _gestures) {
-        if (gesture.first == d || gesture.first == None)
-            continue;
-        if (!threshold_met) {
-            if (gesture.second->metThreshold()) {
-                // If the primary gesture did not meet its threshold, use the
-                // secondary one.
-                threshold_met = true;
-                gesture.second->release(true);
-            }
-        } else {
-            gesture.second->release(false);
-        }
+        gesture.second->release(gesture.first == d);
     }
 
     auto none_gesture = _gestures.find(None);
-    if (none_gesture != _gestures.end()) {
-        none_gesture->second->release(!threshold_met);
+    if (d == None && none_gesture != _gestures.end()) {
+        none_gesture->second->release(none_gesture->first == d);
     }
 }
 
-void GestureAction::move(int16_t x, int16_t y) {
+
+bool GestureAction::isScroll()
+{
+    auto scrollUp = _gestures.find(ScrollUp);
+    bool isScrollUp = scrollUp == _gestures.end() ? false : scrollUp->second->metThreshold();
+    auto scrollDown = _gestures.find(ScrollDown);
+    bool isScrollDown = scrollDown == _gestures.end() ? false : scrollDown->second->metThreshold();
+    return isScrollUp || isScrollDown;
+}
+
+bool GestureAction::isVertical()
+{
+    auto up = _gestures.find(Up);
+    bool isUp = up == _gestures.end() ? false : up->second->metThreshold();
+    auto down = _gestures.find(Down);
+    bool isDown = down == _gestures.end() ? false : down->second->metThreshold();
+    return isUp || isDown;
+}
+
+bool GestureAction::isHorizontal()
+{
+    auto left = _gestures.find(Left);
+    bool isLeft = left == _gestures.end() ? false : left->second->metThreshold();
+    auto right = _gestures.find(Right);
+    bool isRight = right == _gestures.end() ? false : right->second->metThreshold();
+    return isLeft || isRight;
+}
+
+void GestureAction::move3D(int16_t x, int16_t y, int16_t s) {
     std::shared_lock lock(_config_mutex);
 
-    int32_t new_x = _x + x, new_y = _y + y;
+    int32_t new_x = _x + x, new_y = _y + y, new_s = _s + s;
 
     if (abs(x) > 0) {
         if (_x < 0 && new_x >= 0) { // Left -> Origin/Right
@@ -213,8 +231,39 @@ void GestureAction::move(int16_t x, int16_t y) {
         }
     }
 
+    if (abs(s) > 0) {
+       if(_s > 0 && new_s <= 0) { // ScrollDown -> Origin/ScrollUp
+            auto down = _gestures.find(ScrollDown);
+           if(down != _gestures.end())
+                down->second->move(_s);
+            if(new_s) { // Ignore to origin
+                auto up = _gestures.find(ScrollUp);
+                if(up != _gestures.end())
+                    up->second->move(new_s);
+            }
+        } else if(_s < 0 && new_s >= 0) { // ScrollUp -> Origin/ScrollDown
+            auto up = _gestures.find(ScrollUp);
+            if(up != _gestures.end())
+                up->second->move(-_s);
+            if(new_s) { // Ignore to origin
+                auto down = _gestures.find(ScrollDown);
+                if(down != _gestures.end())
+                    down->second->move(-new_s);
+            }
+        } else if(new_s < 0) { // Origin/ScrollDown to ScrollDown
+            auto down = _gestures.find(ScrollDown);
+            if(down != _gestures.end())
+                down->second->move(-s);
+        } else if(new_s > 0) {// Origin/ScrollUp to ScrollUp
+            auto up = _gestures.find(ScrollUp);
+            if(up != _gestures.end())
+                up->second->move(s);
+        }
+    }
+
     _x = new_x;
     _y = new_y;
+    _s = new_s;
 }
 
 uint8_t GestureAction::reprogFlags() const {
@@ -231,7 +280,7 @@ void GestureAction::setGesture(const std::string& direction, const std::string& 
 
     if (it != _gestures.end()) {
         if (pressed()) {
-            auto current = toDirection(_x, _y);
+            auto current = toDirection(_x, _y, _s);
             if (it->second)
                 it->second->release(current == d);
         }
