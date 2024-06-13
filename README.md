@@ -6,6 +6,18 @@ This is an unofficial driver for Logitech mice and keyboard.
 
 This is currently only compatible with HID++ \>2.0 devices.
 
+## Installation
+
+Logiops is currently available in packaged form for the following distributions:
+
+**Debian (Sid only)** `sudo apt install logiops`
+
+**Arch Linux:**: `sudo pacman -S logiops-git`
+
+**Fedora (>=32)**: `sudo dnf install logiops`
+
+All packages install logiops with the logid service in a disabled state so be sure to enable it with `sudo systemctl enable --now logid` after you have configured it.
+
 ## Configuration
 [Refer to the wiki for details.](https://github.com/PixlOne/logiops/wiki/Configuration)
 
@@ -13,7 +25,7 @@ You may also refer to [logid.example.cfg](./logid.example.cfg) for an example.
 
 Default location for the configuration file is /etc/logid.cfg, but another can be specified using the `-c` flag.
 
-## Dependencies
+## Build Dependencies
 
 This project requires a C++20 compiler, `cmake`, `libevdev`, `libudev`, `glib`, and `libconfig`.
 For popular distributions, I've included commands below.
@@ -41,7 +53,13 @@ cmake -DCMAKE_BUILD_TYPE=Release ..
 make
 ```
 
-To install, run `sudo make install` after building. You can set the daemon to start at boot by running `sudo systemctl enable logid` or `sudo systemctl enable --now logid` if you want to enable and start the daemon.
+To install, run the following after building:
+```bash
+sudo make install
+sudo systemctl daemon-reload
+```
+
+You can set the daemon to start at boot by running `sudo systemctl enable logid` or `sudo systemctl enable --now logid` if you want to enable and start the daemon.
 
 ## Development
 
