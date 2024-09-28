@@ -3,11 +3,12 @@
  "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
 
 <busconfig>
-  <policy user="root">
-    <allow own="pizza.pixl.LogiOps"/>
+  <policy context="default">
+    <deny receive_sender="pizza.pixl.LogiOps"/>
   </policy>
 
-  <policy context="default">
+  <policy user="root">
+    <allow own="pizza.pixl.LogiOps"/>
     <allow send_destination="pizza.pixl.LogiOps"/>
     <allow receive_sender="pizza.pixl.LogiOps"/>
   </policy>
