@@ -12,6 +12,7 @@ This is not by any means an exhaustive list. Many more devices are supported but
 | MX Master           |     Yes     | `Wireless Mouse MX Master`             |
 | MX Anywhere S2      |     Yes     | `Wireless Mobile Mouse MX Anywhere 2S` |
 | MX Anywhere 3       |     Yes     | `MX Anywhere 3`                        |
+| MX Anywhere 3S      |     Yes     | `MX Anywhere 3S`                       |
 | MX Vertical         |     Yes     | `MX Vertical Advanced Ergonomic Mouse` |
 | MX Ergo             |     Yes     | `MX Ergo Multi-Device Trackball `      |
 | MX Ergo M575        |     Yes     | `ERGO M575 Trackball`                  |
