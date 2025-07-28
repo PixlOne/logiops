@@ -157,10 +157,12 @@ void DeviceMonitor::_addHandler(const std::string& device, int tries) {
     try {
         auto supported_reports = backend::hidpp::getSupportedReports(
                 RawDevice::getReportDescriptor(device));
-        if (supported_reports)
+        if (supported_reports) {
+            std::lock_guard<std::mutex> lock(_devices_mutex);
             addDevice(device);
-        else
+        } else {
             logPrintf(DEBUG, "Unsupported device %s ignored", device.c_str());
+        }
     } catch (backend::DeviceNotReady& e) {
         if (tries == max_tries) {
             logPrintf(WARN, "Failed to add device %s after %d tries. Treating as failure.",
@@ -182,6 +184,7 @@ void DeviceMonitor::_addHandler(const std::string& device, int tries) {
 
 void DeviceMonitor::_removeHandler(const std::string& device) {
     try {
+        std::lock_guard<std::mutex> lock(_devices_mutex);
         removeDevice(device);
     } catch (std::exception& e) {
         logPrintf(WARN, "Error removing device %s: %s",
