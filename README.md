@@ -20,7 +20,7 @@ For popular distributions, I've included commands below.
 
 **Arch Linux:** `sudo pacman -S base-devel cmake libevdev libconfig systemd-libs glib2`
 
-**Debian/Ubuntu:** `sudo apt install build-essential cmake pkg-config libevdev-dev libudev-dev libconfig++-dev libglib2.0-dev`
+**Debian/Ubuntu:** `sudo apt install build-essential cmake pkg-config libevdev-dev libudev-dev libconfig++-dev libglib2.0-dev systemd-dev`
 
 **Fedora:** `sudo dnf install cmake libevdev-devel systemd-devel libconfig-devel gcc-c++ glib2-devel`
 
