@@ -20,6 +20,7 @@
 #define LOGID_BACKEND_HIDPP_DEFS_H
 
 #include <cstdint>
+#include <cstddef>
 
 namespace logid::backend::hidpp {
     namespace ReportType {
