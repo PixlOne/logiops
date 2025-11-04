@@ -292,18 +292,29 @@ namespace logid::config {
 
     typedef map<uint16_t, Button, string_literal_of<keys::cid>> RemapButton;
 
+    struct HapticFeedback : public group {
+        std::optional<bool> enabled;
+        std::optional<int> strength;
+        std::optional<bool> battery_saving;
+
+        HapticFeedback() : group({"enabled", "strength", "battery_saving"},
+                             &HapticFeedback::enabled, &HapticFeedback::strength,
+                             &HapticFeedback::battery_saving) {}
+    };
+
     struct Profile : public group {
         std::optional<DPI> dpi;
         std::optional<SmartShift> smartshift;
         std::optional<std::variant<bool, HiresScroll>> hiresscroll;
         std::optional<ThumbWheel> thumbwheel;
         std::optional<RemapButton> buttons;
+        std::optional<HapticFeedback> haptic_feedback;
 
         Profile() : group({"dpi", "smartshift", "hiresscroll",
-                           "buttons", "thumbwheel"},
+                           "buttons", "thumbwheel", "haptic_feedback"},
                           &Profile::dpi, &Profile::smartshift,
                           &Profile::hiresscroll, &Profile::buttons,
-                          &Profile::thumbwheel) {}
+                          &Profile::thumbwheel, &Profile::haptic_feedback) {}
     };
 
     struct Device : public group {
