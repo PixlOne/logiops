@@ -5,6 +5,7 @@ This is not by any means an exhaustive list. Many more devices are supported but
 
 | Device              | Compatible? |              Config Name               |
 | :-----------------: | :---------: | :------------------------------------: |
+| LIFT                |     Yes     | `LIFT VERTICAL ERGONOMIC MOUSE`        |
 | MX Master 3S        |     Yes     | `MX Master 3S`                         |
 | MX Master 3         |     Yes     | `Wireless Mouse MX Master 3`           |
 | MX Master 3 for Mac |     Yes     | `MX Master 3 for Mac`                  |
