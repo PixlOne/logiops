@@ -57,6 +57,7 @@ namespace logid::backend::hidpp20 {
             BACKLIGHT = 0x1981,
             BACKLIGHT_V2 = 0x1982,
             BACKLIGHT_V3 = 0x1983,
+            HAPTIC_FEEDBACK = 0x19b0,
             PRESENTER_CONTROL = 0x1a00,
             SENSOR_3D = 0x1a01,
             REPROG_CONTROLS = 0x1b00,

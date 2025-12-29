@@ -25,6 +25,7 @@
 #include <ipcgull/node.h>
 #include <ipcgull/interface.h>
 #include <Configuration.h>
+#include <util/log.h>
 
 namespace logid {
     class DeviceManager;
@@ -144,6 +145,9 @@ namespace logid {
             try {
                 _features.emplace(name, features::DeviceFeature::make<T>(this));
             } catch (features::UnsupportedFeature& e) {
+                // Feature not supported by device, silently ignore
+            } catch (std::exception& e) {
+                logPrintf(WARN, "Failed to add feature '%s': %s", name.c_str(), e.what());
             }
         }
 
