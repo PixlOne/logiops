@@ -95,6 +95,8 @@ namespace logid::backend::raw {
         bool _ready;
 
         std::weak_ptr<DeviceMonitor> _self;
+
+        mutable std::mutex _devices_mutex;
     };
 }
 
