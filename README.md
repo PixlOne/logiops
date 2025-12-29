@@ -35,10 +35,8 @@ For popular distributions, I've included commands below.
 To build this project, run:
 
 ```bash
-mkdir build
-cd build
-cmake -DCMAKE_BUILD_TYPE=Release ..
-make
+cmake -B build -DCMAKE_BUILD_TYPE=Release 
+cmake --build build
 ```
 
 To install, run `sudo make install` after building. You can set the daemon to start at boot by running `sudo systemctl enable logid` or `sudo systemctl enable --now logid` if you want to enable and start the daemon.
