@@ -44,19 +44,29 @@ AxisGesture::AxisGesture(Device* device, config::AxisGesture& config,
             const auto& axis = std::get<std::string>(_config.axis.value());
             try {
                 _input_axis = _device->virtualInput()->toAxisCode(axis);
+                logPrintf(INFO, "axis %d %s", _input_axis, axis.c_str());
             } catch (InputDevice::InvalidEventCode& e) {
-                logPrintf(WARN, "Invalid axis %s.");
+                logPrintf(WARN, "Invalid axis %s.", axis.c_str());
             }
         }
 
     }
 
     if (_input_axis.has_value())
-        _device->virtualInput()->registerAxis(_input_axis.value());
+        registerAxis(_input_axis.value());
+}
+
+void AxisGesture::registerAxis(uint axis) {
+    _device->virtualInput()->registerAxis(axis);
+    int low_res_axis = InputDevice::getLowResAxis(axis);
+    if (low_res_axis != -1) {
+        _device->virtualInput()->registerAxis(low_res_axis);
+    }
 }
 
 void AxisGesture::press(bool init_threshold) {
     std::shared_lock lock(_config_mutex);
+    logPrintf(RAWREPORT, "press %d %d\n", _axis, init_threshold);
     if (init_threshold) {
         _axis = (int32_t) (_config.threshold.value_or(defaults::gesture_threshold));
     } else {
@@ -76,11 +86,13 @@ void AxisGesture::move(int16_t axis) {
     if (!_input_axis.has_value())
         return;
 
+
     const auto threshold = _config.threshold.value_or(
             defaults::gesture_threshold);
     int32_t new_axis = _axis + axis;
-    int low_res_axis = InputDevice::getLowResAxis(axis);
+    int low_res_axis = InputDevice::getLowResAxis(_input_axis.value());
     int hires_remainder = _hires_remainder;
+
 
     if (new_axis > threshold) {
         double move = axis;
@@ -102,20 +114,33 @@ void AxisGesture::move(int16_t axis) {
             _axis_remainder -= int_remainder;
         }
 
-        if (negative_multiplier)
-            move_floor = -move_floor;
-
         if (low_res_axis != -1) {
-            int lowres_movement, hires_movement = (int) move_floor;
+            int lowres_movement = 0;
+            int hires_movement = (int) move_floor;
             _device->virtualInput()->moveAxis(_input_axis.value(), hires_movement);
             hires_remainder += hires_movement;
-            if (abs(hires_remainder) >= 60) {
+            if (abs(hires_remainder) >= 1) {
                 lowres_movement = hires_remainder / 120;
-                if (lowres_movement == 0)
+                if (lowres_movement == 0) {
                     lowres_movement = hires_remainder > 0 ? 1 : -1;
+                }
+
+                if ((lowres_movement > 0 && negative_multiplier) ||
+                    (lowres_movement < 0 && !negative_multiplier))
+                {
+                    lowres_movement = 0;
+                }
+
                 hires_remainder -= lowres_movement * 120;
+
                 _device->virtualInput()->moveAxis(low_res_axis, lowres_movement);
             }
+
+            logPrintf(RAWREPORT, "move %ld [%.2f], l_mv:%d h_mv:%d code:%d/%d;"
+                   " axis %d/%d; new_axis %d; hires_rem %d th %d neg %d mv %.1f\n", 
+                time(NULL), _config.axis_multiplier.value_or(1), lowres_movement, hires_movement,
+                 _input_axis.value(),  low_res_axis, axis, _axis, new_axis, hires_remainder, 
+                 threshold, negative_multiplier, move);
 
             _hires_remainder = hires_remainder;
         } else {
@@ -164,7 +189,7 @@ void AxisGesture::setAxis(const std::string& axis) {
     } else {
         _input_axis = _device->virtualInput()->toAxisCode(axis);
         _config.axis = axis;
-        _device->virtualInput()->registerAxis(_input_axis.value());
+        registerAxis(_input_axis.value());
     }
     setHiresMultiplier(_hires_multiplier);
 }
