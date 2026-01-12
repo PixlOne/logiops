@@ -51,7 +51,9 @@ RemapButton::RemapButton(Device* dev) : DeviceFeature(dev),
     if (!config.has_value())
         config = config::RemapButton();
 
-    for (const auto& control: _reprog_controls->getControls()) {
+    const auto& controls = _reprog_controls->getControls();
+
+    for (const auto& control: controls) {
         const auto i = _buttons.size();
         Button::ConfigFunction func = [this, info = control.second](
                 const std::shared_ptr<actions::Action>& action) {
@@ -83,7 +85,6 @@ RemapButton::RemapButton(Device* dev) : DeviceFeature(dev),
         logPrintf(DEBUG, "%s:%d remappable buttons:",
                   dev->hidpp20().devicePath().c_str(),
                   dev->hidpp20().deviceIndex());
-        const auto& controls = _reprog_controls->getControls();
         int cid_width = controls.rbegin()->first > 0xFF ? 5 : 4;
         logPrintf(DEBUG, "%-*s | reprog? | fn key? | mouse key? | "
                          "gesture support?", cid_width, "CID");
