@@ -51,7 +51,9 @@ RemapButton::RemapButton(Device* dev) : DeviceFeature(dev),
     if (!config.has_value())
         config = config::RemapButton();
 
-    for (const auto& control: _reprog_controls->getControls()) {
+    const auto& controls = _reprog_controls->getControls();
+
+    for (const auto& control: controls) {
         const auto i = _buttons.size();
         Button::ConfigFunction func = [this, info = control.second](
                 const std::shared_ptr<actions::Action>& action) {
@@ -63,7 +65,7 @@ RemapButton::RemapButton(Device* dev) : DeviceFeature(dev),
                 if ((action->reprogFlags() & hidpp20::ReprogControls::RawXYDiverted) &&
                     (!_reprog_controls->supportsRawXY() ||
                      !(info.additionalFlags & hidpp20::ReprogControls::RawXY)))
-                    logPrintf(WARN, "%s: 'Cannot divert raw XY movements for CID 0x%02x",
+                    logPrintf(WARN, "%s: Cannot divert raw XY movements for CID 0x%04x",
                               _device->name().c_str(), info.controlID);
 
                 report.flags |= action->reprogFlags();
@@ -83,10 +85,11 @@ RemapButton::RemapButton(Device* dev) : DeviceFeature(dev),
         logPrintf(DEBUG, "%s:%d remappable buttons:",
                   dev->hidpp20().devicePath().c_str(),
                   dev->hidpp20().deviceIndex());
-        logPrintf(DEBUG, "CID  | reprog? | fn key? | mouse key? | "
-                         "gesture support?");
-        for (const auto& control: _reprog_controls->getControls())
-            logPrintf(DEBUG, "0x%02x | %-7s | %-7s | %-10s | %s",
+        int cid_width = controls.rbegin()->first > 0xFF ? 5 : 4;
+        logPrintf(DEBUG, "%-*s | reprog? | fn key? | mouse key? | "
+                         "gesture support?", cid_width, "CID");
+        for (const auto& control: controls)
+            logPrintf(DEBUG, "0x%0*x | %-7s | %-7s | %-10s | %s", cid_width - 2,
                       control.first, REPROG_FLAG(TemporaryDivertable), REPROG_FLAG(FKey),
                       REPROG_FLAG(MouseButton), REPROG_FLAG_ADDITIONAL(RawXY));
     }
