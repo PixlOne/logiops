@@ -35,6 +35,8 @@ For popular distributions, I've included commands below.
 To build this project, run:
 
 ```bash
+git clone https://github.com/PixlOne/logiops.git
+cd logiops
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
