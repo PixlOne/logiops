@@ -67,12 +67,13 @@ void AxisGesture::press(bool init_threshold) {
 }
 
 void AxisGesture::release(bool primary) {
-    // Do nothing
+    _axis = 0;
     (void) primary; // Suppress unused warning
 }
 
 void AxisGesture::move(int16_t axis) {
     std::shared_lock lock(_config_mutex);
+    logPrintf(WARN, "AxisGesture Debug: Input axis=%d, input_axis_configured=%d", axis, _input_axis.has_value());
     if (!_input_axis.has_value())
         return;
 
@@ -82,15 +83,17 @@ void AxisGesture::move(int16_t axis) {
     int low_res_axis = InputDevice::getLowResAxis(axis);
     int hires_remainder = _hires_remainder;
 
-    if (new_axis > threshold) {
+    if (std::abs(new_axis) > threshold) {
         double move = axis;
-        if (_axis < threshold)
-            move = new_axis - threshold;
-        bool negative_multiplier = _config.axis_multiplier.value_or(1) < 0;
-        if (negative_multiplier)
-            move *= -_config.axis_multiplier.value_or(1);
-        else
-            move *= _config.axis_multiplier.value_or(1);
+        if (std::abs(_axis) < threshold) {
+            // crossing threshold
+            if (new_axis > 0)
+                move = new_axis - threshold;
+            else
+                move = new_axis + threshold;
+        }
+
+        move *= _config.axis_multiplier.value_or(1);
         // Handle hi-res multiplier
         move *= _multiplier;
 
@@ -102,10 +105,8 @@ void AxisGesture::move(int16_t axis) {
             _axis_remainder -= int_remainder;
         }
 
-        if (negative_multiplier)
-            move_floor = -move_floor;
-
         if (low_res_axis != -1) {
+            logPrintf(WARN, "AxisGesture Debug: Calling moveAxis (HiRes) with %f", move_floor);
             int lowres_movement, hires_movement = (int) move_floor;
             _device->virtualInput()->moveAxis(_input_axis.value(), hires_movement);
             hires_remainder += hires_movement;
@@ -138,7 +139,7 @@ void AxisGesture::setHiresMultiplier(double multiplier) {
     _hires_multiplier = multiplier;
     if (_input_axis.has_value()) {
         if (InputDevice::getLowResAxis(_input_axis.value()) != -1)
-            _multiplier = _config.axis_multiplier.value_or(1) * multiplier;
+            _multiplier = multiplier; // Don't bake axis_multiplier here, it's applied in move()
     }
 }
 

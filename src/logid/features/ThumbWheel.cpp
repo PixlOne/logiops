@@ -20,6 +20,7 @@
 #include <actions/gesture/AxisGesture.h>
 #include <Device.h>
 #include <util/log.h>
+#include <util/task.h>
 #include <ipc_defs.h>
 
 using namespace logid::features;
@@ -153,6 +154,7 @@ void ThumbWheel::setProfile(config::Profile& profile) {
 void ThumbWheel::_handleEvent(hidpp20::ThumbWheel::ThumbwheelEvent event) {
     std::shared_lock lock(_config_mutex);
     if (event.flags & hidpp20::ThumbWheel::SingleTap) {
+        _touch_pending = false; // Cancel pending touch on tap
         auto action = _tap_action;
         if (action) {
             action->press();
@@ -173,10 +175,34 @@ void ThumbWheel::_handleEvent(hidpp20::ThumbWheel::ThumbwheelEvent event) {
     if ((bool) (event.flags & hidpp20::ThumbWheel::Touch) != _last_touch) {
         _last_touch = !_last_touch;
         if (_touch_action) {
-            if (_last_touch)
-                _touch_action->press();
-            else
-                _touch_action->release();
+            if (_last_touch) {
+                // Touch started: start timer
+                _touch_pending = true;
+                auto now = std::chrono::system_clock::now();
+                _touch_time = now;
+                
+                logid::run_task_after([this, now]() {
+                    // Only press if still pending AND it's the same touch session
+                    if (_touch_pending.load() && _touch_time == now) {
+                        std::shared_lock lock(_config_mutex);
+                        // Re-check after acquiring lock
+                        if (_touch_pending.load() && _touch_time == now) {
+                            if (_touch_action)
+                                _touch_action->press();
+                            _touch_active = true;
+                            _touch_pending = false;
+                        }
+                    }
+                }, std::chrono::milliseconds(TOUCH_DELAY_MS));
+            } else {
+                // Touch stopped: ALWAYS release
+                _touch_pending = false;
+                if (_touch_active.exchange(false)) {
+                    std::shared_lock lock(_config_mutex);
+                    if (_touch_action)
+                        _touch_action->release();
+                }
+            }
         }
     }
 
@@ -184,25 +210,18 @@ void ThumbWheel::_handleEvent(hidpp20::ThumbWheel::ThumbwheelEvent event) {
         // Make right positive unless inverted
         event.rotation *= _wheel_info.defaultDirection;
 
-        if (event.rotationStatus == hidpp20::ThumbWheel::Start) {
-            if (_right_gesture)
-                _right_gesture->press(true);
-            if (_left_gesture)
-                _left_gesture->press(true);
-        }
 
         if (event.rotation) {
-            int8_t direction = event.rotation > 0 ? 1 : -1;
+            _touch_pending = false; // Cancel pending touch on movement
             std::shared_ptr<actions::Gesture> scroll_action;
 
-            if (direction > 0)
+            if (event.rotation > 0)
                 scroll_action = _right_gesture;
             else
                 scroll_action = _left_gesture;
 
             if (scroll_action) {
-                scroll_action->press(true);
-                scroll_action->move((int16_t) (direction * event.rotation));
+                scroll_action->move(event.rotation);
             }
         }
 
@@ -223,8 +242,9 @@ void ThumbWheel::_fixGesture(const std::shared_ptr<actions::Gesture>& gesture) c
             axis->setHiresMultiplier(_wheel_info.divertedRes);
     } catch (std::bad_cast& e) {}
 
-    if (gesture)
-        gesture->press(true);
+    if (gesture) {
+        // gesture->press(true); // Removed to prevent setting initial axis to +50
+    }
 }
 
 ThumbWheel::IPC::IPC(ThumbWheel* parent) : ipcgull::interface(

@@ -192,6 +192,22 @@ namespace logid::config {
     template<>
     struct config_io<double> : public primitive_io<double,
             libconfig::Setting::TypeFloat> {
+        static double get(const libconfig::Setting& setting) {
+            switch (setting.getType()) {
+                case libconfig::Setting::TypeInt:
+                    return (double) (int) setting;
+                case libconfig::Setting::TypeInt64:
+                    return (double) (long long) setting;
+                case libconfig::Setting::TypeFloat:
+                default:
+                    return (double) setting;
+            }
+        }
+
+        static double get(const libconfig::Setting& parent,
+                          const std::string& name) {
+            return get(parent.lookup(name));
+        }
     };
     template<>
     struct config_io<std::string> : public primitive_io<std::string,

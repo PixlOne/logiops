@@ -19,6 +19,7 @@
 #include <InputDevice.h>
 #include <system_error>
 #include <mutex>
+#include <util/log.h>
 
 extern "C"
 {
@@ -99,6 +100,7 @@ void InputDevice::registerAxis(uint axis) {
 }
 
 void InputDevice::moveAxis(uint axis, int movement) {
+    logPrintf(WARN, "InputDevice Debug: Sending EV_REL axis=%u value=%d", axis, movement);
     _sendEvent(EV_REL, axis, movement);
 }
 

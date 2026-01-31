@@ -22,6 +22,8 @@
 #include <actions/gesture/Gesture.h>
 #include <backend/hidpp20/features/ThumbWheel.h>
 #include <backend/hidpp/Device.h>
+#include <chrono>
+#include <atomic>
 
 namespace logid::features {
     class ThumbWheel : public DeviceFeature {
@@ -85,6 +87,12 @@ namespace logid::features {
 
         bool _last_proxy = false;
         bool _last_touch = false;
+        
+        // Smart touch detection
+        std::chrono::system_clock::time_point _touch_time;
+        std::atomic<bool> _touch_pending{false};
+        std::atomic<bool> _touch_active{false};
+        static constexpr int TOUCH_DELAY_MS = 150;
 
         mutable std::shared_mutex _config_mutex;
         std::reference_wrapper<std::optional<config::ThumbWheel>> _config;
