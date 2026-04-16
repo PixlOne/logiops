@@ -19,10 +19,14 @@
 #define LOGID_ACTION_INTERVALGESTURE_H
 
 #include <actions/gesture/Gesture.h>
+#include <chrono>
+#include <optional>
 
 namespace logid::actions {
     class IntervalGesture : public Gesture {
     public:
+        using Clock = std::chrono::steady_clock;
+
         static const char* interface_name;
 
         IntervalGesture(Device* device, config::IntervalGesture& config,
@@ -40,7 +44,11 @@ namespace logid::actions {
 
         [[nodiscard]] std::tuple<int, int> getConfig() const;
 
+        [[nodiscard]] int getDelay() const;
+
         void setInterval(int interval);
+
+        void setDelay(int delay);
 
         void setThreshold(int threshold);
 
@@ -51,6 +59,7 @@ namespace logid::actions {
         int32_t _interval_pass_count;
         std::shared_ptr<Action> _action;
         config::IntervalGesture& _config;
+        std::optional<Clock::time_point> _next_action_time;
     private:
     };
 }

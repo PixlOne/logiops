@@ -29,14 +29,17 @@ IntervalGesture::IntervalGesture(
         Gesture(device, parent, interface_name, {
                 {
                         {"GetConfig", {this, &IntervalGesture::getConfig, {"interval", "threshold"}}},
+                        {"GetDelay", {this, &IntervalGesture::getDelay, {"delay"}}},
                         {"SetInterval", {this, &IntervalGesture::setInterval, {"interval"}}},
+                        {"SetDelay", {this, &IntervalGesture::setDelay, {"delay"}}},
                         {"SetThreshold", {this, &IntervalGesture::setThreshold, {"interval"}}},
                         {"SetAction", {this, &IntervalGesture::setAction, {"type"}}}
                 },
                 {},
                 {}
         }),
-        _axis(0), _interval_pass_count(0), _config(config) {
+        _axis(0), _interval_pass_count(0), _config(config),
+        _next_action_time(std::nullopt) {
     if (config.action) {
         try {
             _action = Action::makeAction(device, config.action.value(), _node);
@@ -47,22 +50,33 @@ IntervalGesture::IntervalGesture(
 }
 
 void IntervalGesture::press(bool init_threshold) {
-    std::shared_lock lock(_config_mutex);
+    std::unique_lock lock(_config_mutex);
     if (init_threshold) {
         _axis = (int32_t) _config.threshold.value_or(defaults::gesture_threshold);
     } else {
         _axis = 0;
     }
     _interval_pass_count = 0;
+    _next_action_time.reset();
 }
 
 void IntervalGesture::release([[maybe_unused]] bool primary) {
+    std::unique_lock lock(_config_mutex);
+    _next_action_time.reset();
 }
 
 void IntervalGesture::move(int16_t axis) {
-    std::shared_lock lock(_config_mutex);
+    std::unique_lock lock(_config_mutex);
     if (!_config.interval.has_value())
         return;
+
+    const auto delay = _config.delay.value_or(0);
+    const bool cooldown_enabled = delay > 0;
+    const auto now = cooldown_enabled ? Clock::now() : Clock::time_point{};
+    if (cooldown_enabled && _next_action_time.has_value()
+        && now < _next_action_time.value()) {
+        return;
+    }
 
     const auto threshold =
             _config.threshold.value_or(defaults::gesture_threshold);
@@ -75,6 +89,14 @@ void IntervalGesture::move(int16_t axis) {
         if (_action) {
             _action->press();
             _action->release();
+            if (cooldown_enabled) {
+                _next_action_time = now + std::chrono::milliseconds(delay);
+                _axis = threshold;
+                _interval_pass_count = 0;
+                return;
+            } else {
+                _next_action_time.reset();
+            }
         }
     }
     _interval_pass_count = new_interval_count;
@@ -94,12 +116,26 @@ std::tuple<int, int> IntervalGesture::getConfig() const {
     return {_config.interval.value_or(0), _config.threshold.value_or(0)};
 }
 
+int IntervalGesture::getDelay() const {
+    std::shared_lock lock(_config_mutex);
+    return _config.delay.value_or(0);
+}
+
 void IntervalGesture::setInterval(int interval) {
     std::unique_lock lock(_config_mutex);
     if (interval == 0)
         _config.interval.reset();
     else
         _config.interval = interval;
+}
+
+void IntervalGesture::setDelay(int delay) {
+    std::unique_lock lock(_config_mutex);
+    if (delay == 0)
+        _config.delay.reset();
+    else
+        _config.delay = delay;
+    _next_action_time.reset();
 }
 
 void IntervalGesture::setThreshold(int threshold) {

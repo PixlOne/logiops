@@ -159,13 +159,15 @@ namespace logid::config {
         std::optional<int> threshold;
         std::optional<BasicAction> action;
         std::optional<int> interval;
+        std::optional<int> delay;
     protected:
         explicit IntervalGesture(const std::string& name) : signed_group(
                 "mode", name,
-                {"threshold", "action", "interval"},
+                {"threshold", "action", "interval", "delay"},
                 &IntervalGesture::threshold,
                 &IntervalGesture::action,
-                &IntervalGesture::interval) {}
+                &IntervalGesture::interval,
+                &IntervalGesture::delay) {}
 
     public:
         IntervalGesture() : IntervalGesture("OnInterval") {}
