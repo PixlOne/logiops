@@ -212,12 +212,23 @@ void RawDevice::sendReport(const std::vector<uint8_t>& report) {
     }
 
 
-    for (int i = 0; i < max_write_tries && write(_fd, report.data(), report.size()) == -1; ++i) {
-        auto err = errno;
-        if (err != EPIPE)
-            throw std::system_error(err, std::system_category(),
+    int last_err = 0;
+    int tries = 0;
+    while (tries < max_write_tries) {
+        if (write(_fd, report.data(), report.size()) != -1) {
+            last_err = 0;
+            break;
+        }
+        last_err = errno;
+        if (last_err != EPIPE)
+            throw std::system_error(last_err, std::system_category(),
                                     "sendReport write failed");
+        ++tries;
     }
+
+    if (last_err == EPIPE)
+        throw std::system_error(last_err, std::system_category(),
+                                "sendReport write failed after retries");
 }
 
 EventHandlerLock<RawDevice> RawDevice::addEventHandler(RawEventHandler handler) {
