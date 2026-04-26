@@ -17,6 +17,7 @@
  */
 #include <backend/hidpp20/features/ChangeHost.h>
 #include <backend/hidpp20/Device.h>
+#include <stdexcept>
 
 using namespace logid::backend::hidpp20;
 
@@ -26,6 +27,8 @@ ChangeHost::ChangeHost(Device* dev) : Feature(dev, ID), _host_count(0) {
 ChangeHost::HostInfo ChangeHost::getHostInfo() {
     std::vector<uint8_t> params(0);
     auto response = callFunction(GetHostInfo, params);
+    if (response.size() < 3)
+        throw std::runtime_error("ChangeHost::getHostInfo: short response");
 
     HostInfo info{};
     info.hostCount = response[0];

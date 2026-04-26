@@ -17,8 +17,15 @@
  */
 #include <backend/hidpp20/features/HiresScroll.h>
 #include <cassert>
+#include <stdexcept>
 
 using namespace logid::backend::hidpp20;
+
+static void require_size(const std::vector<uint8_t>& v, std::size_t n,
+                         const char* where) {
+    if (v.size() < n)
+        throw std::runtime_error(std::string("HiresScroll: short response in ") + where);
+}
 
 HiresScroll::HiresScroll(Device* device) : Feature(device, ID) {
 }
@@ -26,6 +33,7 @@ HiresScroll::HiresScroll(Device* device) : Feature(device, ID) {
 HiresScroll::Capabilities HiresScroll::getCapabilities() {
     std::vector<uint8_t> params(0);
     auto response = callFunction(GetCapabilities, params);
+    require_size(response, 2, "getCapabilities");
 
     Capabilities capabilities{};
     capabilities.multiplier = response[0];
@@ -36,6 +44,7 @@ HiresScroll::Capabilities HiresScroll::getCapabilities() {
 uint8_t HiresScroll::getMode() {
     std::vector<uint8_t> params(0);
     auto response = callFunction(GetMode, params);
+    require_size(response, 1, "getMode");
     return response[0];
 }
 
@@ -52,7 +61,11 @@ void HiresScroll::setMode(uint8_t mode) {
 }
 
 HiresScroll::WheelStatus HiresScroll::wheelMovementEvent(const hidpp::Report& report) {
-    assert(report.function() == WheelMovement);
+    if (report.function() != WheelMovement)
+        throw std::runtime_error("wheelMovementEvent: bad function");
+    const auto param_size = static_cast<std::size_t>(report.paramEnd() - report.paramBegin());
+    if (param_size < 3)
+        throw std::runtime_error("wheelMovementEvent: short report");
     WheelStatus status{};
     status.hiRes = report.paramBegin()[0] & 1 << 4;
     status.periods = report.paramBegin()[0] & 0x0F;
@@ -62,7 +75,11 @@ HiresScroll::WheelStatus HiresScroll::wheelMovementEvent(const hidpp::Report& re
 
 [[maybe_unused]]
 HiresScroll::RatchetState HiresScroll::ratchetSwitchEvent(const hidpp::Report& report) {
-    assert(report.function() == RatchetSwitch);
+    if (report.function() != RatchetSwitch)
+        throw std::runtime_error("ratchetSwitchEvent: bad function");
+    const auto param_size = static_cast<std::size_t>(report.paramEnd() - report.paramBegin());
+    if (param_size < 1)
+        throw std::runtime_error("ratchetSwitchEvent: short report");
     // Possible bad cast
     return static_cast<RatchetState>(report.paramBegin()[0]);
 }

@@ -16,6 +16,7 @@
  *
  */
 #include <backend/hidpp20/features/FeatureSet.h>
+#include <stdexcept>
 
 using namespace logid::backend::hidpp20;
 
@@ -26,6 +27,8 @@ FeatureSet::FeatureSet(Device* device) : Feature(device, ID) {
 uint8_t FeatureSet::getFeatureCount() {
     std::vector<uint8_t> params(0);
     auto response = callFunction(GetFeatureCount, params);
+    if (response.empty())
+        throw std::runtime_error("FeatureSet::getFeatureCount: empty response");
     return response[0];
 }
 
@@ -33,6 +36,8 @@ uint16_t FeatureSet::getFeature(uint8_t feature_index) {
     std::vector<uint8_t> params(1);
     params[0] = feature_index;
     auto response = callFunction(GetFeature, params);
+    if (response.size() < 2)
+        throw std::runtime_error("FeatureSet::getFeature: short response");
 
     uint16_t feature_id = (response[0] << 8);
     feature_id |= response[1];

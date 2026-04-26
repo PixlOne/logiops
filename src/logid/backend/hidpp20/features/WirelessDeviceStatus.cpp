@@ -17,6 +17,7 @@
  */
 #include <backend/hidpp20/features/WirelessDeviceStatus.h>
 #include <cassert>
+#include <stdexcept>
 
 using namespace logid::backend::hidpp20;
 
@@ -25,7 +26,11 @@ WirelessDeviceStatus::WirelessDeviceStatus(Device* dev) : Feature(dev, ID) {
 
 WirelessDeviceStatus::Status WirelessDeviceStatus::statusBroadcastEvent(
         const hidpp::Report& report) {
-    assert(report.function() == StatusBroadcast);
+    if (report.function() != StatusBroadcast)
+        throw std::runtime_error("statusBroadcastEvent: bad function");
+    const auto param_size = static_cast<std::size_t>(report.paramEnd() - report.paramBegin());
+    if (param_size < 3)
+        throw std::runtime_error("statusBroadcastEvent: short report");
     Status status = {};
     auto params = report.paramBegin();
     status.reconnection = params[0];

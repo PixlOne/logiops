@@ -16,8 +16,15 @@
  *
  */
 #include <backend/hidpp20/features/SmartShift.h>
+#include <stdexcept>
 
 using namespace logid::backend::hidpp20;
+
+static void require_size(const std::vector<uint8_t>& v, std::size_t n,
+                         const char* where) {
+    if (v.size() < n)
+        throw std::runtime_error(std::string("SmartShift: short response in ") + where);
+}
 
 SmartShift::SmartShift(Device* dev) : SmartShift(dev, ID) {
 }
@@ -49,6 +56,7 @@ SmartShift::Status SmartShift::getStatus() {
     std::vector<uint8_t> params(0);
 
     auto response = callFunction(GetStatus, params);
+    require_size(response, 2, "getStatus");
 
     return {
             .active = static_cast<bool>(response[0] - 1),
@@ -64,6 +72,7 @@ SmartShift::Defaults SmartShift::getDefaults() {
     std::vector<uint8_t> params(0);
 
     auto response = callFunction(GetStatus, params);
+    require_size(response, 3, "getDefaults");
 
     return {
             .autoDisengage = response[2],
@@ -84,6 +93,7 @@ void SmartShift::setStatus(Status status) {
 SmartShift::Defaults SmartShiftV2::getDefaults() {
     std::vector<uint8_t> params(0);
     auto response = callFunction(GetCapabilities, params);
+    require_size(response, 4, "v2/getDefaults");
 
     return {
             .autoDisengage = response[1],
@@ -95,6 +105,7 @@ SmartShift::Defaults SmartShiftV2::getDefaults() {
 SmartShift::Status SmartShiftV2::getStatus() {
     std::vector<uint8_t> params(0);
     auto response = callFunction(GetStatus, params);
+    require_size(response, 3, "v2/getStatus");
 
     return {
             .active = static_cast<bool>(response[0] - 1),
@@ -119,6 +130,7 @@ void SmartShiftV2::setStatus(Status status) {
 bool SmartShiftV2::supportsTorque() {
     std::vector<uint8_t> params(0);
     auto response = callFunction(GetCapabilities, params);
+    require_size(response, 1, "v2/supportsTorque");
 
     return static_cast<bool>(response[0] & 1);
 }

@@ -16,8 +16,15 @@
  *
  */
 #include <backend/hidpp20/features/AdjustableDPI.h>
+#include <stdexcept>
 
 using namespace logid::backend::hidpp20;
+
+static void require_size(const std::vector<uint8_t>& v, std::size_t n,
+                         const char* where) {
+    if (v.size() < n)
+        throw std::runtime_error(std::string("AdjustableDPI: short response in ") + where);
+}
 
 AdjustableDPI::AdjustableDPI(Device* dev) : Feature(dev, ID) {
 }
@@ -25,6 +32,7 @@ AdjustableDPI::AdjustableDPI(Device* dev) : Feature(dev, ID) {
 uint8_t AdjustableDPI::getSensorCount() {
     std::vector<uint8_t> params(0);
     auto response = callFunction(GetSensorCount, params);
+    require_size(response, 1, "getSensorCount");
     return response[0];
 }
 
@@ -56,6 +64,7 @@ uint16_t AdjustableDPI::getDefaultSensorDPI(uint8_t sensor) {
     params[0] = sensor;
     auto response = callFunction(GetSensorDPI, params);
 
+    require_size(response, 5, "getDefaultSensorDPI");
     uint16_t default_dpi = response[4];
     default_dpi |= (response[3] << 8);
 
@@ -66,6 +75,7 @@ uint16_t AdjustableDPI::getSensorDPI(uint8_t sensor) {
     std::vector<uint8_t> params(1);
     params[0] = sensor;
     auto response = callFunction(GetSensorDPI, params);
+    require_size(response, 3, "getSensorDPI");
 
     uint16_t dpi = response[2];
     dpi |= (response[1] << 8);
