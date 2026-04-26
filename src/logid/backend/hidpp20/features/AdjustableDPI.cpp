@@ -35,7 +35,7 @@ AdjustableDPI::SensorDPIList AdjustableDPI::getSensorDPIList(uint8_t sensor) {
     auto response = callFunction(GetSensorDPIList, params);
 
     dpi_list.dpiStep = false;
-    for (std::size_t i = 1; i < response.size(); i += 2) {
+    for (std::size_t i = 1; i + 1 < response.size(); i += 2) {
         uint16_t dpi = response[i + 1];
         dpi |= (response[i] << 8);
         if (!dpi)
