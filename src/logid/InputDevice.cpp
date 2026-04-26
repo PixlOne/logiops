@@ -44,12 +44,15 @@ InputDevice::InputDevice(const char* name) {
     device = libevdev_new();
     libevdev_set_name(device, name);
 
+    /* Enable every valid EV_KEY and EV_REL code up-front so the uinput
+     * node never has to be destroyed and recreated when a new key or
+     * axis is requested at runtime. Recreating exposed a window where
+     * ui_device could be left null on failure, and changed the
+     * /dev/input/eventN number under the feet of any application that
+     * had the previous node open. */
     libevdev_enable_event_type(device, EV_KEY);
     for (unsigned int i = 0; i < KEY_CNT; i++) {
-        // Enable some keys which a normal keyboard should have
-        // by default, i.e. a-z, modifier keys and so on, see:
-        // /usr/include/linux/input-event-codes.h
-        if (i < 128) {
+        if (libevdev_event_code_get_name(EV_KEY, i)) {
             registered_keys[i] = true;
             libevdev_enable_event_code(device, EV_KEY, i, nullptr);
         } else {
@@ -57,10 +60,15 @@ InputDevice::InputDevice(const char* name) {
         }
     }
 
-    for (bool& axis: registered_axis)
-        axis = false;
-
     libevdev_enable_event_type(device, EV_REL);
+    for (unsigned int i = 0; i < REL_CNT; i++) {
+        if (libevdev_event_code_get_name(EV_REL, i)) {
+            registered_axis[i] = true;
+            libevdev_enable_event_code(device, EV_REL, i, nullptr);
+        } else {
+            registered_axis[i] = false;
+        }
+    }
 
     int err = libevdev_uinput_create_from_device(device,
                                                  LIBEVDEV_UINPUT_OPEN_MANAGED, &ui_device);
@@ -77,25 +85,13 @@ InputDevice::~InputDevice() {
 }
 
 void InputDevice::registerKey(uint code) {
-    // TODO: Maybe print error message, if wrong code is passed?
-    if (code >= KEY_CNT || registered_keys[code]) {
-        return;
-    }
-
-    _enableEvent(EV_KEY, code);
-
-    registered_keys[code] = true;
+    /* All valid keys are pre-enabled in the constructor. */
+    (void) code;
 }
 
 void InputDevice::registerAxis(uint axis) {
-    // TODO: Maybe print error message, if wrong code is passed?
-    if (axis >= REL_CNT || registered_axis[axis]) {
-        return;
-    }
-
-    _enableEvent(EV_REL, axis);
-
-    registered_axis[axis] = true;
+    /* All valid axes are pre-enabled in the constructor. */
+    (void) axis;
 }
 
 void InputDevice::moveAxis(uint axis, int movement) {
@@ -159,25 +155,10 @@ uint InputDevice::_toEventCode(uint type, const std::string& name) {
     return code;
 }
 
-void InputDevice::_enableEvent(const uint type, const uint code) {
-    std::unique_lock lock(_input_mutex);
-    libevdev_uinput_destroy(ui_device);
-
-    libevdev_enable_event_code(device, type, code, nullptr);
-
-    int err = libevdev_uinput_create_from_device(device,
-                                                 LIBEVDEV_UINPUT_OPEN_MANAGED, &ui_device);
-
-    if (err != 0) {
-        libevdev_free(device);
-        device = nullptr;
-        ui_device = nullptr;
-        throw std::system_error(-err, std::generic_category());
-    }
-}
-
 void InputDevice::_sendEvent(uint type, uint code, int value) {
     std::unique_lock lock(_input_mutex);
+    if (!ui_device)
+        return;
     libevdev_uinput_write_event(ui_device, type, code, value);
     libevdev_uinput_write_event(ui_device, EV_SYN, SYN_REPORT, 0);
 }

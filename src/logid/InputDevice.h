@@ -71,8 +71,6 @@ namespace logid {
     private:
         void _sendEvent(uint type, uint code, int value);
 
-        void _enableEvent(uint type, uint name);
-
         static std::string _toEventName(uint type, uint code);
 
         static uint _toEventCode(uint type, const std::string& name);
