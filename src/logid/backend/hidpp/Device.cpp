@@ -120,6 +120,8 @@ void Device::_setupReportsAndInit() {
     _raw_handler = _raw_device->addEventHandler(
             {[index = _index](
                     const std::vector<uint8_t>& report) -> bool {
+                if (report.size() <= Offset::DeviceIndex)
+                    return false;
                 return (report[Offset::Type] == Report::Type::Short ||
                         report[Offset::Type] == Report::Type::Long) &&
                        (report[Offset::DeviceIndex] == index);
