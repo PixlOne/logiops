@@ -17,6 +17,7 @@
  */
 
 #include <backend/hidpp20/features/DeviceName.h>
+#include <stdexcept>
 
 using namespace logid::backend;
 using namespace logid::backend::hidpp20;
@@ -36,6 +37,8 @@ namespace {
             for (std::size_t j = 0; j < hidpp::LongParamLength; j++) {
                 if (params[0] + j >= length)
                     return name;
+                if (j >= name_section.size())
+                    return name;
                 name += (char) name_section[j];
             }
         }
@@ -52,6 +55,8 @@ uint8_t DeviceName::getNameLength() {
     std::vector<uint8_t> params(0);
 
     auto response = this->callFunction(DeviceName::Function::GetLength, params);
+    if (response.empty())
+        throw std::runtime_error("DeviceName::getNameLength: empty response");
 
     return response[0];
 }

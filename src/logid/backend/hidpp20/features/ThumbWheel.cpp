@@ -18,8 +18,15 @@
 
 #include <backend/hidpp20/features/ThumbWheel.h>
 #include <cassert>
+#include <stdexcept>
 
 using namespace logid::backend::hidpp20;
+
+static void require_size(const std::vector<uint8_t>& v, std::size_t n,
+                         const char* where) {
+    if (v.size() < n)
+        throw std::runtime_error(std::string("ThumbWheel: short response in ") + where);
+}
 
 ThumbWheel::ThumbWheel(Device* dev) : Feature(dev, ID) {
 }
@@ -28,6 +35,7 @@ ThumbWheel::ThumbwheelInfo ThumbWheel::getInfo() {
     std::vector<uint8_t> params(0), response;
     ThumbwheelInfo info{};
     response = callFunction(GetInfo, params);
+    require_size(response, 8, "getInfo");
 
     info.nativeRes = response[1];
     info.nativeRes |= (response[0] << 8);
@@ -45,6 +53,7 @@ ThumbWheel::ThumbwheelStatus ThumbWheel::getStatus() {
     std::vector<uint8_t> params(0), response;
     ThumbwheelStatus status{};
     response = callFunction(GetStatus, params);
+    require_size(response, 2, "getStatus");
 
     status.diverted = response[0];
     status.inverted = response[1] & 1;
@@ -61,6 +70,7 @@ ThumbWheel::ThumbwheelStatus ThumbWheel::setStatus(bool divert, bool invert) {
     params[1] = invert;
 
     response = callFunction(SetReporting, params);
+    require_size(response, 2, "setStatus");
     status.diverted = response[0];
     status.inverted = response[1] & 1;
 
@@ -68,7 +78,11 @@ ThumbWheel::ThumbwheelStatus ThumbWheel::setStatus(bool divert, bool invert) {
 }
 
 ThumbWheel::ThumbwheelEvent ThumbWheel::thumbwheelEvent(const hidpp::Report& report) {
-    assert(report.function() == Event);
+    if (report.function() != Event)
+        throw std::runtime_error("thumbwheelEvent: bad function");
+    const auto param_size = static_cast<std::size_t>(report.paramEnd() - report.paramBegin());
+    if (param_size < 6)
+        throw std::runtime_error("thumbwheelEvent: short report");
     ThumbwheelEvent event{};
     event.rotation = (int16_t) ((report.paramBegin()[0] << 8) | report.paramBegin()[1]);
     event.timestamp = report.paramBegin()[3];

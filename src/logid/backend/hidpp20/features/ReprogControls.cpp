@@ -19,6 +19,15 @@
 #include <backend/hidpp20/Error.h>
 #include <backend/hidpp20/Device.h>
 #include <cassert>
+#include <stdexcept>
+
+namespace {
+void require_size(const std::vector<uint8_t>& v, std::size_t n,
+                  const char* where) {
+    if (v.size() < n)
+        throw std::runtime_error(std::string("ReprogControls: short response in ") + where);
+}
+}
 
 using namespace logid::backend::hidpp20;
 
@@ -63,6 +72,7 @@ std::shared_ptr<ReprogControls> ReprogControls::autoVersion(Device* dev) {
 uint8_t ReprogControls::getControlCount() {
     std::vector<uint8_t> params(0);
     auto response = callFunction(GetControlCount, params);
+    require_size(response, 1, "getControlCount");
     return response[0];
 }
 
@@ -71,6 +81,7 @@ ReprogControls::ControlInfo ReprogControls::getControlInfo(uint8_t index) {
     ControlInfo info{};
     params[0] = index;
     auto response = callFunction(GetControlInfo, params);
+    require_size(response, 9, "getControlInfo");
 
     info.controlID = response[1];
     info.controlID |= response[0] << 8;
@@ -137,7 +148,8 @@ void ReprogControls::setControlReporting(uint16_t cid, ControlInfo info) {
 
 std::set<uint16_t> ReprogControls::divertedButtonEvent(
         const hidpp::Report& report) {
-    assert(report.function() == DivertedButtonEvent);
+    if (report.function() != DivertedButtonEvent)
+        throw std::runtime_error("divertedButtonEvent: bad function");
     std::set<uint16_t> buttons;
     uint8_t cids = std::distance(report.paramBegin(), report.paramEnd()) / 2;
     for (uint8_t i = 0; i < cids; i++) {
@@ -153,7 +165,11 @@ std::set<uint16_t> ReprogControls::divertedButtonEvent(
 
 ReprogControls::Move ReprogControls::divertedRawXYEvent(const hidpp::Report
                                                         & report) {
-    assert(report.function() == DivertedRawXYEvent);
+    if (report.function() != DivertedRawXYEvent)
+        throw std::runtime_error("divertedRawXYEvent: bad function");
+    const auto param_size = static_cast<std::size_t>(report.paramEnd() - report.paramBegin());
+    if (param_size < 4)
+        throw std::runtime_error("divertedRawXYEvent: short report");
     Move move{};
     move.x = (int16_t) ((report.paramBegin()[0] << 8) | report.paramBegin()[1]);
     move.y = (int16_t) ((report.paramBegin()[2] << 8) | report.paramBegin()[3]);
@@ -166,6 +182,7 @@ ReprogControls::ControlInfo ReprogControlsV4::getControlReporting(uint16_t cid) 
     params[0] = (cid >> 8) & 0xff;
     params[1] = cid & 0xff;
     auto response = callFunction(GetControlReporting, params);
+    require_size(response, 3, "v4/getControlReporting");
 
     info.controlID = response[1];
     info.controlID |= response[0] << 8;

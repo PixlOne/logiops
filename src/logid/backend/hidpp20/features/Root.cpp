@@ -19,6 +19,7 @@
 #include <backend/hidpp20/features/Root.h>
 #include <backend/hidpp20/Feature.h>
 #include <backend/hidpp20/Error.h>
+#include <stdexcept>
 
 using namespace logid::backend::hidpp20;
 
@@ -32,6 +33,8 @@ namespace {
 
     feature_info _genGetFeatureInfo(uint16_t feature_id,
                                     std::vector<uint8_t> response) {
+        if (response.size() < 2)
+            throw std::runtime_error("Root::getFeature: short response");
         feature_info info{};
         info.feature_id = response[0];
 
@@ -66,6 +69,8 @@ uint8_t Root::ping(uint8_t byte) {
     params[2] = byte;
 
     auto response = this->callFunction(Root::Function::Ping, params);
+    if (response.size() < 3)
+        throw std::runtime_error("Root::ping: short response");
 
     return response[2];
 }
@@ -73,6 +78,8 @@ uint8_t Root::ping(uint8_t byte) {
 std::tuple<uint8_t, uint8_t> Root::getVersion() {
     std::vector<uint8_t> params(0);
     auto response = this->callFunction(Root::Function::Ping, params);
+    if (response.size() < 2)
+        throw std::runtime_error("Root::getVersion: short response");
 
     if (response[0] == 0x11)
         return std::make_tuple(1, 0);
