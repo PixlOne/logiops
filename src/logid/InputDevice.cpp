@@ -178,6 +178,8 @@ void InputDevice::_enableEvent(const uint type, const uint code) {
 
 void InputDevice::_sendEvent(uint type, uint code, int value) {
     std::unique_lock lock(_input_mutex);
+    if (!ui_device)
+        return;
     libevdev_uinput_write_event(ui_device, type, code, value);
     libevdev_uinput_write_event(ui_device, EV_SYN, SYN_REPORT, 0);
 }
