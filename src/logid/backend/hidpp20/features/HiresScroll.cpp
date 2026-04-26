@@ -48,7 +48,9 @@ void HiresScroll::setMode(uint8_t mode) {
 [[maybe_unused]] bool HiresScroll::getRatchetState() {
     std::vector<uint8_t> params(0);
     auto response = callFunction(GetRatchetState, params);
-    return params[0];
+    if (response.empty())
+        return false;
+    return response[0];
 }
 
 HiresScroll::WheelStatus HiresScroll::wheelMovementEvent(const hidpp::Report& report) {
