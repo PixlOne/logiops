@@ -93,7 +93,7 @@ void readCliOptions(const int argc, char** argv, CmdlineOptions& options) {
                             global_loglevel = DEBUG; // Assume debug verbosity
                             i--; // Go back to last argument to continue loop.
                         } else {
-                            logPrintf(WARN, e.what());
+                            logPrintf(WARN, "%s", e.what());
                             printf("Valid verbosity levels are: Debug, Info, "
                                    "Warn/Warning, or Error.\n");
                             exit(EXIT_FAILURE);
