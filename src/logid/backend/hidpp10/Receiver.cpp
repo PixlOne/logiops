@@ -241,6 +241,8 @@ std::string Receiver::getDeviceName(hidpp::DeviceIndex index) {
         request[1] = 0x01;
 
         auto resp = getRegister(PairingInfo, request, hidpp::ReportType::Long);
+        if (resp.size() < 4)
+            return name;
         const uint8_t size = resp[2];
         const uint8_t chunk_size = resp.size() - 3;
         const uint8_t chunks = size / chunk_size + (size % chunk_size ? 1 : 0);
@@ -248,12 +250,19 @@ std::string Receiver::getDeviceName(hidpp::DeviceIndex index) {
         name.resize(size, ' ');
         for (int i = 0; i < chunks; ++i) {
             for (int j = 0; j < chunk_size; ++j) {
-                name[i * chunk_size + j] = (char) resp[j + 3];
+                const std::size_t pos = (std::size_t) i * chunk_size + j;
+                if (pos >= name.size())
+                    break;
+                if ((std::size_t) (j + 3) >= resp.size())
+                    break;
+                name[pos] = (char) resp[j + 3];
             }
 
             if (i < chunks - 1) {
                 request[1] = i + 1;
                 resp = getRegister(PairingInfo, request, hidpp::ReportType::Long);
+                if (resp.size() < 4)
+                    break;
             }
         }
 
