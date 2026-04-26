@@ -56,13 +56,19 @@ Configuration::Configuration() {
 
 void Configuration::save() {
     config::set(_config.getRoot(), *this);
+    const std::string tmp_path = _config_file + ".tmp";
     try {
-        _config.writeFile(_config_file.c_str());
+        _config.writeFile(tmp_path.c_str());
+        std::filesystem::rename(tmp_path, _config_file);
     } catch (const FileIOException& e) {
+        std::error_code ec;
+        std::filesystem::remove(tmp_path, ec);
         logPrintf(ERROR, "I/O Error while writing %s: %s",
                   _config_file.c_str(), e.what());
         throw;
     } catch (const std::exception& e) {
+        std::error_code ec;
+        std::filesystem::remove(tmp_path, ec);
         logPrintf(ERROR, "Error while writing %s: %s",
                   _config_file.c_str(), e.what());
         throw;
