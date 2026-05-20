@@ -94,6 +94,8 @@ void AxisGesture::move(int16_t axis) {
         // Handle hi-res multiplier
         move *= _multiplier;
 
+        move += _axis_remainder;
+
         double move_floor = floor(move);
         _axis_remainder = move - move_floor;
         if (_axis_remainder >= 1) {
