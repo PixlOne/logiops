@@ -13,6 +13,23 @@ You may also refer to [logid.example.cfg](./logid.example.cfg) for an example.
 
 Default location for the configuration file is /etc/logid.cfg, but another can be specified using the `-c` flag.
 
+### Graphical Configuration Tool (GUI)
+
+An interactive graphical configurator is available in [`logiops_gui.py`](./logiops_gui.py). It provides an intuitive interface for:
+- Auto-detecting connected Logitech HID++ devices
+- Setting DPI, SmartShift (freespin, threshold, torque), and HiRes scrolling
+- Remapping buttons (thumb, top, forward, back) and configuring swipe gestures
+- Remapping side thumbwheel actions (e.g. volume control, media keys)
+- Viewing live service, connection, and battery status
+- Real-time configuration diff preview and clipboard export
+
+To launch the GUI:
+```bash
+sudo python3 logiops_gui.py
+```
+
+For full documentation and troubleshooting, see [readme_gui.md](./readme_gui.md).
+
 ## Dependencies
 
 This project requires a C++20 compiler, `cmake`, `libevdev`, `libudev`, `glib`, and `libconfig`.
@@ -29,6 +46,8 @@ For popular distributions, I've included commands below.
 **Solus:** `sudo eopkg install cmake libevdev-devel libconfig-devel libgudev-devel glib2-devel`
 
 **openSUSE:** `sudo zypper install cmake libevdev-devel systemd-devel libconfig-devel gcc-c++ libconfig++-devel libudev-devel glib2-devel`
+
+*Note: If using the graphical configuration tool (`logiops_gui.py`), `python3` and `python3-tk` are also required (e.g. `sudo apt install python3-tk` on Debian/Ubuntu).*
 
 ## Building
 
