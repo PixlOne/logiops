@@ -27,6 +27,7 @@
 
 namespace logid {
     class InputDevice;
+    class TouchpadDevice;
 
     class DeviceManager : public backend::raw::DeviceMonitor {
     public:
@@ -34,6 +35,7 @@ namespace logid {
         [[nodiscard]] std::shared_ptr<Configuration> config() const;
 
         [[nodiscard]] std::shared_ptr<InputDevice> virtualInput() const;
+        [[nodiscard]] std::shared_ptr<TouchpadDevice> virtualTouchpad() const;
 
         [[nodiscard]] std::shared_ptr<const ipcgull::node> devicesNode() const;
 
@@ -83,6 +85,8 @@ namespace logid {
         std::shared_ptr<ipcgull::server> _server;
         std::shared_ptr<Configuration> _config;
         std::shared_ptr<InputDevice> _virtual_input;
+        mutable std::shared_ptr<TouchpadDevice> _virtual_touchpad;
+        mutable std::mutex _touchpad_lock;
 
         std::shared_ptr<ipcgull::node> _root_node;
 

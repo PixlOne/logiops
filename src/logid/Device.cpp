@@ -222,6 +222,18 @@ std::shared_ptr<InputDevice> Device::virtualInput() const {
     }
 }
 
+std::shared_ptr<TouchpadDevice> Device::virtualTouchpad() const {
+    if (auto manager = _manager.lock()) {
+        return manager->virtualTouchpad();
+    } else {
+        logPrintf(ERROR, "Device manager lost");
+        logPrintf(ERROR,
+                  "Fatal error occurred, file a bug report,"
+                  " the program will now exit.");
+        std::terminate();
+    }
+}
+
 std::shared_ptr<ipcgull::node> Device::ipcNode() const {
     return _ipc_node;
 }

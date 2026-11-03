@@ -39,6 +39,8 @@ namespace logid::actions {
 
     class ToggleSmartShift;
 
+    class TouchpadAction;
+
     class AxisGesture;
 
     class IntervalGesture;
@@ -73,6 +75,22 @@ namespace logid::config {
                 "type", "Keypress",
                 {"keys"}, &KeypressAction::keys) {
         }
+    };
+
+    struct TouchpadAction : public signed_group<std::string> {
+        typedef actions::TouchpadAction action;
+        std::optional<int> fingers;
+        std::optional<double> scale;
+        std::optional<bool> invert_x;
+        std::optional<bool> invert_y;
+
+        TouchpadAction() : signed_group<std::string>(
+                "type", "Touchpad",
+                {"fingers", "scale", "invert_x", "invert_y"},
+                &TouchpadAction::fingers,
+                &TouchpadAction::scale,
+                &TouchpadAction::invert_x,
+                &TouchpadAction::invert_y) {}
     };
 
     struct ToggleSmartShift : public signed_group<std::string> {
@@ -133,6 +151,7 @@ namespace logid::config {
     typedef std::variant<
             NoAction,
             KeypressAction,
+            TouchpadAction,
             ToggleSmartShift,
             ToggleHiresScroll,
             CycleDPI,
@@ -230,6 +249,7 @@ namespace logid::config {
     typedef std::variant<
             NoAction,
             KeypressAction,
+            TouchpadAction,
             ToggleSmartShift,
             ToggleHiresScroll,
             CycleDPI,

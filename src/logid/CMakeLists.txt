@@ -15,6 +15,7 @@ add_executable(logid
         util/log.cpp
         config/config.cpp
         InputDevice.cpp
+        TouchpadDevice.cpp
         DeviceManager.cpp
         Device.cpp
         Receiver.cpp
@@ -35,6 +36,7 @@ add_executable(logid
         actions/GestureAction.cpp
         actions/ChangeHostAction.cpp
         actions/ChangeProfile.cpp
+        actions/TouchpadAction.cpp
         actions/gesture/Gesture.cpp
         actions/gesture/ReleaseGesture.cpp
         actions/gesture/ThresholdGesture.cpp

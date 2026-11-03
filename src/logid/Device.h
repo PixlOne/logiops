@@ -34,6 +34,7 @@ namespace logid {
     class Receiver;
 
     class InputDevice;
+    class TouchpadDevice;
 
     class DeviceNickname {
     public:
@@ -100,6 +101,7 @@ namespace logid {
         void reset();
 
         [[nodiscard]] std::shared_ptr<InputDevice> virtualInput() const;
+        [[nodiscard]] std::shared_ptr<TouchpadDevice> virtualTouchpad() const;
 
         [[nodiscard]] std::shared_ptr<ipcgull::node> ipcNode() const;
 
