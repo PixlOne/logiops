@@ -179,5 +179,9 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-    return EXIT_SUCCESS;
+    /* server->start() only returns when the IPC main loop is stopped, which
+     * should never happen while logid is running. Failing here (instead of
+     * silently exiting with success) lets systemd restart the daemon. */
+    logPrintf(ERROR, "IPC server stopped unexpectedly, terminating.");
+    return EXIT_FAILURE;
 }
