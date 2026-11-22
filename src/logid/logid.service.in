@@ -8,6 +8,8 @@ Wants=multi-user.target
 Type=simple
 ExecStart=${CMAKE_INSTALL_PREFIX}/bin/logid
 User=root
+Restart=on-failure
+RestartSec=2
 
 [Install]
 WantedBy=graphical.target

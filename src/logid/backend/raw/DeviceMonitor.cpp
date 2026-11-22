@@ -92,19 +92,32 @@ void DeviceMonitor::ready() {
             [self_weak = _self]() {
                 if (auto self = self_weak.lock()) {
                     struct udev_device* device = udev_monitor_receive_device(self->_udev_monitor);
-                    std::string action = udev_device_get_action(device);
-                    std::string dev_node = udev_device_get_devnode(device);
+                    if (!device) {
+                        /* udev_monitor_receive_device() may return NULL on a
+                         * spurious wakeup or when the netlink buffer is
+                         * exhausted. Treat it as an empty event. */
+                        logPrintf(DEBUG, "No udev device received");
+                        return;
+                    }
 
-                    if (action == "add")
-                        run_task([self_weak, dev_node]() {
-                            if (auto self = self_weak.lock())
-                                self->_addHandler(dev_node);
-                        });
-                    else if (action == "remove")
-                        run_task([self_weak, dev_node]() {
-                            if (auto self = self_weak.lock())
-                                self->_removeHandler(dev_node);
-                        });
+                    const char* action = udev_device_get_action(device);
+                    const char* dev_node = udev_device_get_devnode(device);
+
+                    if (action && dev_node) {
+                        const std::string action_str{action};
+                        const std::string dev_node_str{dev_node};
+
+                        if (action_str == "add")
+                            run_task([self_weak, dev_node_str]() {
+                                if (auto self = self_weak.lock())
+                                    self->_addHandler(dev_node_str);
+                            });
+                        else if (action_str == "remove")
+                            run_task([self_weak, dev_node_str]() {
+                                if (auto self = self_weak.lock())
+                                    self->_removeHandler(dev_node_str);
+                            });
+                    }
 
                     udev_device_unref(device);
                 }
